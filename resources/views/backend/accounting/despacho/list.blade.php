@@ -1,0 +1,476 @@
+@extends('layouts.app')
+<link href="{{ asset('public/dropzone/dropzone.min.css') }}" rel="stylesheet" type="text/css" />
+@section('content')
+    <div class="row">
+
+        <div class="col-12">
+            @csrf
+            <div class="card mt-2">
+                <span class="d-none panel-title">{{ _lang('Orden de despacho') }}</span>
+
+                <div class="card-body">
+                    @php $currency = currency() @endphp
+                    <table id="orden-despacho-table" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all"></th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Acciones.') }}
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Nro.') }}
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cotización') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Ubicación') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Marca') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Modelo') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Pieza') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cliente') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Vendedor') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">
+                                    {{ _lang('Estado Cotización') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('F.Desarme') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Estado la pieza') }}
+                                </th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">
+                                    {{ _lang('F.envio otro dep.') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('F.envio dep.') }}
+                                </th>
+                                <!--<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Embalado el') }}
+                                </th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Lugar Embalado') }}
+                                </th>-->
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('F.Entrega') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">
+                                    {{ _lang('Forma de Entrega') }}</th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Despachado por') }}
+                                </th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Observaciones') }}
+                                </th>
+                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Foto Guía') }}</th>
+                                {{-- <th style="width: 100px;min-width: 100px">{{ _lang('Prioridad') }}</th> --}}
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+	
+    @include('backend.accounting.despacho.modal.confirmar-entrega')
+@endsection
+
+@section('js-script')
+<script src="{{ asset('public/dropzone/dropzone.min.js') }}" defer></script>
+    <script>
+		
+        var adminDesarme =
+            {{ strTolower(auth()->user()->role->name) == 'administrativo de despacho' || strTolower(auth()->user()->role->name) == 'gerencial' ? 'true' : 'false' }};
+    </script>
+
+    <script>
+        function changeProcesar(s) {
+            let select = $(s);
+            let id = select.data('id');
+            let procesar = select.val();
+            $.ajax({
+                url: '{{ url('orden-despacho/changeProcesar') }}/' + id + '/' + procesar,
+                method: 'GET',
+                success: function(data) {
+                    if (data.result == 'success') {
+                        select.addClass('border-success')
+                    } else {
+                        select.addClass('border-danger')
+                    }
+                }
+            })
+        }
+
+
+
+        $(function() {
+            var selectedRows = new Set();
+
+            $('#orden-despacho-table thead tr')
+                .clone(true)
+                .addClass('filters')
+                .appendTo('#orden-despacho-table thead');
+
+            var table = $('#orden-despacho-table').DataTable({
+                scrollX: true,
+                serverSide: true,
+                processing: true,
+                searching: true,
+                orderCellsTop: true,
+                fixedHeader: true,
+                stateSave: true,
+                stateLoadCallback: function(settings) {
+                    var state = JSON.parse(localStorage.getItem(
+                        '{{ url('orden-despacho/get_table_data') }}'));
+                    if (state) {
+                        // Restaurar valores de filtros personalizados
+                        state.columns.forEach(function(column, index) {
+                            $('input[name="filtro_columna_' + index + '"]').val(column.search
+                                .search);
+                        });
+                    }
+                    return state;
+                },
+                ajax: {
+                    url: '{{ url('orden-despacho/get_table_data') }}',
+                    method: "POST",
+                    data: function(d) {
+                        d._token = $('meta[name="csrf-token"]').attr('content');
+                        d.id = "{{ $id ?? null }}";
+                    }
+                },
+                dom: 'Bfrtip',
+                columns: [{
+                        data: 'checkbox',
+                        name: 'checkbox',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'actions',
+                        name: 'actions'
+                    },
+                    {
+                        data: 'nro',
+                        name: 'nro'
+                    },
+                    {
+                        data: 'fecha_venta',
+                        name: 'fecha_venta'
+                    }, // Fecha
+                    {
+                        data: 'cotizacion',
+                        name: 'cotizacion'
+                    }, // Cotización
+                    {
+                        data: 'interno',
+                        name: 'interno'
+                    }, // Interno
+                    {
+                        data: 'ubicacion',
+                        name: 'ubicacion'
+                    }, // Ubicación
+                    {
+                        data: 'marca',
+                        name: 'marca'
+                    }, // Marca
+                    {
+                        data: 'modelo',
+                        name: 'modelo'
+                    }, // Modelo
+                    {
+                        data: 'pieza',
+                        name: 'pieza'
+                    }, // Pieza
+                    {
+                        data: 'cliente',
+                        name: 'cliente'
+                    }, // Cliente
+                    {
+                        data: 'vendedor',
+                        name: 'vendedor'
+                    }, // Vendedor
+                    {
+                        data: 'estado_cotizacion',
+                        name: 'estado_cotizacion'
+                    }, // Estado Cotización
+                    {
+                        data: 'fecha_desarme',
+                        name: 'fecha_desarme'
+                    },
+                    {
+                        data: 'estado_pieza',
+                        name: 'estado_pieza'
+                    },
+                    {
+                        data: 'envio_otro_deposito',
+                        name: 'envio_otro_deposito'
+                    },
+                    {
+                        data: 'envio_deposito',
+                        name: 'envio_deposito'
+                    },
+
+                  /*  {
+                        data: 'embalado_el',
+                        name: 'embalado_el'
+                    },
+                    {
+                        data: 'lugar_embalado',
+                        name: 'lugar_embalado'
+                    },*/
+                    {
+                        data: 'fecha_entrega',
+                        name: 'fecha_entrega'
+                    },
+                    {
+                        data: 'forma_entrega',
+                        name: 'forma_entrega'
+                    },
+                    {
+                        data: 'despachado_por',
+                        name: 'despachado_por'
+                    },
+                    {
+                        data: 'observaciones',
+                        name: 'observaciones'
+                    },
+                    {
+                        data: 'guia',
+                        name: 'guia'
+                    },
+                ],
+
+                buttons: [{
+                        extend: 'pdf',
+                        text: 'Exportar a PDF',
+                        exportOptions: {
+                            columns: ':visible:not(.not-export)',
+                            format: {
+                                body: function(data, row, column, node) {
+                                    // Si hay un select, obtiene el texto seleccionado
+                                    if ($(node).find('select').length) {
+                                        return $(node).find('select option:selected').text();
+                                    }
+                                    return $(node).text().trim();
+                                }
+                            }
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        text: 'Exportar a Excel',
+                        exportOptions: {
+                            columns: ':visible:not(.not-export)',
+                            format: {
+                                body: function(data, row, column, node) {
+                                    // Si hay un select, obtiene el texto seleccionado
+                                    if ($(node).find('select').length) {
+                                        return $(node).find('select option:selected').text();
+                                    }
+                                    return $(node).text().trim();
+                                }
+                            }
+                        }
+
+                    },
+                    {
+                        text: 'Generar Impresiones',
+                        action: function(e, dt, node, config) {
+                            var selectedIds = [];
+                            $('.row-checkbox:checked').each(function() {
+                                selectedIds.push($(this).data('id'));
+                            });
+
+                            if (selectedIds.length === 0) {
+                                alert('Seleccione al menos una orden para imprimir.');
+                                return;
+                            }
+
+                            // selectedIds.forEach(function(id) {
+                            //     window.open('{{ url('orden-despacho/generar-pdf') }}/' + id,
+                            //         '_blank');
+                            // });
+                            window.open('{{ url('orden-despacho/generar-pdf') }}/' + selectedIds,
+                                '_blank');
+
+                        }
+                    }
+                ],
+
+                createdRow: function(row, data) {
+                    var estado = data.estatus;
+                    if (estado === 'listo para entrega') {
+                        $(row).css('background-color', '#98FB98');
+                    } else if (estado === 'despachado') {
+                        $(row).css('background-color', '#FFFACD');
+
+                    } else if (!estado || estado === 'pendiente') {
+                        $(row).css('background-color', '#FFFACD');
+                        //$(row).css('background-color', '#F08080');
+                    }
+                },
+                responsive: false,
+                bStateSave: true,
+                bAutoWidth: false,
+                ordering: false,
+                language: {
+                    decimal: "",
+                    emptyTable: "{{ _lang('No Data Found') }}",
+                    info: "{{ _lang('Showing') }} _START_ {{ _lang('to') }} _END_ {{ _lang('of') }} _TOTAL_ {{ _lang('Entries') }}",
+                    infoEmpty: "{{ _lang('Showing 0 To 0 Of 0 Entries') }}",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    thousands: ",",
+                    lengthMenu: "{{ _lang('Show') }} _MENU_ {{ _lang('Entries') }}",
+                    loadingRecords: "{{ _lang('Loading...') }}",
+                    processing: "{{ _lang('Processing...') }}",
+                    search: "{{ _lang('Search') }}",
+                    zeroRecords: "{{ _lang('No matching records found') }}",
+                    paginate: {
+                        first: "{{ _lang('First') }}",
+                        last: "{{ _lang('Last') }}",
+                        next: "{{ _lang('Next') }}",
+                        previous: "{{ _lang('Previous') }}"
+                    }
+                },
+                initComplete: function() {
+                    var api = this.api();
+
+                    var columnasFecha = [3, 13, 15, 16, 17];
+                    var columnaFormaEntrega = 20;
+
+                    api.columns().eq(0).each(function(colIdx) {
+
+                        var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
+                        if (!cell.length) return;
+
+                        var title = $(cell).text();
+
+                        // Si es la columna "forma_entrega"
+                        if (colIdx === columnaFormaEntrega) {
+                            var select = $(
+                                    '<select style="width:100%"><option value="">Todas</option></select>'
+                                )
+                                .appendTo(cell.empty())
+                                .on('change', function() {
+                                    var val = $.fn.dataTable.util.escapeRegex($(this)
+                                        .val());
+                                    api.column(colIdx)
+                                        .search(val ? '^' + val + '$' : '', true, false)
+                                        .draw();
+                                });
+
+                            [
+                                'retira cliente',
+                                'despacho',
+                                'flete',
+                                'Mostrador Colectora',
+                                'Mostrador ventanita',
+                                'Mostrador constituyentes',
+                                'Mostrador Octubre'
+                            ].forEach(function(d) {
+                                select.append('<option value="' + d + '">' + d +
+                                    '</option>');
+                            });
+
+                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 21) {
+                            var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
+
+                            $(cell).html(
+                                '<input style="width:100%" type="' + tipoInput +
+                                '" placeholder="' + title + '" />'
+                            );
+
+                            $('input', cell).each(function() {
+                                let cursorPosition = 0;
+
+                                $(this).off('change')
+                                    .on('change', function(e) {
+                                        $(this).attr('title', $(this).val());
+                                        let regexr = '({search})';
+                                        cursorPosition = this.selectionStart;
+
+                                     //if (e.keyCode == 13) { 
+									  api.column(colIdx).search(
+									  
+                                            /*this.value !== '' ? regexr.replace(
+                                                '{search}', '(((' + this.value +
+                                                ')))') : '',
+                                            this.value !== '',
+                                            this.value === ''*/
+											this.value
+									  ).draw();
+									 //}
+									  
+                                    });
+                                    /*.on('keyup', function(e) {
+                                        e.stopPropagation();
+                                        $(this).trigger('change');
+                                        $(this).focus()[0].setSelectionRange(
+                                            cursorPosition, cursorPosition);
+                                    });*/
+                            });
+                        } else {
+                            $(cell).html('');
+                        }
+                    });
+
+                    api.columns.adjust();
+                }
+
+            });
+
+
+
+
+            $(document).on('click', '#select-all', function() {
+                var isChecked = $(this).is(':checked');
+                $('#orden-despacho-table tbody input.row-checkbox').each(function() {
+                    var id = $(this).data('id');
+                    $(this).prop('checked', isChecked);
+                    if (isChecked) {
+                        selectedRows.add(id);
+                    } else {
+                        selectedRows.delete(id);
+                    }
+                });
+            });
+
+            $(document).on('change', '.row-checkbox', function() {
+                var id = $(this).data('id');
+                if ($(this).is(':checked')) {
+                    selectedRows.add(id);
+                } else {
+                    selectedRows.delete(id);
+                }
+            });
+
+            table.on('draw', function() {
+                $('#orden-despacho-table tbody input.row-checkbox').each(function() {
+                    var id = $(this).data('id');
+                    $(this).prop('checked', selectedRows.has(id));
+                });
+                var allChecked = $('#orden-despacho-table tbody input.row-checkbox').length > 0 &&
+                    $('#orden-despacho-table tbody input.row-checkbox').length === $(
+                        '#orden-despacho-table tbody input.row-checkbox:checked').length;
+                $('#select-all').prop('checked', allChecked);
+            });
+
+
+
+
+        });
+    </script>
+    <script>
+        $('#modalConfirmarEntrega').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            $('#modal_orden_id').val(button.data('id'));
+            $('#modal_fecha_entrega').val(button.data('fecha') ?? '');
+            $('#modal_forma_entrega').val(button.data('forma') ?? '');
+            $('#modal_despachado_por').val(button.data('despachado') ?? '');
+        });
+		
+	
+		 
+ 
+		
+		
+		/*$('#orden-despacho-table tbody').on('click', '.view-details', function () {
+    var rowData = $('#orden-despacho-table').DataTable().row($(this).parents('tr')).data();
+    // Populate the modal body with data
+    $('#detailsModal .modal-body').html(
+        '<h5>Name: ' + rowData.name + '</h5>' +
+        '<p>Position: ' + rowData.position + '</p>'
+        // ... more details
+    );
+});*/
+		
+		
+    </script>
+@endsection

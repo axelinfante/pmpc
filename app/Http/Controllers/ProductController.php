@@ -1,0 +1,2039 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Estado;
+use App\Lugar_entregas;
+use App\Cars;
+use App\Categoria;
+use App\Categoria_product;
+use App\Company;
+use App\Historial_product;
+use App\Imagen;
+use App\Utilities\Imagenes;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
+use App\Product;
+use App\Item;
+use App\Stock;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Validator;
+use Illuminate\Validation\Rule;
+use App\Imports\ProductsImport;
+use App\Marca;
+use Maatwebsite\Excel\Facades\Excel;
+//use DataTables;
+use DB;
+use OwenIt\Auditing\Models\Audit;
+use Yajra\DataTables\Facades\DataTables;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
+use ZipArchive;
+use File;
+
+class ProductController extends Controller
+{
+    use Imagenes;
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+
+    public function index(Request $request)
+    {
+        if (request()->ajax()) {
+            $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+            // Iniciamos la consulta base
+            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio')
+                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+                ->where('car_id', null)
+                ->where('stock', '>=', 1)
+                ->whereIn('products.company_id', $company_id)
+                ->with('category')
+                ->whereHas('item', function ($query) {
+                    $query->where("item_type", "product");
+                });
+            //$products->orderBy('products.nro_interno', 'asc');
+            if ($request->columns['3']['search']['value'] != "") {
+                $products->orderBy('products.nro_interno', 'asc');
+            } else {
+                $products->orderBy('products.id', 'desc');
+            }
+
+
+            return DataTables::eloquent($products)
+                ->filterColumn('id', function ($query, $keyword) {
+                    $query->where('products.id', 'like', "%{$keyword}%");
+                    //$query->where('products.id11', 'like', "%{$keyword}");
+                })
+                ->filterColumn('created_at', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('products.created_at', '>=', $date_range[0])
+                            ->whereDate('products.created_at', '<=', $date_range[1]);
+                    }
+                })
+                ->filterColumn('fecha_ingreso_a_stock', function ($query, $keyword) {
+					if ($keyword == "todos") {
+                        $query->where('products.fecha_ingreso_a_stock', '=', "")
+                            ->orWhereNull('products.fecha_ingreso_a_stock');
+                    } elseif ($keyword != "") {
+						 $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('products.fecha_ingreso_a_stock', '>=', $date_range[0])
+                            ->whereDate('products.fecha_ingreso_a_stock', '<=', $date_range[1]);
+                    }
+                    }
+                })
+                ->filterColumn('nro_interno', function ($query, $keyword) {
+                    $query->where('products.nro_interno', 'like', "%{$keyword}");
+                    //$query->orderBy('products.nro_interno', 'asc');
+                })
+                ->filterColumn('dominio', function ($query, $keyword) {
+                    if ($keyword == "todos") {
+                        $query->where('cars.dominio', '=', "")
+                            ->orWhereNull('cars.dominio');
+                    } elseif ($keyword != "") {
+                        $query->where('cars.dominio', 'like', "%{$keyword}%");
+                    }
+                    //$query->where('cars.dominio', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('productItem', function ($query, $keyword) {
+                    $query->orWhereHas('item', function ($subQuery) use ($keyword) {
+                        $subQuery->where('item_name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->filterColumn('marca', function ($query, $keyword) {
+                    $query->orWhereHas('marcamodelo', function ($subQuery) use ($keyword) {
+                        $subQuery->whereHas('marca', function ($str) use ($keyword) {
+                            //$str->where('marca', 'like', "%{$keyword}%");
+
+                            if ($keyword == "todos") {
+                                $str->where('marca', '=', "")
+                                    ->orWhereNull('marca');
+                            } elseif ($keyword != "") {
+                                $str->where('marca', 'like', "%{$keyword}%");
+                            }
+                        });
+                    });
+                })
+                ->filterColumn('modelo', function ($query, $keyword) {
+                    $query->orWhereHas('marcamodelo', function ($subQuery) use ($keyword) {
+                        $subQuery->whereHas('modelo', function ($str) use ($keyword) {
+                            $str->where('modelo', 'like', "%{$keyword}%");
+                        });
+                    });
+                })
+                ->filterColumn('motor', function ($query, $keyword) {
+                    //$query->where('products.motor', 'like', "%{$keyword}");
+                    if ($keyword == "todos") {
+                        $query->where('cars.motor_nro', '=', "")
+                            ->orWhereNull('cars.motor_nro');
+                    } elseif ($keyword != "") {
+                        $query->where('cars.motor_nro', 'like', "%{$keyword}%");
+                    }
+
+                    /*if ($keyword=="todos") {
+                                          $query->where('cars.motor_nro','=', "")
+                                            ->orWhereNull('cars.motor_nro');
+                                }elseif($keyword!=""){
+                                           $query->where('cars.motor_nro', 'like', "%{$keyword}%");
+                                 }*/
+                })
+                ->filterColumn('mercado_libre', function ($query, $keyword) {
+                    if ($keyword == "Si") {
+                        $query->where('mercado_libre', 1);
+                    } elseif ($keyword == "No") {
+                        $query->where('mercado_libre', 0)->orwherenull('mercado_libre');
+                    }
+                })
+                /*   ->filterColumn('motor', function ($query, $keyword) {
+                $query->where('products.motor', 'like', "%{$keyword}");
+            })*/
+                ->filterColumn('deposito', function ($query, $keyword) {
+                    $query->orWhereHas('deposito', function ($str) use ($keyword) {
+
+                        if ($keyword != "") {
+                            $ids = explode(",", $keyword);
+
+
+                            if (in_array("-1", $ids)) {
+                                $str->where('idDeposito', '=', "")
+                                    ->orWhereNull('idDeposito');
+                            } else {
+                                $str->wherein('idDeposito', $ids);
+                            }
+                        }
+
+                        /*if ($keyword=="todos") {
+                                                $str->where('nombre','=', "")
+                                                ->orWhereNull('nombre');
+                                            }elseif($keyword!=""){
+                                                $str->where('nombre', 'like', "%{$keyword}%");
+                                            }*/
+                    });
+                })
+
+
+
+
+                /*  ->filter(function ($q) use ($request) {
+
+                //busqueda individuales
+                $columns_ind=array_filter($request['columns'], function ($filtro) {
+                    return $filtro['search']['value'] != "";
+                });
+                // busqueda global
+                $keyword = (isset($request['search']) ? $request['search']['value'] : "" ); 
+
+                if ($keyword !=""  || count($columns_ind)>0){
+                    $q->where(function ($q) use ($request,$columns_ind,$keyword) {
+
+                      foreach ($request['columns'] as $column) {
+                        if ($column['searchable'] == 'true') {
+                            $valor_campo=$column['name'];
+                            $valor_columna= ($column['search']['value']!="" ? $column['search']['value'] : $keyword );
+                            if ($valor_columna!=""){
+                            
+                            switch ($valor_campo) {
+                                    case "id":
+                                    case "nro_interno":                                        
+                               $q->where( "products.$valor_campo", 'like', '%'. $valor_columna.'');
+                                    break;
+                                    case "productItem":
+                                         $q->orWhereHas('item', function ($subQuery) use ($valor_columna) {
+                                              $subQuery->where('item_name', 'like', "%{$valor_columna}%");
+                                        });
+                                    break;
+                                    case "marca":
+                                         $q->orWhereHas('marcamodelo', function ($str) use ($valor_columna) {
+                                                $str->whereHas('marca', function ($str) use ($valor_columna) {
+                                                 $str->where('marca', 'like', "%{$valor_columna}%");
+                                                 });
+                                        });
+                                    break; 
+                                    case "modelo":
+                                         $q->orWhereHas('marcamodelo', function ($str) use ($valor_columna) {
+                                                $str->whereHas('modelo', function ($str) use ($valor_columna) {
+                                                 $str->where('modelo', 'like', "%{$valor_columna}%");
+                                                 });
+                                        });
+                                    break;  
+                                    case "deposito":
+                                         $q->orWhereHas('deposito', function ($str) use ($valor_columna) {
+                                             if ($valor_columna=="todos") {
+                                                $str->where('nombre','=', "")
+                                                ->orWhereNull('nombre');
+                                            }elseif($valor_columna!=""){
+                                                $str->where('nombre', 'like', "%{$valor_columna}%");
+                                            }
+                                       });
+                                    break;     
+                                    case "created_at":
+                                        $date_range=($valor_columna!='') ? explode(" - ",$valor_columna) : array();
+                                        if (count($date_range)==2){
+                                            $q->whereBetween('products.created_at', [$date_range[0], $date_range[1]]);
+                                        }
+                                    break;  
+                                    case "fecha_ingreso_a_stock":
+                                          $q->whereRaw("DATE_FORMAT(fecha_ingreso_a_stock,'%d/%m/%Y') LIKE ?", ["%$valor_columna%"]);
+                                    break;  
+                                    default:
+                                $q->Where( $valor_campo, 'like', '%'.$valor_columna.'%');    
+                                }
+
+                        
+                            }//if
+                           }
+			            }
+                    });
+                }
+               // dd($q->toSql());
+                  return true;
+               })*/
+                /*->orderColumn('nro_interno', function($query, $order) {
+				$query->orderBy('nro_interno', "Desc");
+			})*/
+                ->addColumn('id', function ($data) {
+
+                    if ($data->company_id == 1) {
+                        $in = 'PM-';
+                    } else if ($data->company_id == 2) {
+                        $in = 'PC-';
+                    }
+                    return $in . $data->id;
+                })
+
+
+                ->addColumn('created_at', function ($data) {
+                    return formatDate($data->created_at);
+                })
+                ->addColumn('fecha_ingreso_a_stock', function ($data) {
+                    return formatDate($data->fecha_ingreso_a_stock);
+                })
+                ->addColumn('interno', function ($data) {
+                    return nroInternoAlias($data->company_id, $data->tipo_vehiculo, $data->nro_interno);
+                })
+                ->addColumn('productItem', function ($data) {
+                    return $data->item->item_name ?? null;
+                })
+                ->addColumn('marca', function ($data) {
+                    return ($data->marcaModelo->marca->marca ?? '');
+                })
+                ->addColumn('modelo', function ($data) {
+                    return ($data->marcaModelo->modelo->modelo ?? '');
+                })
+                ->addColumn('deposito', function ($data) {
+                    return $data->deposito->nombre ?? '';
+                })
+                ->addColumn('dominio', function ($data) {
+                    return $data->dominio ?? '';
+                })
+                ->editColumn('mercado_libre', function ($data) use ($request) {
+					
+					if (!isset($request->exportar)){
+                        return view('backend.accounting.product.include.product-mercadolibre', ['data' => $data]);
+                    }
+					 
+                    return ($data->mercado_libre==1) ? 'Si' : 'No';
+                })->addColumn('action', function ($data) {
+
+                    $result =  "<form action='" . action('ProductController@destroy', $data->id) . "' method='post'>";
+                    $result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
+
+                    $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
+
+                    $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+
+                    $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+
+                    $result .= csrf_field();
+
+                    $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
+                    class='ti-eraser'></i></button>";
+
+                    /*$hist = Historial_product::where('product_id', $data->id)->first();
+                    if (!empty($hist)) {
+                        $result .= "<a href='" . route('historialProducto', $data->id) . "' class='btn btn-warning btn-xs '><i class='ti-list'></i></a>";
+                    }*/
+					$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
+					data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
+					
+                    $result .= "<button class='btn btn-warning' type='button' data-id='$data->id' onClick='toggleStock(this)' ><i class='fa fa-ban'></i></button> ";
+                    $result .= "</form>";
+                    return $result;
+                })
+				->editColumn('nro_oblea', function ($data) use ($request) {
+                    if (!isset($request->exportar)){
+                        return view('backend.accounting.product.include.product-oblea', ['data' => $data]);
+                    }
+                     return $data->nro_oblea;
+                })
+				->rawColumns(['mercado_libre','action'])
+				->tojson();
+        }
+
+        $lugar_entregas = Lugar_entregas::all();
+        $estados = Estado::select('*')->where('Activo', "Si")->orderBy('estado', 'asc')->get();
+
+        return view('backend.accounting.product.list', compact(['lugar_entregas', 'estados']));
+    }
+
+    public function index_old()
+    {
+
+        if (request()->ajax()) {
+            $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+            // Iniciamos la consulta base
+            $products = Product::select('products.*', 'cars.tipo_vehiculo')
+                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+                ->where('car_id', null)
+                ->where('stock', '>=', 1)
+                ->whereIn('products.company_id', $company_id)
+                ->with('category')
+                ->whereHas('item', function ($query) {
+                    $query->where("item_type", "product");
+                });
+
+            // Condición adicional por rol del usuario
+            /*if (auth()->user()->role->name != 'Gerencial') {
+            $id_cia=(!empty(session('cia'))) ? session('cia'):auth()->user()->company_id;
+                if ($id_cia!=100){
+                    $products->where('products.company_id', $id_cia);
+                }
+            //$products->where('products.company_id', auth()->user()->company_id);
+        }*/
+
+
+            //$data->marcaModelo->modelo->modelo 
+
+            /*  if ($request->has('marcamodelo'))
+        {
+            $products->where('last_name', 'LIKE', '%' . $request->input('last_name') . '%');
+        }*/
+
+            $products->orderBy('products.id', 'desc');
+            return DataTables::eloquent($products)
+                ->filterColumn('id', function ($query, $keyword) {
+                    $query->where('products.id', 'like', '%' . $keyword . '%');
+                })
+                ->filterColumn('marca', function ($query, $keyword) {
+                    $query->orwhereHas('marcamodelo', function ($str) use ($keyword) {
+                        $str->whereHas('marca', function ($str) use ($keyword) {
+                            $str->where('marca', 'like', "%{$keyword}%");
+                        });
+                        /*$str->orwhereHas('modelo', function ($str) use ($keyword) {
+                        $str->where('modelo', 'like', "%{$keyword}%");
+                    });*/
+                    });
+                })
+                ->filterColumn('modelo', function ($query, $keyword) {
+                    $query->orwhereHas('marcamodelo', function ($str) use ($keyword) {
+                        $str->whereHas('modelo', function ($str) use ($keyword) {
+                            $str->where('modelo', 'like', "%{$keyword}%");
+                        });
+                    });
+                })
+                ->filterColumn('created_at', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereBetween('products.created_at', [$date_range[0], $date_range[1]]);
+                    }
+                })
+                ->filterColumn('interno', function ($query, $keyword) {
+                    $query->where('cars.id', 'like', '%' . $keyword . '%');
+                })
+                ->filterColumn('productItem', function ($query, $keyword) {
+                    $query->whereHas('item', function ($query) use ($keyword) {
+                        $query->where('item_name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->filterColumn('deposito', function ($query, $keyword) {
+                    $query->orwhereHas('deposito', function ($str) use ($keyword) {
+                        //$str->where('nombre', 'like', "%{$keyword}%");
+                        if ($keyword == "todos") {
+                            $str->where('nombre', '=', "")
+                                ->orWhereNull('nombre');
+                        } elseif ($keyword != "") {
+                            $str->where('nombre', 'like', "%{$keyword}%");
+                        }
+                    });
+                })
+                ->addColumn('id', function ($data) {
+
+                    if ($data->company_id == 1) {
+                        $in = 'PM-';
+                    } else if ($data->company_id == 2) {
+                        $in = 'PC-';
+                    }
+                    return $in . $data->id;
+                })
+
+
+                ->addColumn('created_at', function ($data) {
+                    return formatDate($data->created_at);
+                })
+                ->addColumn('fecha_ingreso_a_stock', function ($data) {
+                    return formatDate($data->fecha_ingreso_a_stock);
+                })
+                ->addColumn('interno', function ($data) {
+                    return nroInternoAlias($data->company_id, $data->tipo_vehiculo, $data->nro_interno);
+                })
+                ->addColumn('productItem', function ($data) {
+                    return $data->item->item_name ?? null;
+                })
+                ->addColumn('marca', function ($data) {
+                    return ($data->marcaModelo->marca->marca ?? '');
+                })
+                ->addColumn('modelo', function ($data) {
+                    return ($data->marcaModelo->modelo->modelo ?? '');
+                })
+                ->addColumn('deposito', function ($data) {
+                    return $data->deposito->nombre ?? '';
+                })
+                /*->addColumn('ubicacion', function ($data) {
+                return $data->lugar_entrega->nombre ?? '';
+            })*/
+                ->addColumn('action', function ($data) {
+
+                    $result =  "<form action='" . action('ProductController@destroy', $data->id) . "' method='post'>";
+                    $result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
+
+                    $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
+
+                    $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+
+                    $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+
+                    $result .= csrf_field();
+
+                    $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
+                    class='ti-eraser'></i></button>";
+                    $result .= "</form>";
+                    return $result;
+                })->tojson();
+            /*->rawColumns(['action'])
+            ->addIndexColumn()
+            ->make(true);*/
+        }
+        return view('backend.accounting.product.list');
+    }
+
+    public function historial(Request $request)
+    {
+        if (request()->ajax()) {
+            $idProduct = $request->query('idProduct', null);
+
+            $products = Historial_product::select('historial_products.*', 'cars.tipo_vehiculo')
+                ->leftJoin('cars', 'cars.id', '=', 'historial_products.nro_interno')
+                ->whereHas('item', function ($query) {
+                    $query->where("item_type", "product");
+                })
+                ->orderBy('historial_products.id', 'desc');
+            if ($idProduct) {
+                $products->where('historial_products.product_id', $idProduct);
+            }
+            return DataTables::eloquent($products)
+                ->filterColumn('created_at', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereBetween('historial_products.created_at', [$date_range[0], $date_range[1]]);
+                    }
+                })
+                ->filterColumn('productItem', function ($query, $keyword) {
+                    $query->whereHas('item', function ($query) use ($keyword) {
+                        $query->where('item_name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->filterColumn('informe', function ($query, $keyword) {
+                    $query->where('historial_products.informe', 'like', '%' . $keyword . '%');
+                })
+                ->filterColumn('id', function ($query, $keyword) {
+                    $query->where('historial_products.product_id', 'like', '%' . $keyword . '%');
+                })
+                ->filterColumn('interno', function ($query, $keyword) {
+                    $query->where('historial_products.nro_interno', 'like', '%' . $keyword . '%');
+                })
+                ->filterColumn('deposito', function ($query, $keyword) {
+                    $query->orwhereHas('deposito', function ($str) use ($keyword) {
+                        //$str->where('nombre', 'like', "%{$keyword}%");
+                        if ($keyword == "todos") {
+                            $str->where('nombre', '=', "")
+                                ->orWhereNull('nombre');
+                        } elseif ($keyword != "") {
+                            $str->where('nombre', 'like', "%{$keyword}%");
+                        }
+                    });
+                })
+                ->filterColumn('ubicacion', function ($query, $keyword) {
+                    $query->where('historial_products.ubicacion', 'like', '%' . $keyword . '%');
+                })
+                ->filterColumn('usuario', function ($query, $keyword) {
+                    $query->whereHas('user', function ($str) use ($keyword) {
+                        $str->where('name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->addColumn('id', function ($data) {
+                    if ($data->company_id == 1) {
+                        $in = 'PM-';
+                    } else if ($data->company_id == 2) {
+                        $in = 'PC-';
+                    }
+                    return $in . $data->product_id;
+                })
+                ->addColumn('created_at', function ($data) {
+                    return formatDate($data->created_at);
+                })
+                ->addColumn('interno', function ($data) {
+                    return nroInternoAlias($data->company_id, $data->tipo_vehiculo, $data->nro_interno);
+                })
+                ->addColumn('productItem', function ($data) {
+                    return $data->item->item_name ?? null;
+                })
+                ->addColumn('marcamodelo', function ($data) {
+                    return ($data->marcaModelo->marca->marca ?? '') . ' ' .
+                        ($data->marcaModelo->modelo->modelo ?? '');
+                })
+                ->addColumn('deposito', function ($data) {
+                    return $data->deposito->nombre ?? '';
+                })
+                ->addColumn('ubicacion', function ($data) {
+                    return $data->ubicacion ?? '';
+                })
+                ->addColumn('description', function ($data) {
+                    return $data->description ?? '';
+                })
+                ->addColumn('usuario', function ($data) {
+                    return $data->user->name ?? '';
+                })
+                ->addColumn('informe', function ($data) {
+                      return strip_tags(clean($data->informe)) ?? '';
+                })
+                ->addColumn('action', function ($data) {
+                    $result = "<a href='" . action('ProductController@historyProduct', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
+                    $result .= csrf_field();
+                    return $result;
+                })->tojson();
+        }
+
+
+
+        return view('backend.accounting.product.historial');
+    }
+
+    public function productos_comunes(Request $request)
+    {
+		
+		if ($request->ajax()) {
+			$data = Item::where("item_type", "product")
+					->orderBy("item_name", "asc");//->get();			
+			 if ($request->has('filtrado')) {
+						 switch ($request->get('filtrado')) {
+							case 'predefinido':
+								$data->where("allCar", 1);
+								$data->where("activo", 'Si');
+								break;
+							case 'activos':
+								$data->where("activo", 'Si');
+								break;
+							case 'inactivos':
+								$data->where("activo", 'No');
+								break;
+						}
+                }
+            return Datatables::eloquent($data)
+                ->addIndexColumn()
+				->addColumn('action', function ($data) {
+								$edit ="<a href='" . action('ProductController@edit_item', $data->id) . "' data-title='" . _lang
+								('Update Product') . "' class='btn btn-warning btn-xs ajax-modal'><i class='ti-pencil'></i></a>";
+								$delete='<button class="btn btn-danger btn-xs button-delete" type="button"><i class="ti-eraser"></i></button>';
+							return $edit.$delete;
+				})
+				->editColumn('allCar', function ($car) {
+				 return	($car->allCar == 1) ? 'Si':'No';
+				})
+				->rawColumns(['action'])
+                ->make(true);
+		}	
+		
+        return view('backend.accounting.product.listComunes');
+    }
+
+    public function edit_item($id)
+    {
+        $item = Item::find($id);
+
+        return view('backend.accounting.product.modal.edit_item', compact('item', 'id'));
+    }
+    public function update_item(Request $request, $id)
+    {
+		
+		/*$validator = Validator::make($request->all(), [
+          //  'item_name' => 'required|max:150|unique:items,item_name,' .$id
+		  'item_name' => [
+            'required',
+            'item_name',
+				Rule::unique('items')->where(function ($query) {
+                return $query->where('activo', 'Si'); // ...solo entre los activos
+            })->ignore($id),
+        ],
+        ]);*/
+		
+		$validator = Validator::make($request->all(), [
+    'item_name' => [
+        'required',
+        'max:150', // Límite de caracteres
+        Rule::unique('items', 'item_name')
+            ->ignore($id)
+            ->where('activo', 'Si')
+    ],
+]);
+
+        if ($validator->fails()) {
+            if($request->ajax()){
+                return response()->json(['result'=>'error','message'=>$validator->errors()->all()]);
+            }else{
+                return redirect()->route('item.create')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+		
+        $item = Item::find($id);
+        $item->item_name = $request->item_name;
+        $item->allCar = $request->allcar ?? 0;
+        $item->activo = $request->activo;
+
+        if ($request->item_name) {
+            $item->save();
+
+            return response()->json(['result' => 'success', 'action' => 'update', 'message' => _lang('Updated sucessfully'), 'data' => $item]);
+        }
+    }
+    public function importXls()
+    {
+
+        //cargar archivo storage  public disk
+        //$file = storage_path(). '/app/public/estados.xlsx' ;
+        $file = storage_path() . '/app/public/product3.xlsx';
+
+        $spreadsheet = IOFactory::load($file);
+        $totalDeHojas = $spreadsheet->getSheetCount();
+
+        $datos = [];
+        for ($indiceHoja = 0; $indiceHoja < $totalDeHojas; $indiceHoja++) {
+
+            # Obtener hoja en el índice que vaya del ciclo
+            $hojaActual = $spreadsheet->getSheet($indiceHoja);
+
+            $hojaActual->getRowIterator();
+            foreach ($hojaActual->getRowIterator() as $fila) {
+                foreach ($fila->getCellIterator() as $celda) {
+                    $res = $celda->getValue();
+                    $resSinNumeros = preg_replace('/[0-9]+/', '', $res);
+                    if (trim($resSinNumeros) != '') {
+                        $datos[$resSinNumeros] = $resSinNumeros;
+                    }
+                }
+            }
+
+
+            # Imprimir
+            //echo "En <strong>$coordenadas</strong> tenemos el valor <strong>$valorRaw</strong>. ";
+            //            echo "Formateado es: <strong>$valorFormateado</strong>. ";
+            //            echo "Calculado es: <strong>$valorCalculado</strong><br><br>";
+
+        }
+        foreach ($datos as $dat => $value):
+            //$estados = new Estado();
+            $estados = new item();
+            //$estados-> estado = $dat;
+            $estados->item_name = $dat;
+            $estados->item_type = 'product';
+            $estados->company_id = company_id();
+            $estados->allCar = 1;
+            $estados->save();
+        endforeach;
+        dd($estados);
+    }
+    public function actualizarProductAutos()
+    {
+		abort(404, 'Sin Configurar actualmente');
+		dd();
+        ini_set('max_execution_time', 0);
+
+        $items = Item::where('allCar', 1)->get('id');
+        $vehiculos = Cars::where('idEstado', '!=', 1)->get(); //where('idEstado', '!=', 5)->orwhere('idEstado', '!=', 6)->or
+        $arr = [];
+        $arrItem = [];
+        foreach ($items as $item) {
+            $arrItem[] = $item->id;
+        }
+
+        foreach ($vehiculos as $v) {
+            $product = Product::where('car_id', $v->id)->get('item_id');
+
+            $arrProduct = [];
+            foreach ($product as $product) {
+                $arrProduct[] = $product->item_id;
+            }
+            $dif = array_diff($arrItem, $arrProduct);
+
+            if (!empty($dif)) {
+                foreach ($dif as $d) {
+                    // $arr[] = [
+                    //     'item_id' =>$d,
+                    //     'car_id' => $v->id,
+                    // 'marca_modelo' => $v->idMarca_modelo,
+                    //     //'product_cost' => $request->input('product_cost'),
+                    //     'product_price' => 0,
+                    //     //'product_unit' => $request->input('product_unit'),
+                    //     'tax_method' => 'exclusive',
+                    //     //'tax_id' => $request->input('tax_id'),
+                    //     //'description' => $request->input('description'),
+                    // 'stock' => 1,
+                    //     'nro_interno' => $v->id,
+                    //     'company_id' => $v->company_id,
+                    //     'allCar' => 1,
+
+                    //     'created_at' => date('Y-m-d H:i:s'),
+                    //     'updated_at' => date('Y-m-d H:i:s'),
+                    // ];
+                    $product = new Product();
+                    $product->item_id = $d;
+                    $product->car_id = $v->id;
+                    $product->marca_modelo = $v->idMarca_modelo;
+                    //$product->product_cost = $request->input('product_cost');
+                    $product->product_price = 0;
+                    //$product->product_unit = $request->input('product_unit');
+                    $product->tax_method = 'exclusive';
+                    //$product->tax_id = $request->input('tax_id');
+                    //$product->description = $request->input('description');
+                    $product->stock = 1;
+                    $product->nro_interno = $v->id;
+                    $product->company_id = $v->company_id;
+                    $product->allCar = 1;
+
+                    $product->save();
+                }
+            }
+            // dd($arr);
+        }
+
+
+
+
+
+        // foreach ($items as $item) {
+        //     foreach($vehiculos as $v) {
+        //         $product = Product::where('item_id', $item->id)->where('car_id', $v->id)->first();
+
+        // }
+        // }
+
+
+
+
+
+        return back()->with('success', _lang('Updated Sucessfully'));
+    }
+    /** Excel Import**/
+    public function import(Request $request)
+    {
+        if ($request->isMethod('get')) {
+            return view('backend.accounting.product.import');
+        } else {
+            @ini_set('max_execution_time', 0);
+            @set_time_limit(0);
+
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|mimes:xlsx',
+            ]);
+
+            if ($validator->fails()) {
+                if ($request->ajax()) {
+                    return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+                } else {
+                    return redirect('products/import')->withErrors($validator)
+                        ->withInput();
+                }
+            }
+
+            $new_rows = 0;
+
+            DB::beginTransaction();
+
+            $previous_rows = Item::where('company_id', company_id())->count();
+
+            $import = Excel::import(new ProductsImport, request()->file('file'));
+
+            $current_rows = Item::where('company_id', company_id())->count();
+
+            $new_rows = $current_rows - $previous_rows;
+
+            DB::commit();
+
+            return back()->with('success', $new_rows . ' ' . _lang('Rows Imported Sucessfully'));
+        }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create(Request $request)
+    {
+        $idCar = $request->get('idCar', false);
+        $predefinido = $request->get('predefinido', false);
+        $modalInStock = $request->get('modalInStock', false);
+
+
+        $comp = Company::all();
+        $cias = $comp;
+        $auto = Cars::where('id', $idCar)->with('marca_modelo')->first();
+        //$cars = Cars::All()->whereIn('company_id', $company_id);
+
+        $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+        $nro_interno_datos = Cars::All()->whereIn('company_id', $company_id);
+        $items = Item::where('activo', "Si")->orderBy('item_name', 'ASC')->get();
+
+        $cars = Cars::All()->whereIn('company_id', $company_id);
+
+        $interno = $this->get_last_interno();
+
+        if ($predefinido) {
+			
+		/*	$predefinidos = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name','id')->toArray();
+			$predefinidosfiltros = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name')->toArray();
+			
+			$products = Product::select('products.id','products.item_id', 'products.stock', 'products.nro_oblea','items.item_name','items.allCar','items.activo')
+						->join('items', 'items.id', '=', 'products.item_id') 
+						->where('products.nro_interno','1321')
+						->whereIn('items.item_name', $predefinidosfiltros)
+						->get();	
+			//$results = array();
+			foreach ($products as $row) {
+				///$results[] = $row->toArray();
+				if (in_array($row->item_name, $predefinidos)) {
+					$clave = array_search($row->item_name, $predefinidos);
+					$predefinidos[$clave] = $row->toArray();
+				}
+				
+			}*/
+            return view('backend.accounting.product.createPredefinidos', compact('nro_interno_datos'));
+        }
+
+        if ($modalInStock) {
+            return view('backend.accounting.product.modal.createMo', compact('interno', 'cias', 'cars', 'items'));
+        }
+
+
+        if (!$request->ajax()) {
+			//$items = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->get();
+            return view('backend.accounting.product.create', compact('interno', 'cias', 'nro_interno_datos', 'items'));
+        } else {
+
+            //            return Redirect::back()->withErrors(compact('auto','interno'));
+            return view(
+                'backend.accounting.product.modal.create',
+                compact('auto')
+            );
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+		//dd(procesarSolicitud());
+        $validator = Validator::make($request->all(), [
+            'nro_oblea' => 'nullable|unique:products',
+            'item_name' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value != "") {
+//                        $item = Item::find($value);
+						  $item = Item::where('item_name', $value)->where('activo', "Si")->first();
+                        if ($item) {
+                            $fail('Item ya se encuentra creado.');
+                            return;
+                        }
+                    };
+                },
+            ],
+            'item_id' => [
+                function ($attribute, $value, $fail) use ($request) {
+					if (procesarSolicitud() == true) {
+						$fail("</br><strong>El producto ya fue solicitado, debe esperar unos segundos.....</strong>");
+						return;
+					 }
+					 
+                    if ($request->has('item_id') && $request->has('nro_interno')) {
+
+                        if ($request->input('nro_interno') > 0) {
+                            $hasPiezaSavedForUser = Product::query()
+                                ->where('item_id', $value)
+                                ->where('nro_interno', $request->input('nro_interno'))
+                                ->where('car_id', null)
+                                ->exists();
+
+                            if ($hasPiezaSavedForUser) {
+                                $fail('Item ya se encuentra asignado al nro interno.');
+                                return;
+                            }
+                        }
+                    }
+                },
+            ],
+            //  'item_name' => 'required|unique:items',
+            //'product_cost' => 'required|numeric',
+            //'product_price' => 'required|numeric',
+            //'product_unit' => 'required',
+            'imagen.*'          => ['mimes:jpg,jpeg,png,gif,svg']
+        ]);
+
+
+        //dd($request->input());
+
+        if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+            } else {
+                return redirect('products/create')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+			
+        DB::beginTransaction();
+        $allCar = $request->input('car_or_stock', false);
+
+        // $es_carga_rapida = $request->input('carga_rapida', false);
+
+        if (!empty($request->input('item_name')) && empty($request->input('item_id'))) {
+            //Create Item
+            $item = new Item();
+            $item->item_name = $request->input('item_name');
+            $item->item_type = 'product';
+            $item->company_id = $request->input('company') ?? company_id();
+            $item->activo = 'Si';
+
+            if ($allCar == 1) {
+                $item->allCar = 1;
+            }
+            $item->save();
+        } else if ($request->input('item_id')) {
+            $item = Item::find($request->input('item_id'));
+        }
+
+
+
+        //Create pieza 
+        if ($allCar != 1) {
+
+            $car_id = $request->input('car_id', null);
+
+            $product = new Product();
+            $product->item_id = $item->id;
+            $product->car_id =  null;
+            //$product->car_id = $car_id ?? null;
+            $product->marca_modelo = $request->input('marca_modelo');
+            //$product->product_cost = $request->input('product_cost');
+            $product->product_price = 0;
+            $product->nro_motor = $request->input('nro_motor') ?? null;
+            $product->nro_oblea = $request->input('nro_oblea') ?? null;
+            //$product->product_unit = $request->input('product_unit');
+            $product->tax_method = 'exclusive';
+            //$product->tax_id = $request->input('tax_id');
+            $product->description = $request->input('description');
+            $product->stock = 1;
+            $product->anio = $request->input('anio');
+
+            $product->estado = $request->input('estado_prod') ?? null;
+
+			//$car_id=$request->input('nro_interno') ?? 0;
+            $car = Cars::find($car_id);
+
+            if (isset($car)) {
+                $product->nro_interno = $car_id ?? null;
+                $product->company_id = $car->company_id ?? company_id();
+                $product->marca_modelo = $car->idMarca_modelo ?? null;
+
+                // $px = Product::where('item_id', $product->item_id)->where('car_id', $car->car_id)->first();
+                // if($px){
+
+                //     return response()->json(['result' => 'error', 'action' => 'store', 'message' => _lang('El vehículo ya tiene una pieza asociada'), 'data' => $product]);
+                // }
+
+            } else {
+                //  $product->car_id = $request->input('car_id') ?? $request->input('nro_interno') ?? null;
+                $product->nro_interno = $request->input('nro_interno') ?? 0;
+                $product->company_id = $request->input('company') ?? company_id();
+				$product->marca_modelo = $request->input('marca_modelo');
+            }
+
+
+
+
+            $product->estado = $request->input('estado_prod') ?? null;
+
+            $product->idDeposito = $request->input('idDeposito') ?? null;
+            $product->ubicacion = $request->input('ubicacion') ?? null;
+
+            $product->mercado_libre = $request->input('mercado_libre') ?? 0;
+
+            $product->carga_rapida = $request->input('carga_rapida') ?? 0;
+
+            $product->user_id = auth()->user()->id;
+
+            if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
+                $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+            };
+
+            $product->save();
+            if (!empty($request->file())) {
+                $this->uploadImg($request, ['dir' => 'products', 'idProduct' => $product->id]);
+            }
+        } else {
+            //Create pieza para todos los autos
+            /*$car = Cars::where('idEstado', '!=', 1)->get();
+            foreach ($car as $c) {
+                $product = new Product();
+                $product->item_id = $item->id;
+                $product->car_id = $c->id;
+                $product->marca_modelo = $c->idMarca_modelo;
+                //$product->product_cost = $request->input('product_cost');
+                $product->product_price = 0;
+                //$product->product_unit = $request->input('product_unit');
+                $product->tax_method = 'exclusive';
+                //$product->tax_id = $request->input('tax_id');
+                $product->description = $request->input('description');
+                $product->stock = 1;
+                $product->nro_interno = $request->input('nro_interno') ?? $c->id;
+                $product->company_id = $c->company_id;
+                $product->allCar = 1;
+                $product->user_id= auth()->user()->id;
+
+                $product->save();
+            }*/
+        }
+
+        $cate = $request->input('categoria');
+
+        if (isset($product) && !empty($cate[0])) {
+            foreach ($cate as $ca):
+                $cateProd = new Categoria_product;
+                $cateProd->product_id = $product->id;
+                $cateProd->categoria_id = $ca;
+                $cateProd->save();
+
+            endforeach;
+        }
+
+	    $request['informe'] = "Creacion de producto " . json_encode($product);
+		$this->grabarHistorial($request, $product);
+
+        //Create Stock Row
+        //        $stock = new Stock();
+        //        $stock->product_id = $item->id;
+        //        $stock->quantity = 1;
+        //        $stock->company_id = company_id();
+        //        $stock->save();
+
+        DB::commit();
+
+        if (!$request->ajax()) {
+            return redirect()->back()->with(['success' => _lang('Saved sucessfully '), 'product' => $product])->withInput();
+        } else {
+            $product->{"products.id"} = $product->id;
+            return response()->json(['result' => 'success', 'action' => 'store', 'message' => _lang('Saved sucessfully'), 'data' => $product]);
+        }
+    }
+
+    public function historialProducto(Request $request, $idProduct)
+    {
+
+        $product = Historial_product::where('product_id', $idProduct)->get();
+
+        $item = Item::where("id", $product[0]->item_id)->first();
+        $id = $idProduct;
+        // dd($idProduct);
+        // dd($item);
+
+        return view('backend.accounting.product.historialProducto', compact('item', 'id', 'product'));
+    }
+
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Request $request, $id)
+    {
+        $product = Product::find($id);
+        $item = Item::where("id", $product->item_id)->first(); // ->where("company_id",company_id())
+
+        if (!$request->ajax()) {
+            return view('backend.accounting.product.view', compact('item', 'id', 'product'));
+        } else {
+            return view('backend.accounting.product.modal.view', compact('item', 'id', 'product'));
+        }
+    }
+
+    public function historyProduct(Request $request, $id)
+    {
+        $product = Historial_product::find($id);
+        $item = Item::where("id", $product->item_id)->first(); // ->where("company_id",company_id())
+
+        if (!$request->ajax()) {
+            return view('backend.accounting.product.view', compact('item', 'id', 'product'));
+        } else {
+            return view('backend.accounting.product.modal.view', compact('item', 'id', 'product'));
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Request $request, $id)
+    {
+        $product = Product::where('id', $id)->with('category')->with('marcaModelo')->first();
+        $item = Item::where("id", $product->item->id)->first(); // ->where("company_id",company_id())
+        $categorias = Categoria::all();
+        $comp = Company::all();
+        $cias = $comp;
+        $marcas = Marca::all();
+        $items = Item::where('activo', "Si")->orderBy('item_name', 'ASC')->get();
+        //$items = Item::orderBy('item_name', 'ASC')->get();
+
+        //$auto = [];
+        //if($idCar) {
+
+        $nro_interno_datos = Cars::All();
+
+        if (auth()->user()->role->name != 'Gerencial') {
+            $nro_interno_datos->where('company_id', company_id());
+        }
+
+        $interno = $this->get_last_interno();
+
+        $idCar = $auto->car_id ?? false;
+        $auto = Cars::where('id', $product->car_id ?? null)->with('marca_modelo')->first();
+        //dd($auto);
+        if (!$request->ajax() || empty($auto->id)) {
+            return view('backend.accounting.product.edit', compact('item', 'id', 'product', 'categorias', 'interno', 'cias', 'marcas', 'nro_interno_datos', 'items'));
+        } else {
+            return view('backend.accounting.product.modal.edit', compact('item', 'id', 'auto', 'product', 'categorias', 'interno', 'marcas', 'nro_interno_datos', 'items'));
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            // 'item_name' => 'required',
+            // 'nro_interno' => 'unique:products,id,'.$id,
+            //'product_cost' => 'required|numeric',
+            //'product_price' => 'required|numeric',
+            //'product_unit' => 'required',
+            'imagen.*'          => ['mimes:jpg,jpeg,png,gif,svg']
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+            } else {
+                return redirect()->route('products.edit', $id)
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+
+
+        //Update item
+        DB::beginTransaction();
+
+        $product = Product::where("id", $id)->first();
+
+        $originalProduct = collect($product->getOriginal());
+
+
+        if (!isset($originalProduct['id'])) {
+            $originalProduct['id'] = $product->id; // Asegurar que el ID esté presente
+        }
+
+
+        $item = Item::where("id", $product->item_id)->first(); //->where("company_id",company_id())
+
+        // $this->grabarHistorial($request, $product);
+
+        if ($item) {
+
+            // $item->item_name = $request->input('item_name');
+            // $item->item_type = 'product';
+            // $item->company_id = $request->input('company') ?? company_id();
+            $allCar = $request->input('car_or_stock', false);
+            // if($allCar == 1) {
+            //     $item->allCar = 1;
+            // }
+            // $item->save();
+
+
+            if (!empty($request->input('item_name')) && empty($request->input('item_id'))) {
+                $item->item_name = $request->input('item_name');
+                $item->item_type = 'product';
+                $item->company_id = $request->input('company') ?? company_id();
+                $allCar = $request->input('car_or_stock', false);
+                if ($allCar == 1) {
+                    $item->allCar = 1;
+                }
+                $item->save();
+            } else if ($request->input('item_id')) {
+                $item = Item::find($request->input('item_id'));
+            }
+            if ($allCar != 1) {
+
+                //dd($request->input('marca_modelo'));
+                $product->item_id = $item->id;
+                $product->supplier_id = $request->input('supplier_id');
+                $product->product_cost = $request->input('product_cost');
+                $product->product_price = $request->input('product_price');
+                $product->product_unit = $request->input('product_unit');
+                $product->tax_method = 'exclusive';
+                //$product->tax_id = $request->input('tax_id');
+                $product->marca_modelo = $request->input('marca_modelo');
+                $product->description = $request->input('description');
+                $product->anio = $request->input('anio');
+                $product->nro_interno = $request->input('nro_interno');
+                $product->estado = $request->input('estado_prod') ?? null;
+                $product->nro_motor = $request->input('nro_motor') ?? null;
+                $product->nro_oblea = $request->input('nro_oblea') ?? null;
+                $product->idDeposito = $request->input('idDeposito') ?? null;
+                $product->ubicacion = $request->input('ubicacion') ?? null;
+
+                if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
+                    $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+                };
+
+                $product->mercado_libre = $request->input('mercado_libre') ?? 0;
+
+
+
+                $dirtyFields = $product->getDirty();
+
+                if (!empty($dirtyFields)) {
+
+                		$cambios="";
+                    foreach ($dirtyFields as $field => $newValue) {
+                        $oldValue = $originalProduct->get($field);
+						
+						$cambios.= (($cambios!="") ? "/":"") ." '{$field}': '{$oldValue}' a '{$newValue}'";
+                        // Crea un informe
+                        //$request['informe'] = "Actualización del campo '{$field}': '{$oldValue}' a '{$newValue}'";
+                        // Simula un producto con los valores originales
+                    }
+					 if ($cambios!=""){
+						 $request['informe']="actualizacion de campos:".$cambios;
+						  $this->grabarHistorial($request, (object) $originalProduct->toArray());
+					  }
+
+                   /* foreach ($dirtyFields as $field => $newValue) {
+                        $oldValue = $originalProduct->get($field);
+
+                        // Crea un informe
+                        $request['informe'] = "Actualización del campo '{$field}': '{$oldValue}' a '{$newValue}'";
+
+                        // Simula un producto con los valores originales
+                        $this->grabarHistorial($request, (object) $originalProduct->toArray());
+                    }*/
+                }
+                $product->save();
+
+                //dd($product);
+            }
+
+            //eliminar las imagenes seleccionadas
+            $arrImgDelete = $request->input('imgDelete', false);
+            if ($arrImgDelete && isset($arrImgDelete[0])) {
+                foreach ($arrImgDelete as $imgdelete) {
+                    $img = Imagen::where('id', $imgdelete)->first();
+				if (file_exists(public_path('uploads/products/' . $img->img))) {
+                    unlink(public_path('uploads/products/' . $img->img));
+				}	
+                    Imagen::where('id', $imgdelete)->delete();
+                }
+            }
+
+
+            if (!empty($request->file('imagen'))) {
+                //                $this->deleteImgsByIdCarOridProd(['idProduct' => $product->id]);
+                $this->uploadImg($request, ['dir' => 'products', 'idProduct' => $product->id]);
+            }
+
+            $cate = $request->input('categoria');
+
+            if (isset($product) && !empty($cate[0])) {
+                foreach ($cate as $ca):
+                    Categoria_product::where('product_id', $product->id)->where('categoria_id', $ca)->delete();
+                    $cateProd = new Categoria_product;
+                    $cateProd->product_id = $product->id;
+                    $cateProd->categoria_id = $ca;
+                    $cateProd->save();
+
+                endforeach;
+            }
+
+            DB::commit();
+        } else {
+            if (!$request->ajax()) {
+                return redirect('products')->with('error', _lang('Update Failed !'));
+            } else {
+                return response()->json(['result' => 'error', 'message' => _lang('Update Failed !')]);
+            }
+        }
+
+
+        if (!$request->ajax()) {
+            return redirect('products')->with('success', _lang('Updated sucessfully'));
+        } else {
+            return response()->json(['result' => 'success', 'action' => 'update', 'message' => _lang('Updated sucessfully'), 'data' => $product]);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id, Request $request)
+    {
+        DB::beginTransaction();
+        $product = Product::where("id", $id)->first();
+
+        $item = Item::where("id", $product->item_id); //->where("company_id",company_id())
+
+        $this->grabarHistorial($request, $product);
+
+        $product->stock = 0;
+        $product->save();
+
+        //$item->delete();
+        //$product->delete();
+
+
+
+        DB::commit();
+
+        return redirect('products')->with('success', _lang('Deleted sucessfully'));
+    }
+
+    public function destroy_comunes($id)
+    {
+        DB::beginTransaction();
+
+
+        $item = Item::where("id", $id); //->where("company_id",company_id())
+        $product = Product::where("item_id", $id);
+        $item->delete();
+        $product->delete();
+
+
+
+        DB::commit();
+
+        return redirect(route('productos_comunes'))->with('success', _lang('Deleted sucessfully'));
+    }
+
+    public function getItem($id)
+    {
+        $item = Item::where("id", $id)->first(); //->where("company_id",company_id())
+
+        if (!empty($item)) {
+            return response()->json(['item' => $item]);
+        }
+    }
+
+
+
+    public function get_product(Request $request, $id)
+    {
+        //        $item = Item::where("id",$id)->where("company_id",company_id())->first();
+        //
+        //      if($item->item_type == 'product'){
+        //          echo json_encode(array("item"=>$item,"product"=>$item->product,"tax"=>$item->product->tax,"available_quantity"=>$item->product_stock->quantity));
+        //        }else if($item->item_type == 'service'){
+        //          echo json_encode(array("item"=>$item,"product"=>$item->service,"tax"=>$item->service->tax));
+        //      }
+
+        $product = Product::where('id', $id)->with('marcaModelo', function ($q) {
+            $q->with('marca');
+            $q->with('modelo');
+        })->first();
+
+        if ($product->item->item_type == 'product') {
+            $product->item->product_price = $product->item->product_price ?? 1;
+            $product->item->product_unit = $product->item->product_unit ?? 1;
+            $product->product_price = $product->product_price ?? 1;
+            $product->product_unit = $product->product_unit ?? 1;
+            echo json_encode(array("item" => $product->item, "product" => $product, "tax" => $product->tax, "available_quantity" => $product->stock));
+        }
+        //        else if($item->item_type == 'service'){
+        //          echo json_encode(array("item"=>$item,"product"=>$item->service,"tax"=>$item->service->tax));
+        //      }
+    }
+	
+	public function productosLote($ids)
+	{
+		//$input = $ids;//$request->all();
+		
+		if (!empty($ids)) {
+			 $ids=explode(",",$ids);
+			$product = Product::whereIn('id', $ids)->with('item')->with('marcaModelo', function ($q) {
+            $q->with('marca');
+            $q->with('modelo');
+        })->get();
+		return response()->json($product);
+		}
+	}
+
+
+    private function get_last_interno()
+    {
+        $interno = Product::select('id')->orderBy('id', 'desc')->first();
+
+        return $interno->nro_interno ?? 2999;
+    }
+    public function companyByProduct($id)
+    {
+        $company = Product::find($id);
+
+        $company = ['company' => $company->company_id];
+
+        return response()->json($company);
+    }
+
+    public function cambiarEstado($id, $estado)
+    {
+        $product = Product::find($id);
+
+        if ($estado == 'descompuesto') {
+            $product->estado = $estado;
+            $product->save();
+        }
+    }
+
+    //productos anulados (se coloca stock 0)
+    public function anulados(Request $request)
+    {
+        // $productosNoVendidosSinStock = Product::query()
+        //     // 1. Condición: El stock debe ser 0
+        //     ->where('stock', 0)
+
+        //     // 2. Condición: El producto NO debe tener registros en la relación 'invoiceItems'
+        //     // (Es decir, no se ha vendido nunca)
+        //     ->whereDoesntHave('invoiceItems')
+
+        //     // 3. Obtener la colección de resultados
+        //     ->get();
+
+
+        if ($request->ajax()) {
+
+            $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+
+
+            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio')
+                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+                ->whereIn('products.company_id', $company_id)
+                ->where('car_id', null)
+                ->with('category')
+                ->whereHas('item', function ($query) {
+                    $query->where("item_type", "product");
+                });
+
+
+            $products->where('products.stock', 0)
+                ->whereDoesntHave('invoiceItems');
+
+            $products->orderBy('products.id', 'desc');
+
+
+            return DataTables::eloquent($products)
+                ->filterColumn('id', function ($query, $keyword) {
+                    $query->where('products.id', 'like', "%{$keyword}");
+                })
+                ->filterColumn('created_at', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('products.created_at', '>=', $date_range[0])
+                            ->whereDate('products.created_at', '<=', $date_range[1]);
+                    }
+                })
+                ->filterColumn('fecha_ingreso_a_stock', function ($query, $keyword) {
+                    $query->whereRaw("DATE_FORMAT(fecha_ingreso_a_stock,'%d/%m/%Y') LIKE ?", ["%$keyword%"]);
+                })
+                ->filterColumn('nro_interno', function ($query, $keyword) {
+                    $query->where('products.nro_interno', 'like', "%{$keyword}");
+                })
+                ->filterColumn('dominio', function ($query, $keyword) {
+                    $query->where('cars.dominio', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('productItem', function ($query, $keyword) {
+                    $query->orWhereHas('item', function ($subQuery) use ($keyword) {
+                        $subQuery->where('item_name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->filterColumn('marca', function ($query, $keyword) {
+                    $query->orWhereHas('marcamodelo', function ($subQuery) use ($keyword) {
+                        $subQuery->whereHas('marca', function ($str) use ($keyword) {
+                            $str->where('marca', 'like', "%{$keyword}%");
+                        });
+                    });
+                })
+                ->filterColumn('modelo', function ($query, $keyword) {
+                    $query->orWhereHas('marcamodelo', function ($subQuery) use ($keyword) {
+                        $subQuery->whereHas('modelo', function ($str) use ($keyword) {
+                            $str->where('modelo', 'like', "%{$keyword}%");
+                        });
+                    });
+                })
+                ->filterColumn('motor', function ($query, $keyword) {
+                    $query->where('products.motor', 'like', "%{$keyword}");
+                })
+                ->filterColumn('deposito', function ($query, $keyword) {
+                    $query->orWhereHas('deposito', function ($str) use ($keyword) {
+                        if ($keyword == "todos") {
+                            $str->where('nombre', '=', "")
+                                ->orWhereNull('nombre');
+                        } elseif ($keyword != "") {
+                            $str->where('nombre', 'like', "%{$keyword}%");
+                        }
+                    });
+                })
+                ->addColumn('id', function ($data) {
+                    if ($data->company_id == 1) {
+                        $in = 'PM-';
+                    } else if ($data->company_id == 2) {
+                        $in = 'PC-';
+                    }
+                    return $in . $data->id;
+                })
+                ->addColumn('created_at', function ($data) {
+                    return formatDate($data->created_at);
+                })
+                ->addColumn('fecha_ingreso_a_stock', function ($data) {
+                    return formatDate($data->fecha_ingreso_a_stock);
+                })
+                ->addColumn('interno', function ($data) {
+                    return nroInternoAlias($data->company_id, $data->tipo_vehiculo, $data->nro_interno);
+                })
+                ->addColumn('productItem', function ($data) {
+                    return $data->item->item_name ?? null;
+                })
+                ->addColumn('marca', function ($data) {
+                    return ($data->marcaModelo->marca->marca ?? '');
+                })
+                ->addColumn('modelo', function ($data) {
+                    return ($data->marcaModelo->modelo->modelo ?? '');
+                })
+                ->addColumn('deposito', function ($data) {
+                    return $data->deposito->nombre ?? '';
+                })
+                ->addColumn('dominio', function ($data) {
+                    return $data->dominio ?? '';
+                })
+                ->addColumn('action', function ($data) {
+                    // $result=  "<form action='". action('ProductController@destroy', $data->id) ."' method='post'>";
+                    // $result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs ". ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
+                    // $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
+                    // $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+                    // $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+                    // $result .= csrf_field();
+                    // $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i class='ti-eraser'></i></button>";
+                    // $result .= "</form>";
+                    $result = "<button class='btn btn-success' data-id='$data->id' onClick='toggleStock(this)' >Habilitar</button> ";
+                    return $result;
+                })->tojson();
+        }
+
+        // 3. Retorna la vista específica para stock 0 y no vendidos
+        return view('backend.accounting.product.anulados');
+
+        // dd($productosNoVendidosSinStock)
+
+    }
+
+    //anular modifica el stock a 0 de lo controario modifica a 1
+    public function toggleStock(Request $request)
+    {
+        $id = $request->id;
+
+        $product = Product::find($id);
+        if ($product->stock <= 0) {
+            $product->stock = 1;
+        } else {
+            $product->stock = 0;
+        }
+        $product->save();
+
+
+        return response()->json(['result' => $id]);
+    }
+
+    public function cargaRapida(Request $request)
+    {
+        $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+        $items = Item::where('activo', "Si")->orderBy('item_name', 'ASC')->get();
+        //$items = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->get();
+        $contenidoEtiqueta = "";
+        $producto = null;
+        $cars = Cars::All()->whereIn('company_id', $company_id);
+		
+		/*$products = Product::where('car_id', null)
+            ->where('stock', '>=', 1)
+            ->where('carga_rapida', 1)
+            ->with('category')
+            ->whereHas('item', function ($query) {
+                $query->where("item_type", "product");
+            })->get();*/
+
+		if ($request->ajax()) {
+			
+			 $data = Product::select("*")
+			 ->where('car_id', null)
+            ->where('stock', '>=', 1)
+            ->where('carga_rapida', 1)
+			->whereIn('company_id', $company_id)
+            ->with('category')
+            ->whereHas('item', function ($query) {
+                $query->where("item_type", "product");
+            });
+			//$key=0;
+            return Datatables::of($data)
+                    ->addIndexColumn()
+					->setRowId(function ($data) {
+						return 'row_' . $data->id; 
+					})
+					//->setRowId('id') // Sets the tr id attribute to the value of the 'id' column
+					->addColumn('producto_id', function ($data) {
+						$in ="";
+						   if ($data->company_id == 1) {
+                                        $in = 'PM-';
+                                    } elseif ($data->company_id == 2) {
+                                        $in = 'PC-';
+                                }
+                        return  $in . $data->id; 
+                    })
+					->addColumn('marcamodelo', function ($data) {
+						return ($data->marcaModelo->marca->marca ?? '') . ' ' . ($data->marcaModelo->modelo->modelo ?? ''); 
+                    })
+					->editColumn('nro_interno', function ($data) {
+						$in ="";
+						   if ($data->company_id == 1) {
+                                        $in = 'PM-';
+                                    } elseif ($data->company_id == 2) {
+                                        $in = 'PC-';
+                                }
+								
+                        return  $data->description . $in . $data->nro_interno; 
+                    })
+					->addColumn('deposito', function ($data) {
+						return $data->deposito->nombre ?? '';
+                    })
+					  ->addColumn('item_name', function ($data) {
+						return $data->item->item_name;
+					})
+					->addColumn('fecha_creacion', function ($data) {
+						return $data->created_at->format('d/m/Y H:i');
+					})
+					->addColumn('usuario', function ($data) {
+						return $data->user->name;
+					})
+					->addColumn('action', function ($data) {
+						
+						 $result=  "<form action='". action('ProductController@destroy', $data->id) ."' method='post'>";
+                                        $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
+
+                                        $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+
+                                        $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+                                        $result .= csrf_field();
+                                          $result .= "</form>";
+                                          //echo "<td>$result </td>";
+						
+						return $result;
+					})
+                    ->rawColumns(['action'])
+                    ->make(true);
+			
+		}
+
+        return view('backend.accounting.product.cargarapida', compact('contenidoEtiqueta', 'producto', 'cars', 'items'));
+    }
+
+    public function grabarHistorial($request, $product)
+    {
+        $historial = new Historial_product();
+        $historial->product_id = $product->id;
+        $historial->item_id = $product->item_id;
+        $historial->car_id = $product->car_id;
+        $historial->informe = $request->informe ?? 'Actualizacion';
+        $historial->nro_interno = $product->nro_interno;
+        $historial->company_id = $product->company_id;
+        $historial->user_id = auth()->id();
+
+        $historial->marca_modelo = $product->marca_modelo;
+        $historial->description = $product->description;
+        $historial->estado = $product->estado;
+        $historial->nro_motor = $product->nro_motor;
+        $historial->nro_oblea = $product->nro_oblea;
+        $historial->idDeposito = $product->idDeposito;
+        $historial->ubicacion = $product->ubicacion;
+
+        // dd($request->informe);
+        $historial->save();
+    }
+
+    /**
+     *  Bajar zip de imagenes
+     */
+
+    public function pro_imag_zip($id, $tipo = "imagenes")
+    {
+
+        $product = Product::find($id);
+        $item = Item::where("id", $product->item_id)->first();
+
+        if (!$product) {
+            return back()->with('error', _lang('Sorry, Car not found !'));
+        }
+
+        $path = public_path("uploads/");
+        $carpeta_comprimir = "{$path}pro_img_{$id}_" . date("Y-m-d_His");
+
+        if (!File::isDirectory($carpeta_comprimir)) {
+            File::makeDirectory($carpeta_comprimir, 0777, true, true);
+        }
+        sleep(1);
+        //Fotos generales
+        if (!empty($product->img) && in_array($tipo, ['all', 'imagenes'])) {
+            foreach ($product->img as $v) {
+				
+				if (file_exists($path . 'products/' . $v->img)) {
+					$file= $path . 'products/' . $v->img;
+					$valor = File::copy($file, $carpeta_comprimir . "/" . $v->img);
+					//GuardarmarcaAgua($path . 'products/' . $v->img, $v->company_id, $carpeta_comprimir);
+				}else{
+					if (Storage::disk('gcs')->exists('/products/'. $v->img)) {
+						$stream = Storage::disk('gcs')->readStream('/products/'. $v->img);
+						$destinationStream = fopen($carpeta_comprimir . "/" . $v->img, 'w');
+							if ($stream && $destinationStream) {
+								stream_copy_to_stream($stream, $destinationStream);
+								fclose($destinationStream);
+							}
+					}
+				}
+				
+                
+				
+            }
+        }
+
+        sleep(1);
+
+        // se comprimime
+        $zip = new ZipArchive;
+        $fileName = "pro_img_{$id}_" . date("Y-m-d_His") . ".zip";
+
+        if ($zip->open($path . $fileName, ZipArchive::CREATE) === TRUE) {
+            $files = File::files($carpeta_comprimir);
+
+            foreach ($files as $key => $value) {
+                $relativeNameInZipFile = basename($value);
+                $zip->addFile($value, $relativeNameInZipFile);
+            }
+            $zip->close();
+        }
+        if (\File::isDirectory($carpeta_comprimir)) \File::deleteDirectory($carpeta_comprimir);
+        return response()->download($path . $fileName)->deleteFileAfterSend(true);
+    }
+
+    public function printQR($id)
+    {
+        //return view('backend.accounting.product.list', compact('products'));
+        $producto = Product::where('id', $id)->first();
+        return view('backend.accounting.product.etiquetaQr', compact('producto'))->render();
+    }
+    public function printsinQR($id)
+    {
+        //return view('backend.accounting.product.list', compact('products'));
+        $producto = Product::where('id', $id)->first();
+        return view('backend.accounting.product.etiqueta', compact('producto'))->render();
+    }
+	
+	
+	 //anular modifica el stock a 0 de lo controario modifica a 1
+    public function actualizaStockitems(Request $request)
+    {
+        $id = $request->id;
+
+        $product = Product::find($id);
+		 if (!$product) {
+            return back()->with('error', _lang('Sorry, Car not found !'));
+        }
+		
+		if (isset($request->nro_oblea)) {
+			$product->nro_oblea = $request->nro_oblea ?? null;
+		}
+		
+		if (isset($request->campo)) {
+			$campo = $request->campo;
+			$product->{$campo} = $request->valor ?? null;
+		}
+		
+        $product->save();
+		
+        return response()->json(['result' => "sucess"]);
+    }
+	
+	public function auditoriaHistorial(Request $request)
+    {
+		   $id = $request->id;
+		return view('backend.accounting.product.modal.historial', compact('id')); 
+    }
+	
+	public function auditoriaProducto(Request $request)
+    {
+		   $id = $request->id;
+		   
+		  if (request()->ajax()) {
+            $datosAudit = Audit::where('auditable_type', Product::class)
+                ->where('auditable_id', $id)
+                ->with('user')
+                ->with('auditable');
+            return DataTables::eloquent($datosAudit)
+			->addIndexColumn()
+				->addColumn('model', function ($data) {
+					return "$data->auditable_type (id: $data->auditable_id )";
+				})
+				->addColumn('usuario', function ($data) {
+					return $data->user->name ?? '';
+				})
+				->addColumn('valores_ant', function ($data) {
+					$datos='<table>';
+                    foreach($data->old_values as $attribute => $value){
+                      $datos.='<tr>
+                        <td><b>'.$attribute .'</b></td>
+                        <td>'. $value .'</td>
+                      </tr>';
+                    }
+                  $datos.= '</table>';
+					return $datos;
+				})
+				->addColumn('valores_nue', function ($data) {
+					$datos='<table>';
+                    foreach($data->new_values as $attribute => $value){
+                      $datos.='<tr>
+                        <td><b>'.$attribute .'</b></td>
+                        <td>'. $value .'</td>
+                      </tr>';
+                    }
+                  $datos.= '</table>';
+					return $datos;
+				})
+				->rawColumns(['valores_ant','valores_nue'])
+                ->make(true);
+        }
+    }
+	
+	
+	public function table_detalle(Request $request)
+    {
+		
+        if ($request->ajax()) {
+			
+			$predefinidos = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name','id')->toArray();
+			$predefinidosfiltros = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name')->toArray();
+			$predefinidostable = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->get();
+			
+			$products = Product::select('products.id','products.item_id', 'products.stock', 'products.nro_oblea','items.item_name','items.allCar','items.activo')
+						->join('items', 'items.id', '=', 'products.item_id') 
+						->where('products.nro_interno',$request->nro_interno ?? 0)
+						->whereIn('items.item_name', $predefinidosfiltros)
+						->get();	
+			//$results = array();
+			foreach ($products as $row) {
+				///$results[] = $row->toArray();
+				if (in_array($row->item_name, $predefinidos)) {
+					$clave = array_search($row->item_name, $predefinidos);
+					$predefinidos[$clave] = $row->toArray();
+				}
+				
+			}
+            return DataTables::of($predefinidostable)
+                ->addIndexColumn()
+                ->addColumn('selection', function ($row)  use ($predefinidos) {
+					
+					 $resultado="";
+					if (!is_array($predefinidos[$row->id])){
+						$resultado= '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="'.$row->id.'">';
+					}
+                    return $resultado;
+                })
+				->addColumn('id_producto', function ($row) use ($predefinidos) {
+					$resultado="";
+					if (is_array($predefinidos[$row->id])){
+						$resultado= $predefinidos[$row->id]['id'];
+					}
+                    return $resultado;
+                })
+				->addColumn('stock', function ($row)  use ($predefinidos) {
+                    $resultado="";
+					if (is_array($predefinidos[$row->id])){
+						$resultado= $predefinidos[$row->id]['stock'];
+					}
+                    return $resultado;
+                })
+				->addColumn('action', function ($row)  use ($predefinidos) {
+                     $resultado="";
+					if (is_array($predefinidos[$row->id])){
+						
+						$resultado .= "<a href='" . action('ProductController@printQR', $predefinidos[$row->id]['id']) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+
+						$resultado .= "<a href='" . action('ProductController@printsinQR', $predefinidos[$row->id]['id']) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+						
+					//	$resultado= $predefinidos[$row->id]['nro_oblea'];
+					}
+                    return $resultado;
+                })
+                ->rawColumns(['selection','action'])
+                ->make(true);
+        }
+    }
+	
+	  public function table_detalle_post(Request $request)
+    {
+		$validator = Validator::make($request->all(), [
+		'nro_interno' => 'required',
+            'idDeposito' => 'required',
+            'ubicacion' => 'nullable',
+            'description' => 'nullable',
+            'idsSeleccionados' => 'required'
+		]);
+
+        if ($validator->fails()) {
+            if($request->ajax()){
+                return response()->json(['result'=>'error','message'=>$validator->errors()->all()]);
+            }else{
+                return redirect()->route('item.create')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+
+
+  DB::beginTransaction();
+        try {
+			 $ids = $request->idsSeleccionados;//is_array($request->idsSeleccionados) ? $request->idsSeleccionados : [$request->input('idsSeleccionados')];
+			 
+			 //dd($ids);
+			 //$idsArray = is_array($ids) ? $ids : explode(',', $ids);
+			 $nro_interno= $request->input('nro_interno',0);
+			 $sql="INSERT INTO products (item_id,nro_interno,stock,description,product_price,tax_method,estado,company_id,idDeposito,ubicacion,carga_rapida,user_id,mercado_libre,created_at,marca_modelo)
+		SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','optimo',".company_id()."
+	,".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), (SELECT idMarca_modelo from cars WHERE id = {$nro_interno} LIMIT 1) as marcamodelo FROM items
+    WHERE id IN($ids)";
+			 
+			   DB::statement($sql);
+			  DB::commit();
+			return response()->json(['result' => 'success', 'message' => _lang('Updated sucessfully')]);
+        } catch (Throwable $e) {
+            DB::rollBack();
+             dd($e->getMessage());
+			return response()->json(['result' => 'error', 'message' => _lang('Error')]);
+            //toast('Error al crear la cotizacione! '.$e->getMessage(), 'error');
+        }
+    }
+	
+}

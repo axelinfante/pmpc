@@ -1,0 +1,22 @@
+/vendor/
+node_modules/
+app/storage/
+.phpintel/
+public/uploads/
+.env
+.vscode/
+.idea/*
+composer.lock
+/storage/framework/*.key
+/storage/logs/*.key
+/.vagrant
+npm-debug.log
+yarn-error.log
+.phpunit.result.cache
+*.log
+.DS_Store
+.env.backup
+.env.production
+id.' name='estadoMod' onchange='updatedStado(this)'
+pmpc-476217-7b27892d567f.json
+certificado_template2.pdf
