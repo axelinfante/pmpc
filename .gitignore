@@ -17,6 +17,4 @@ yarn-error.log
 .DS_Store
 .env.backup
 .env.production
-id.' name='estadoMod' onchange='updatedStado(this)'
 pmpc-476217-7b27892d567f.json
-certificado_template2.pdf
