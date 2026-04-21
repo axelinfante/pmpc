@@ -886,6 +886,8 @@
 	 $(document).on("submit",".ajax-submit",function(){			 
 		 var link = $(this).attr("action");
 		 var reload = $(this).data('reload');
+		 var data_value = $(this).data('value');
+		 //var table_reload = $(this).data('table_reload');
 		 var current_modal = $(this).closest('.modal');
 		 
 		 var elem = $(this);
@@ -924,11 +926,14 @@
 						$(current_modal).find(".alert-secondary").removeClass('d-none');
 						$(current_modal).find(".alert-danger").addClass('d-none');
 						
-						var select_value = json['data'][target_select.data('value')];
-						var select_display = json['data'][target_select.data('display')];
+						
+						if (typeof data_value !== 'undefined') {
+							var select_value = json['data'][target_select.data('value')];
+							var select_display = json['data'][target_select.data('display')];
 
-						var newOption = new Option(select_display, select_value, true, true);
-						target_select.append(newOption).trigger('change');
+							var newOption = new Option(select_display, select_value, true, true);
+							target_select.append(newOption).trigger('change');
+						}
 						$(current_modal).modal('hide');
 					}
 					
@@ -2286,6 +2291,7 @@ function showRole(elem){
 						
 						var newOption = new Option(select_display, select_value, true, true);
 						target_select.append(newOption).trigger('change');
+						
 						$(current_modal).modal('hide');
 					}
 					

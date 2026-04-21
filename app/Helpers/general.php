@@ -2276,5 +2276,39 @@ if (!function_exists('saldo_sql_list')) {
 			}
        return $result;
 	}
-  }	 
+  }
+
+
+if (!function_exists('filepondUpload')) {
+    function filepondUpload($campo = 'image', $path = '') {
+        $filename = "";
+
+        if (request()->hasFile($campo)) {
+            $uploaded_file = request()->file($campo);
+            $extension = $uploaded_file->getClientOriginalExtension();
+            $mime = $uploaded_file->getMimeType();
+            
+            // Nombre base único sin extensión
+            $baseName = now()->timestamp . '-' . uniqid();
+
+            if (str_starts_with($mime, 'image/')) {
+                //$manager = new ImageManager(new Driver());
+				//$manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+              //  $image = $manager->read($uploaded_file);
+                
+                $filename = $baseName . '.webp';
+                // Guardar optimizado
+                //$image->toWebp(70)->save($path . '/' . $filename);
+				Image::make($uploaded_file)
+                    ->encode('webp', 70)
+                    ->save($path . '/' . $filename);
+            } else {
+                $filename = $baseName . '.' . $extension;
+                // Mover archivo original
+                $uploaded_file->move($path, $filename);
+            }
+        }
+        return $filename; // Retorna el nombre exacto guardado (con .webp o extensión original)
+    }
+}
   
