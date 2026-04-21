@@ -407,6 +407,24 @@
             });
 
 
+$('#orden-despacho-table').on('processing.dt', function (e, settings, processing) {
+    if (processing) {
+       	inicioLoading();
+    } else {
+        closeLoading();
+    }
+});
+
+ $('.dataTables_filter input')
+    .unbind('keypress keyup input')
+    .bind('keyup input', function (e) {
+		 var code = e.keyCode || e.which;
+		 if ($(this).val().length >= 3 && code === 13) {
+			_table.search(this.value).draw();
+		}
+		
+    });
+	
 
 
             $(document).on('click', '#select-all', function() {
@@ -457,7 +475,12 @@
         });
 		
 	
+	$('#main_modal').on('hidden.bs.modal', function () {
+			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
+		});
 		 
+		 
+	
  
 		
 		

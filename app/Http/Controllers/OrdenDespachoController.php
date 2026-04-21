@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\View;
 use PDF;
 use Validator;
 
+			
 class OrdenDespachoController extends Controller
 {
     //
@@ -53,7 +54,7 @@ class OrdenDespachoController extends Controller
                 return $orden->id;
             })
             ->addColumn('actions', function ($orden) {
-                $editarBtn = '<a href="' . action('OrdenDespachoController@edit', $orden->id) . '" data-title="Editar" class="btn btn-warning btn-xs ajax-modal" title="Editar">
+                $editarBtn = '<a href="' . action('OrdenDespachoController@edit', $orden->id) . '" data-reload="false" data-title="Editar" class="btn btn-warning btn-xs ajax-modal" title="Editar">
                     <i class="ti-pencil"></i>
                   </a>';
 
@@ -368,17 +369,9 @@ class OrdenDespachoController extends Controller
 
     public function update(Request $request, $id)
     {
-		/*$request->validate([
-            'name' => 'required|string|min:3|max:255',
-			'email' => 'required|string|email|max:255|unique:users',
-            'file' => 'mimes:png,jpg,jpeg,gif|max:5000'
-        ]);*/
-		
-		/*$validator = Validator::make($request->all(), [
-			'name' => 'required|string|min:3|max:255',
-			'email' => 'required|string|email|max:255|unique:users',
-            'file' => 'mimes:png,jpg,jpeg,gif|max:5000'
-		]);
+		 $validator = Validator::make($request->all(), [
+			'images_zona' => 'nullable|file|mimes:png,jpeg,jpg,pdf,webp,gif,jfif|max:5120'
+        ]);
 
 		if ($validator->fails()) {
 			if ($request->ajax()) {
@@ -387,8 +380,7 @@ class OrdenDespachoController extends Controller
 				return back()->withErrors($validator)
 					->withInput();
 			}
-		}*/
-		
+		}
 		
         $orden = OrdenDespacho::findOrFail($id);
 
@@ -405,6 +397,7 @@ class OrdenDespachoController extends Controller
         $path = public_path('uploads/ordenes');
 		if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
 		
+		//$request->filled('removed_files')
 		if (request("removed_files")) {
             $filePath = $path . '/' . request("removed_files");
             if (file_exists($filePath)) {
@@ -416,10 +409,7 @@ class OrdenDespachoController extends Controller
 
         // Subida de nueva imagen
         if ($request->hasFile('images_zona')) {
-            $file = $request->file('images_zona');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move($path, $filename);
-            $orden->foto_guia = $filename;
+			$orden->foto_guia = filepondUpload('images_zona',$path);
         }
 
         // Guardar otros cambios como siempre

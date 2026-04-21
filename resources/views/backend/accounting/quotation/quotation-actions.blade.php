@@ -1,5 +1,9 @@
 <input type="text" class="form-control mb-2" id="quotation_link_2" value="{{ url('client/view_quotation/'.md5($quotation->id)) }}">
 <div>
+
+@if (in_array($quotation->status, ['Anulada', 'Convertida']))
+
+@else
 	<a class="btn btn-dark btn-xs" href="javascript:void(0);" id="copy_quotation_link_2"><i class="far fa-copy"></i> {{ _lang('Copy Quotation Link') }}</a>
 	<a class="btn btn-secondary btn-xs ajax-modal" data-title="{{ _lang('Send Email') }}" href="{{ url('quotations/create_email/'.$quotation->id) }}"><i class="fas fa-envelope-open-text"></i> {{ _lang('Send Email') }}</a>
 	@if($quotation->related_to == 'contacts')
@@ -10,5 +14,6 @@
 	<a class="btn btn-danger btn-xs " href="{{ url('reservas/pdf/'.$quotation->id) }}"><i class="fas fa-print"></i> {{ _lang('Export PDF') }}</a>
 	<a class="btn btn-warning btn-xs" href="{{ action('QuotationController@edit', $quotation->id) }}"><i class="fas fa-edit"></i> {{ _lang('Edit') }}</a>
 	<a class="btn btn-success btn-xs ajax-modal" data-title="{{ _lang('Receive Payment') }}" href="{{ url('reservas/create_payment/'.$quotation->id) }}"><i class="far fa-credit-card"></i> {{ _lang('Record a Payment') }}</a>
+@endif
 </div>
 	
