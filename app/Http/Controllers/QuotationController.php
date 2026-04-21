@@ -166,7 +166,7 @@ class QuotationController extends Controller
                 //    }
                 return $status;
             })
-            ->editColumn('idCar', function ($quotation) {
+            ->editColumn('modelo', function ($quotation) {
                 $items = QuotationItem::where('quotation_id', $quotation->id)->with('product')
                     ->first();
 					
@@ -180,8 +180,19 @@ class QuotationController extends Controller
                 return $html;
             })
             ->addColumn('action', function ($quotation) {
-
+			//	return $quotation->status;
                 // dd($quotation->id);
+				if (in_array($quotation->status, ['Anulada','Convertida'])) {
+					
+					 return '<div class="dropdown">'
+                        . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">' . _lang('Action')
+                        . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+                        . '<div class="dropdown-menu">'
+                        . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
+                        . '</div>'
+                        . '</div>';
+				}
+				
                 if ($quotation->related_to == 'contacts') {
                     return '<div class="dropdown">'
                         . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">' . _lang('Action')
@@ -343,7 +354,7 @@ class QuotationController extends Controller
 
         $quotation->company_id = $company_id;
         $quotation->user_id = auth()->id();
-        $quotation->status = 'Adeudado';
+        $quotation->status = 'Pendiente';
         //dd($quotation->desarmar);
         $quotation->save();
 
@@ -669,7 +680,13 @@ class QuotationController extends Controller
     public function destroy($id)
     {
         DB::beginTransaction();
-        Transaction::where("id_quotation", $id)->delete();
+		$quotation = Quotation::where("id", $id)->first();
+        $quotation->status='Anulada';
+		$quotation->save();
+		
+		
+		
+        /*Transaction::where("id_quotation", $id)->delete();
         $quotation = Quotation::where("id", $id);
         $quotation->delete();
 
@@ -677,7 +694,7 @@ class QuotationController extends Controller
         $quotationItem->delete();
 
         $quotationItemTax = QuotationItemTax::where('quotation_id', $id);
-        $quotationItemTax->delete();
+        $quotationItemTax->delete();*/
 
         DB::commit();
 
@@ -908,11 +925,15 @@ $hasPiezaSavedForUser = Product::query()
 
 
         //Remove Existing Quotation
-		$quotationItem = QuotationItem::where("quotation_id", $quotation_id);
+		/*$quotationItem = QuotationItem::where("quotation_id", $quotation_id);
         $quotationItem->delete();
 		
         $quotation = Quotation::where("id", $quotation_id);//->where("company_id", company_id());
-        $quotation->delete();
+        $quotation->delete();*/
+		
+		$quotation = Quotation::where("id", $quotation_id)->first();
+        $quotation->status='Convertida';
+		$quotation->save();
 
         DB::commit();
 

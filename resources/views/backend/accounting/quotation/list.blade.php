@@ -18,10 +18,11 @@
 				<thead>
 				  <tr>
 					<th>{{ _lang('Nro reserva') }}</th>
-					<th>{{ _lang('Quotation To') }}</th>
 					<th>{{ _lang('Quotation Date') }}</th>
+					<th>{{ _lang('Quotation To') }}</th>
 					<th class="text-right">{{ _lang('Grand Total') }}</th>
-					<th class="text-right">{{ _lang('vehiculo') }}</th>
+					<th class="text-right">{{ _lang('Interno') }}</th>
+					<th class="text-right">{{ _lang('Modelo') }}</th>
 					<th class="text-right">{{ _lang('Status') }}</th>
 					<th class="text-center">{{ _lang('Action') }}</th>
 				  </tr>
@@ -45,10 +46,11 @@
 			ajax: '{{ url('reservas/get_table_data') }}',
 			"columns" : [
 				{ data : "quotation_number", name : "quotation_number" },
-				{ data : "contact_name", name : "contact_name" },
 				{ data : "quotation_date", name : "quotation_date" },
+				{ data : "contact_name", name : "contact_name" },				
 				{ data : "grand_total", name : "grand_total" },
-				{ data : "idCar", name : "idCar" },
+				{ data : "car_id", name : "car_id" },
+				{ data : "modelo", name : "modelo" },
 				{ data : "status", name : "status" },
 				{ data : "action", name : "action" },
 			],
