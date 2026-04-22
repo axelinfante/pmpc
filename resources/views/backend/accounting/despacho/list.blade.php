@@ -233,6 +233,18 @@
                 ],
 
                 buttons: [{
+					extend: 'colvis',
+                    text: 'Reset Filter',
+                    action: function(e, dt, node, config) {
+								$('.filtros').val('');
+								$('.select-filter').val('');
+								// Limpiar la selección de un select2
+								table.search('').columns().search('').draw();
+								$('.select2').val(null).trigger('change');
+
+                           }
+				},
+				{
                         extend: 'pdf',
                         text: 'Exportar a PDF',
                         exportOptions: {
@@ -327,8 +339,8 @@
                 initComplete: function() {
                     var api = this.api();
 
-                    var columnasFecha = [3, 13, 15, 16, 17];
-                    var columnaFormaEntrega = 20;
+                    var columnasFecha = [3, 14, 16, 17,18];
+                    var columnaFormaEntrega = 19;
 
                     api.columns().eq(0).each(function(colIdx) {
 
@@ -347,8 +359,9 @@
                                     var val = $.fn.dataTable.util.escapeRegex($(this)
                                         .val());
                                     api.column(colIdx)
-                                        .search(val ? '^' + val + '$' : '', true, false)
-                                        .draw();
+									table.column( colIdx ).search(val ? val : '', false, false).draw();
+                                    /*    .search(val ? '^' + val + '$' : '', true, false)
+                                        .draw();*/
                                 });
 
                             [
@@ -392,7 +405,7 @@
                             var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
 
                             $(cell).html(
-                                '<input style="width:100%" type="' + tipoInput +
+                                '<input class="filtros" style="width:100%" type="' + tipoInput +
                                 '" placeholder="' + title + '" />'
                             );
 
@@ -409,6 +422,8 @@
 									  api.column(colIdx).search(
 											this.value
 									  ).draw();
+									  
+									  
                                     });
                             });
 							};

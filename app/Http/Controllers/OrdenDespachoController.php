@@ -324,9 +324,15 @@ class OrdenDespachoController extends Controller
             })
             ->filterColumn('pieza', function ($query, $keyword) {
                   $query->whereHas('itemInvoice', function ($q) use ($keyword) {
-                    $q->whereHas('item', function ($q) use ($keyword) {
-                        $q->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
-                    });
+					   $q->whereHas('product', function ($q) use ($keyword) {
+                                $q->whereRaw('products.id LIKE ?', ['%' . strtolower($keyword) . '%']);
+                       });
+                    
+						$q->orwhereHas('item', function ($q) use ($keyword) {
+							$q->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
+						});
+					
+					
                 });
             })
             ->filterColumn('cliente', function ($query, $keyword) {
