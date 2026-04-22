@@ -18,3 +18,4 @@ yarn-error.log
 .env.backup
 .env.production
 pmpc-476217-7b27892d567f.json
+/storage/app/vehiculo/*

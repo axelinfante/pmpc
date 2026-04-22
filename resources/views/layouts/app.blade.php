@@ -112,8 +112,8 @@
 		<!-- Preloader area start -->
 		<div id="preloader"></div>
 		<!-- Preloader area end -->
-
-		<div class="page-container">
+		
+		<div class="page-container sbar_collapsed">
 		    <!-- sidebar menu area start -->
 			<div class="sidebar-menu">
 
