@@ -167,7 +167,129 @@ class OrdenDespachoController extends Controller
 				return ($producto_completo) ? "($producto_id) $producto_completo":"";
             })
             ->addColumn('cliente', function ($orden) {
-                return $orden->cotizacion->client->contact_name ?? '';
+				//<h5 class="modal-title mt-0 text-white"></h5>
+				$resultado = $orden->cotizacion->client->contact_name ?? '';
+				$botonurl = '<a class="view-details" href="javascript:void(0)" data-title="Datos Cliente" data-body=\'<table class="table table-striped">
+  <thead>
+     <th colspan="2">
+		<h5>General Information</h5>
+      </th>
+  </thead>
+  <tbody>
+    <tr>
+      <tr>
+                                     <td>Nombre</td>
+                                      <td><b>'.($orden->cotizacion->client->contact_name ?? '').'</b></td>
+                            </tr>
+ <tr>
+                                     <td>Email</td>
+                                      <td><b>'.($orden->cotizacion->client->contact_email ?? '').'</b></td>
+                            </tr>	
+<tr>
+                                     <td>Teléfono</td>
+                                      <td><b>'.($orden->cotizacion->client->contact_phone ?? '').'</b></td>
+                            </tr>	
+<tr>
+                                     <td>Dirección</td>
+                                      <td><b>'.($orden->cotizacion->client->address ?? '').'</b></td>
+                            </tr>	
+<tr>
+                                     <td>CUIT - DNI</td>
+                                      <td><b>'.($orden->cotizacion->client->dni_cuit ?? '').'</b></td>
+                            </tr>	
+    </tr>
+  </tbody>
+</table>\' data-toggle="modal" data-target="#detailsModal"><i class="fa fa-info-circle text-success" aria-hidden="true"></i></a>';
+
+
+				$resultado .= ($resultado != "") ? $botonurl : '';
+                return $resultado;
+				
+				
+				
+				/*<table class="table table-striped">
+                                <thead>
+                                    <th colspan="2">
+                                        <h5>{{ _lang('General Information') }}</h5>
+                                    </th>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{ _lang('Profile Type') }}</td>
+                                        <td><b>{{ _lang($contact->profile_type) }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Company Name') }}</td>
+                                        <td><b>{{ $contact->company_name }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Contact Name') }}</td>
+                                        <td><b>{{ $contact->contact_name }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Group') }}</td>
+                                        <td><b>{{ $contact->group->name }}</b></td>
+                                    </tr>
+
+                                    {{-- <tr><td>{{ _lang('Reg No') }}</td><td><b>{{ $contact->reg_no }}</b></td></tr> --}}
+                                    <tr>
+                                        <td>{{ _lang('Contact Email') }}</td>
+                                        <td><b>{{ $contact->contact_email }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Contact Phone') }}</td>
+                                        <td><b>{{ $contact->contact_phone }}</b></td>
+                                    </tr>
+                                    {{-- <tr><td>{{ _lang('Country') }}</td><td><b>{{ $contact->country }}</b></td></tr> --}}
+
+                                    <tr>
+                                        <td>{{ _lang('City') }}</td>
+                                        <td><b>{{ $contact->city }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('State') }}</td>
+                                        <td><b>{{ $contact->state }}</b></td>
+                                    </tr>
+
+                                    {{-- <tr>
+                                        <td>{{ _lang('Currency') }}</td>
+                                        <td><b>{{ $contact->currency }} ({!! xss_clean(get_currency_symbol($contact->currency)) !!})</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Zip') }}</td>
+                                        <td><b>{{ $contact->zip }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Address') }}</td>
+                                        <td><b>{{ $contact->address }}</b></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>{{ _lang('CUIT - DNI') }}</td>
+                                        <td><b>{{ $contact->dni_cuit }}</b></td>
+                                    </tr> --}}
+                                    {{-- <tr><td>{{ _lang('Facebook') }}</td><td><b>{{ $contact->facebook }}</b></td></tr> --}}
+                                    {{-- <tr><td>{{ _lang('Twitter') }}</td><td><b>{{ $contact->twitter }}</b></td></tr> --}}
+                                    {{-- <tr><td>{{ _lang('Linkedin') }}</td><td><b>{{ $contact->linkedin }}</b></td></tr> --}}
+                                    <tr>
+                                        <td>{{ _lang('Remarks') }}</td>
+                                        <td><b>{{ $contact->remarks }}</b></td>
+                                    </tr>
+                                </tbody>
+                            </table>*/
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
             })
 			
 			 ->addColumn('vendedor', function ($orden) {
@@ -388,7 +510,7 @@ class OrdenDespachoController extends Controller
                 $query->where('observaciones', 'like', "%{$keyword}%");
             })
 			
-		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions'])
+		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente'])
          ->make(true);
 		
     }
