@@ -2312,3 +2312,14 @@ if (!function_exists('filepondUpload')) {
     }
 }
   
+function buscarImagen($nombreArchivo)
+{
+	$url=asset("public/images/no-img.jpg");
+	$discos = ['raiz_publica', 'gcs'];
+    foreach ($discos as $disco) {
+        if (Storage::disk($disco)->exists($nombreArchivo)) {
+			return Storage::disk($disco)->url($nombreArchivo);
+        }
+    }
+	return $url;
+}  

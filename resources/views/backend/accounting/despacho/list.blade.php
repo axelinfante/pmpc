@@ -19,6 +19,7 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cotización') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Deposito') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Ubicación') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Marca') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Modelo') }}</th>
@@ -64,7 +65,7 @@
 @section('js-script')
 <script src="{{ asset('public/dropzone/dropzone.min.js') }}" defer></script>
     <script>
-		
+		var lugarentregas_tables = <?php echo json_encode($lugar_entregas); ?>;
         var adminDesarme =
             {{ strTolower(auth()->user()->role->name) == 'administrativo de despacho' || strTolower(auth()->user()->role->name) == 'gerencial' ? 'true' : 'false' }};
     </script>
@@ -152,6 +153,10 @@
                         data: 'interno',
                         name: 'interno'
                     }, // Interno
+					{
+                        data: 'deposito',
+                        name: 'deposito'
+                    }, // Ubicación
                     {
                         data: 'ubicacion',
                         name: 'ubicacion'
@@ -359,7 +364,31 @@
                                     '</option>');
                             });
 
-                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 21) {
+                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 22) {
+							
+							if (colIdx == 6) {
+								
+								var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
+								.appendTo(cell.empty())
+								.on( 'change', function () {
+											var val = $(this).val();
+											table.column( colIdx ).search(val ? val : '', false, false).draw();
+								} );
+								
+								
+							select.append( '<option value="-1">VACIOS</option>' );
+							for (const row_xx of lugarentregas_tables) {
+									select.append( '<option value="'+row_xx.id+'">'+row_xx.nombre+'</option>' )
+							}
+							
+								$('.select2').select2({
+									multiple: true,
+									closeOnSelect: false//,
+								  }); 
+							
+							
+							}else{
+							
                             var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
 
                             $(cell).html(
@@ -378,24 +407,11 @@
 
                                      //if (e.keyCode == 13) { 
 									  api.column(colIdx).search(
-									  
-                                            /*this.value !== '' ? regexr.replace(
-                                                '{search}', '(((' + this.value +
-                                                ')))') : '',
-                                            this.value !== '',
-                                            this.value === ''*/
 											this.value
 									  ).draw();
-									 //}
-									  
                                     });
-                                    /*.on('keyup', function(e) {
-                                        e.stopPropagation();
-                                        $(this).trigger('change');
-                                        $(this).focus()[0].setSelectionRange(
-                                            cursorPosition, cursorPosition);
-                                    });*/
                             });
+							};
                         } else {
                             $(cell).html('');
                         }
@@ -461,7 +477,7 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
             });
 
 
-
+			
 
         });
     </script>
@@ -479,21 +495,11 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
 			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
 		});
 		 
-		 
-	
- 
-		
-		
-		/*$('#orden-despacho-table tbody').on('click', '.view-details', function () {
-    var rowData = $('#orden-despacho-table').DataTable().row($(this).parents('tr')).data();
-    // Populate the modal body with data
-    $('#detailsModal .modal-body').html(
-        '<h5>Name: ' + rowData.name + '</h5>' +
-        '<p>Position: ' + rowData.position + '</p>'
-        // ... more details
-    );
-});*/
-		
-		
+		/*$(document).ready(function(){
+			$('.select2').select2({
+                multiple: true,
+                closeOnSelect: false//,
+              }); 	
+		}); */
     </script>
 @endsection
