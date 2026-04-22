@@ -2,79 +2,92 @@
 <html>
 <head>
     <title>QR Producto</title>
+</head>
+<body>
+    {{-- Estilos aquí: el modal carga solo el body por AJAX (.modal-body.html) y no aplica el <head>. --}}
     <style>
-        /* Estilos generales para la página */
-        body {
+        /* Vista (modal / pestaña): no usar selector `body` para no afectar el admin. */
+        .etiqueta-qr-modal-root {
             margin: 0;
-            padding: 20px; /* Espacio alrededor del contenedor principal */
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0; /* Fondo para resaltar el contenedor */
+            background-color: #f0f0f0;
         }
 
-        /* Contenedor principal con tamaño y borde específico */
         .print-container {
             width: 64mm;
             height: 32mm;
-            border: 1px solid #000; /* Borde del contenedor */
-            box-sizing: border-box; /* Incluir el borde en el tamaño total */
+            border: 1px solid #000;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* Espacio uniforme entre el QR y los párrafos */
+            justify-content: space-between;
             text-align: center;
-            overflow: hidden; /* Asegura que nada se salga del contenedor */
-            background-color: #fff; /* Fondo blanco para impresión */
-            padding: 2mm; /* Pequeño relleno para evitar que el contenido toque el borde */
+            overflow: hidden;
+            background-color: #fff;
+            padding: 2mm;
             position: relative;
         }
 
-        /* Ajustar el tamaño del QR */
-        .row.qr-code {
+        /* Sin clase Bootstrap `row` (en el modal rompe el layout con márgenes negativos). */
+        .print-container .qr-code {
             display: flex;
-            justify-content: center;
-            width: 100%;
+            justify-content: flex-start;
+            flex: 0 0 auto;
+            width: auto;
         }
-        .qr-code img {
-            max-width: 20mm; /* Tamaño reducido del código QR */
-            max-height: 20mm; /* Tamaño reducido del código QR */
+        .print-container .qr-code img {
+            display: block;
+            max-width: 20mm;
+            max-height: 20mm;
         }
 
-        /* Estilo para los párrafos */
-        .row p {
+        .print-container .label-text p {
             margin: 0;
-            line-height: 1.1; /* Espaciado entre líneas */
-            font-size: 12px; /* Tamaño ajustado para que el texto no se superponga */
+            line-height: 1.1;
+            font-size: 12px;
         }
 
-       
-    </style>
-</head>
-<body>
+        .print-container .label-text {
+            flex: 0 1 auto;
+            min-width: 0;
+            max-width: 160px;
+            text-align: left;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
 
+        /* Modal: un poco más de aire entre QR y texto (la impresión usa otra hoja de estilos). */
+        .print-container .label-row {
+            column-gap: 14px;
+        }
+    </style>
+    <div class="etiqueta-qr-modal-root">
     <!-- Contenedor para imprimir -->
     <div class="print-container" style="width: 250px; display: flex; flex-direction: row;" id="divParaImprimir">
-    <div style="width: 250px; display: flex; flex-direction: row;">
+    <div class="label-row" style="width: 250px; display: flex; flex-direction: row; align-items: flex-start;">
         @php
-            // Determinar la compañía y número interno
-            $company = ($producto->company_id == 1) ? 'PM-' : 'PC-';
-            $interno = $company . $producto->nro_interno;
-			$macar_modelo= ($producto->marcaModelo->marca->marca ?? '') ." ".($producto->marcaModelo->modelo->modelo ?? '');
-			$csvData = "Id_Producto,Interno,Marca_Modelo,Oblea\n{$producto->id},$producto->nro_interno,$macar_modelo,$producto->nro_oblea";
-			$qrText = QrCode::size(80)->format('png')->generate($csvData);
+// Determinar la compañía y número interno
+$company = ($producto->company_id == 1) ? 'PM-' : 'PC-';
+$interno = $company . $producto->nro_interno;
+$macar_modelo = ($producto->marcaModelo->marca->marca ?? '') . " " . ($producto->marcaModelo->modelo->modelo ?? '');
+$csvData = "Id_Producto,Interno,Marca_Modelo,Oblea\n{$producto->id},$producto->nro_interno,$macar_modelo,$producto->nro_oblea";
+$qrText = QrCode::size(80)->format('png')->generate($csvData);
         @endphp
 
         <!-- Contenedor para el código QR -->
-        <div class="row qr-code" style="width: 50%;">
+        <div class="qr-code">
             {{-- QrCode::size(80)->generate($producto->id) --}} <!-- Tamaño reducido del QR -->
 			<img src="data:image/png;base64, {!! base64_encode($qrText) !!} ">
         </div>
 
         <!-- Contenedores para los párrafos -->
-        <div class="row" style="width: 50%;">
+        <div class="label-text">
             <p>{!! $producto->id !!} - {!! $producto->item->item_name !!}</p>
             <p>{!! isset($producto->marcaModelo->marca->marca) ? $producto->marcaModelo->marca->marca : ''  !!} - {!! isset($producto->marcaModelo->modelo->modelo) ? $producto->marcaModelo->modelo->modelo : '' !!} - {!! $interno !!}</p>
         </div>
@@ -82,8 +95,11 @@
     </div>
 
     <!-- Botón de impresión fuera del contenedor -->
-   <button onclick="imprimirDiv()">Imprimir</button>
+    <div style="margin-top: 10px;">
+        <button onclick="imprimirDiv()">Imprimir</button>
+    </div>
 
+    </div>
 
 </body>
 <script>
@@ -100,53 +116,62 @@
                 <head>
                     <title>Imprimir</title>
                    <style>
-        /* Estilos generales para la página */
         body {
             margin: 0;
-            padding: 20px; /* Espacio alrededor del contenedor principal */
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0; /* Fondo para resaltar el contenedor */
+            background-color: #f0f0f0;
         }
 
-        /* Contenedor principal con tamaño y borde específico */
         .print-container {
-            display: flex; 
+            display: flex;
             flex-direction: row;
             width: 64mm;
             height: 32mm;
-            border: 1px solid #000; /* Borde del contenedor */
-            box-sizing: border-box; /* Incluir el borde en el tamaño total */
-            display: flex;
-            flex-direction: column;
+            border: 1px solid #000;
+            box-sizing: border-box;
             align-items: center;
-            justify-content: space-between; /* Espacio uniforme entre el QR y los párrafos */
+            justify-content: space-between;
             text-align: center;
-            overflow: hidden; /* Asegura que nada se salga del contenedor */
-            background-color: #fff; /* Fondo blanco para impresión */
-            padding: 2mm; /* Pequeño relleno para evitar que el contenido toque el borde */
+            overflow: hidden;
+            background-color: #fff;
+            padding: 2mm;
             position: relative;
         }
 
-        /* Ajustar el tamaño del QR */
-        .row.qr-code {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-        .qr-code img {
-            max-width: 16mm; /* Tamaño reducido del código QR */
-            max-height: 16mm; /* Tamaño reducido del código QR */
+        .label-row {
+            column-gap: 8px;
         }
 
-        /* Estilo para los párrafos */
-        .row p {
+        .qr-code {
+            display: flex;
+            justify-content: flex-start;
+            flex: 0 0 auto;
+            width: auto;
+        }
+        .qr-code img {
+            display: block;
+            max-width: 16mm;
+            max-height: 16mm;
+        }
+
+        .label-text p {
             margin: 0;
-            line-height: 1.1; /* Espaciado entre líneas */
-            font-size: 12px; /* Tamaño ajustado para que el texto no se superponga */
+            line-height: 1.1;
+            font-size: 12px;
+        }
+
+        .label-text {
+            flex: 0 1 auto;
+            min-width: 0;
+            max-width: 140px;
+            text-align: left;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
 
     </style>
