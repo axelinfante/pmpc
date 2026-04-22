@@ -23,7 +23,8 @@ class OrdenDespachoController extends Controller
         // if (strtolower(auth()->user()->role->name) == 'vendedor') {
         //     return view('backend.accounting.desarme.listVendedor');
         // }
-        return view('backend.accounting.despacho.list');
+		$lugar_entregas = Lugar_entregas::all();
+        return view('backend.accounting.despacho.list',compact('lugar_entregas'));
     }
 
 
@@ -223,8 +224,27 @@ class OrdenDespachoController extends Controller
             })
             ->addColumn('guia', function ($orden) {
                 if (!empty($orden->foto_guia) && file_exists(public_path('uploads/ordenes/' . $orden->foto_guia))) {
-                    $url = asset('public/uploads/ordenes/' . $orden->foto_guia);
-                    return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-primary">Ver Guía</a>';
+					$url = buscarImagen('uploads/ordenes/' . $orden->foto_guia);
+                    //$url = asset('public/uploads/ordenes/' . $orden->foto_guia);
+					//<img src="{{ public_path('images/modern-invoice-bg.jpg') }}" class="wp-300">
+					$botonurl = '<a class="btn btn-sm btn-primary  view-details" href="javascript:void(0)" data-body=\'<table class="table table-bordered">
+  <thead>
+    <tr class="table-primary">
+      <th scope="col">Foto Guia</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="'.$url.'" class="wp-400"></td>
+    </tr>
+  </tbody>
+</table>\' data-toggle="modal" data-target="#detailsModal">Ver Guía</a>';
+					
+					
+					
+					
+                    //return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-primary">Ver Guía</a>';
+					return $botonurl;
                 } else {
                     return '<span class="text-muted"></span>';
                 }
@@ -233,6 +253,26 @@ class OrdenDespachoController extends Controller
             // Add the extra data to the main object
 				return $orden->items_pendientes ?? ''; 
 			})
+			->addColumn('deposito', function ($orden) {
+            // Add the extra data to the main object
+				return $orden->itemInvoice->product->deposito->nombre ?? ''; 
+			})
+			->filterColumn('deposito', function ($query, $keyword) {
+				 if ($keyword != "") {
+				$query->whereHas('itemInvoice.product', function ($q) use ($keyword) {
+					
+                    $ids = explode(",", $keyword);
+                    if (in_array("-1", $ids)) {
+                        $q->where('idDeposito', '=', "")
+                            ->orWhereNull('idDeposito');
+                    } else {
+                        $q->wherein('idDeposito', $ids);
+                    }
+					
+					
+					});
+				 }	
+            })
 			->filterColumn('nro', function ($query, $keyword) {
                    $query->where('ordenes_despacho.id', 'LIKE', '%' . $keyword . '%');
 

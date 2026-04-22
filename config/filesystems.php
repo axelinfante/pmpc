@@ -47,6 +47,14 @@ return [
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
         ],
+		
+		'raiz_publica' => [
+			'driver' => 'local',
+			'root' => public_path(), // Apunta directamente a la carpeta /public del proyecto
+			//'url' => env('APP_URL'),
+			'url' => asset('public/'),
+			'visibility' => 'public',
+		],
 
         's3' => [
             'driver' => 's3',
