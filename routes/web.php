@@ -1468,3 +1468,5 @@ Route::resource("puestos", "PuestosController");
 
 		   Route::post('products/detalle', 'ProductController@table_detalle')->name('products.table_detalle');
 		   Route::post('products/detalle-post', 'ProductController@table_detalle_post')->name('table.detalle.post');
+   	       Route::post("orden-despacho/confirmaciones","OrdenDespachoController@confirmacionesMAX")->name("orden-despacho.confirmaciones");
+		   

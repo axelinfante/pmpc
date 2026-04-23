@@ -23,10 +23,13 @@ class OrdenDespachoController extends Controller
         // if (strtolower(auth()->user()->role->name) == 'vendedor') {
         //     return view('backend.accounting.desarme.listVendedor');
         // }
-        return view('backend.accounting.despacho.list');
+		$lugar_entregas = Lugar_entregas::all();
+        return view('backend.accounting.despacho.list',compact('lugar_entregas'));
     }
 
-
+public function show()
+{
+}
     public function get_table_data(Request $request)
     {
 		 $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();	
@@ -48,7 +51,7 @@ class OrdenDespachoController extends Controller
 		 
 		return DataTables::eloquent($ordenes)
 		  ->addColumn('checkbox', function ($orden) {
-                return '<input type="checkbox" class="row-checkbox" value="' . $orden->id . '">';
+                return '<input type="checkbox" class="row-checkbox" data-id="' . $orden->id . '" value="' . $orden->id . '">';
             })
             ->editColumn('nro', function ($orden) {
                 return $orden->id;
@@ -166,7 +169,43 @@ class OrdenDespachoController extends Controller
 				return ($producto_completo) ? "($producto_id) $producto_completo":"";
             })
             ->addColumn('cliente', function ($orden) {
-                return $orden->cotizacion->client->contact_name ?? '';
+				//<h5 class="modal-title mt-0 text-white"></h5>
+				$resultado = $orden->cotizacion->client->contact_name ?? '';
+				$botonurl = '<a class="view-details" href="javascript:void(0)" data-title="Datos Cliente" data-body=\'<table class="table table-striped">
+  <thead>
+     <th colspan="2">
+		<h5>General Information</h5>
+      </th>
+  </thead>
+  <tbody>
+    <tr>
+      <tr>
+                                     <td>Nombre</td>
+                                      <td><b>'.($orden->cotizacion->client->contact_name ?? '').'</b></td>
+                            </tr>
+ <tr>
+                                     <td>Email</td>
+                                      <td><b>'.($orden->cotizacion->client->contact_email ?? '').'</b></td>
+                            </tr>	
+<tr>
+                                     <td>Teléfono</td>
+                                      <td><b>'.($orden->cotizacion->client->contact_phone ?? '').'</b></td>
+                            </tr>	
+<tr>
+                                     <td>Dirección</td>
+                                      <td><b>'.($orden->cotizacion->client->address ?? '').'</b></td>
+                            </tr>	
+<tr>
+                                     <td>CUIT - DNI</td>
+                                      <td><b>'.($orden->cotizacion->client->dni_cuit ?? '').'</b></td>
+                            </tr>	
+    </tr>
+  </tbody>
+</table>\' data-toggle="modal" data-target="#detailsModal"><i class="fa fa-info-circle text-success" aria-hidden="true"></i></a>';
+
+
+				$resultado .= ($resultado != "") ? $botonurl : '';
+                return $resultado;
             })
 			
 			 ->addColumn('vendedor', function ($orden) {
@@ -223,8 +262,27 @@ class OrdenDespachoController extends Controller
             })
             ->addColumn('guia', function ($orden) {
                 if (!empty($orden->foto_guia) && file_exists(public_path('uploads/ordenes/' . $orden->foto_guia))) {
-                    $url = asset('public/uploads/ordenes/' . $orden->foto_guia);
-                    return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-primary">Ver Guía</a>';
+					$url = buscarImagen('uploads/ordenes/' . $orden->foto_guia);
+                    //$url = asset('public/uploads/ordenes/' . $orden->foto_guia);
+					//<img src="{{ public_path('images/modern-invoice-bg.jpg') }}" class="wp-300">
+					$botonurl = '<a class="btn btn-sm btn-primary  view-details" href="javascript:void(0)" data-body=\'<table class="table table-bordered">
+  <thead>
+    <tr class="table-primary">
+      <th scope="col">Foto Guia</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="'.$url.'" class="wp-400"></td>
+    </tr>
+  </tbody>
+</table>\' data-toggle="modal" data-target="#detailsModal">Ver Guía</a>';
+					
+					
+					
+					
+                    //return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-primary">Ver Guía</a>';
+					return $botonurl;
                 } else {
                     return '<span class="text-muted"></span>';
                 }
@@ -233,6 +291,26 @@ class OrdenDespachoController extends Controller
             // Add the extra data to the main object
 				return $orden->items_pendientes ?? ''; 
 			})
+			->addColumn('deposito', function ($orden) {
+            // Add the extra data to the main object
+				return $orden->itemInvoice->product->deposito->nombre ?? ''; 
+			})
+			->filterColumn('deposito', function ($query, $keyword) {
+				 if ($keyword != "") {
+				$query->whereHas('itemInvoice.product', function ($q) use ($keyword) {
+					
+                    $ids = explode(",", $keyword);
+                    if (in_array("-1", $ids)) {
+                        $q->where('idDeposito', '=', "")
+                            ->orWhereNull('idDeposito');
+                    } else {
+                        $q->wherein('idDeposito', $ids);
+                    }
+					
+					
+					});
+				 }	
+            })
 			->filterColumn('nro', function ($query, $keyword) {
                    $query->where('ordenes_despacho.id', 'LIKE', '%' . $keyword . '%');
 
@@ -284,9 +362,15 @@ class OrdenDespachoController extends Controller
             })
             ->filterColumn('pieza', function ($query, $keyword) {
                   $query->whereHas('itemInvoice', function ($q) use ($keyword) {
-                    $q->whereHas('item', function ($q) use ($keyword) {
-                        $q->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
-                    });
+					   $q->whereHas('product', function ($q) use ($keyword) {
+                                $q->whereRaw('products.id LIKE ?', ['%' . strtolower($keyword) . '%']);
+                       });
+                    
+						$q->orwhereHas('item', function ($q) use ($keyword) {
+							$q->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
+						});
+					
+					
                 });
             })
             ->filterColumn('cliente', function ($query, $keyword) {
@@ -342,7 +426,7 @@ class OrdenDespachoController extends Controller
                 $query->where('observaciones', 'like', "%{$keyword}%");
             })
 			
-		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions'])
+		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente'])
          ->make(true);
 		
     }
@@ -493,6 +577,36 @@ class OrdenDespachoController extends Controller
 
         return back()->with('success', 'Entrega confirmada correctamente.');
     }
+	
+	
+	public function confirmacionesMAX(Request $request)
+    {
+		 $validator = Validator::make($request->all(), [
+			 'orden_id_max' => 'required|exists:ordenes_despacho,id',
+            'fecha_entrega_max' => 'required|date',
+            'forma_entrega_max' => 'required|string',
+            'despachado_por_max' => 'required|string',
+        ]);
+
+		if ($validator->fails()) {
+			if ($request->ajax()) {
+				return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+			} else {
+				return back()->withErrors($validator)
+					->withInput();
+			}
+		}
+			$ids = explode(',', $request->input('orden_id_max'));
+
+			OrdenDespacho::whereIn('id', $ids)->update(['f_entrega' => $request->fecha_entrega_max,'forma_entrega' => $request->forma_entrega_max,'despachado_por' => $request->despachado_por_max,'estatus' => 'despachado']);	
+			
+		return response()->json([
+            'result' => 'success',
+            'message' => 'Orden de despacho actualizada correctamente.',
+            'reload' => true
+        ]);	
+
+	}
 	
 	
 }
