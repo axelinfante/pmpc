@@ -1521,11 +1521,22 @@
 		}
 	});
 	
-	$(document).on("click",".view-details",function(){
-		 var body = $(this).data("body");
-		 $('#detailsModal .modal-body').html(body);
-		 return false;
-	 }); 
+	$(document).on('click', '.view-details', function() {
+    // Retrieve data from data-title and data-body attributes
+    var title = $(this).data('title');
+    var body = $(this).data('body');
+
+    // Optional: Update the modal title if it exists
+    if (typeof title !== 'undefined') {
+        $('#detailsModal .modal-title').html(title);
+    }
+
+    // Inject the body content into the modal
+    $('#detailsModal .modal-body').html(body);
+
+    // Prevent default action and event bubbling
+    return false;
+});
 
 })(jQuery);
 

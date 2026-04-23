@@ -19,6 +19,7 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cotización') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Deposito') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Ubicación') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Marca') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Modelo') }}</th>
@@ -59,12 +60,13 @@
     </div>
 	
     @include('backend.accounting.despacho.modal.confirmar-entrega')
+    @include('backend.accounting.despacho.modal.confirmar-entrega-max')
 @endsection
 
 @section('js-script')
 <script src="{{ asset('public/dropzone/dropzone.min.js') }}" defer></script>
     <script>
-		
+		var lugarentregas_tables = <?php echo json_encode($lugar_entregas); ?>;
         var adminDesarme =
             {{ strTolower(auth()->user()->role->name) == 'administrativo de despacho' || strTolower(auth()->user()->role->name) == 'gerencial' ? 'true' : 'false' }};
     </script>
@@ -152,6 +154,10 @@
                         data: 'interno',
                         name: 'interno'
                     }, // Interno
+					{
+                        data: 'deposito',
+                        name: 'deposito'
+                    }, // Ubicación
                     {
                         data: 'ubicacion',
                         name: 'ubicacion'
@@ -228,6 +234,18 @@
                 ],
 
                 buttons: [{
+					extend: 'colvis',
+                    text: 'Reset Filter',
+                    action: function(e, dt, node, config) {
+								$('.filtros').val('');
+								$('.select-filter').val('');
+								// Limpiar la selección de un select2
+								table.search('').columns().search('').draw();
+								$('.select2').val(null).trigger('change');
+
+                           }
+				},
+				{
                         extend: 'pdf',
                         text: 'Exportar a PDF',
                         exportOptions: {
@@ -260,28 +278,29 @@
                         }
 
                     },
-                    {
-                        text: 'Generar Impresiones',
-                        action: function(e, dt, node, config) {
-                            var selectedIds = [];
-                            $('.row-checkbox:checked').each(function() {
-                                selectedIds.push($(this).data('id'));
-                            });
+					
+					{
+                    text: 'Confirmacion de entrega',
+			        className: 'btn btn-xs',
+					attr: {
+						title: "Confirmacion de entrega",
+						id: "confirmacion-button",
+						"data-title": "Confirmacion de entrega",
+					},
+					action: function (e, dt, node, config) {
+						var selectedIds = [];
+						$('.row-checkbox:checked').each(function() {
+							selectedIds.push($(this).data('id'));
+						});
 
-                            if (selectedIds.length === 0) {
-                                alert('Seleccione al menos una orden para imprimir.');
-                                return;
-                            }
-
-                            // selectedIds.forEach(function(id) {
-                            //     window.open('{{ url('orden-despacho/generar-pdf') }}/' + id,
-                            //         '_blank');
-                            // });
-                            window.open('{{ url('orden-despacho/generar-pdf') }}/' + selectedIds,
-                                '_blank');
-
-                        }
-                    }
+						if (selectedIds.length === 0) {
+							alert('Por favor, seleccione al menos un registro para continuar.');
+							return;
+						}
+					  $('#modal_orden_id_max').val(selectedIds);
+					  $('#modalConfirmarEntregaMax').modal('show');
+					}
+				}
                 ],
 
                 createdRow: function(row, data) {
@@ -322,8 +341,8 @@
                 initComplete: function() {
                     var api = this.api();
 
-                    var columnasFecha = [3, 13, 15, 16, 17];
-                    var columnaFormaEntrega = 20;
+                    var columnasFecha = [3, 14, 16, 17,18];
+                    var columnaFormaEntrega = 19;
 
                     api.columns().eq(0).each(function(colIdx) {
 
@@ -342,8 +361,9 @@
                                     var val = $.fn.dataTable.util.escapeRegex($(this)
                                         .val());
                                     api.column(colIdx)
-                                        .search(val ? '^' + val + '$' : '', true, false)
-                                        .draw();
+									table.column( colIdx ).search(val ? val : '', false, false).draw();
+                                    /*    .search(val ? '^' + val + '$' : '', true, false)
+                                        .draw();*/
                                 });
 
                             [
@@ -359,11 +379,35 @@
                                     '</option>');
                             });
 
-                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 21) {
+                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 22) {
+							
+							if (colIdx == 6) {
+								
+								var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
+								.appendTo(cell.empty())
+								.on( 'change', function () {
+											var val = $(this).val();
+											table.column( colIdx ).search(val ? val : '', false, false).draw();
+								} );
+								
+								
+							select.append( '<option value="-1">VACIOS</option>' );
+							for (const row_xx of lugarentregas_tables) {
+									select.append( '<option value="'+row_xx.id+'">'+row_xx.nombre+'</option>' )
+							}
+							
+								$('.select2').select2({
+									multiple: true,
+									closeOnSelect: false//,
+								  }); 
+							
+							
+							}else{
+							
                             var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
 
                             $(cell).html(
-                                '<input style="width:100%" type="' + tipoInput +
+                                '<input class="filtros" style="width:100%" type="' + tipoInput +
                                 '" placeholder="' + title + '" />'
                             );
 
@@ -378,24 +422,13 @@
 
                                      //if (e.keyCode == 13) { 
 									  api.column(colIdx).search(
-									  
-                                            /*this.value !== '' ? regexr.replace(
-                                                '{search}', '(((' + this.value +
-                                                ')))') : '',
-                                            this.value !== '',
-                                            this.value === ''*/
 											this.value
 									  ).draw();
-									 //}
+									  
 									  
                                     });
-                                    /*.on('keyup', function(e) {
-                                        e.stopPropagation();
-                                        $(this).trigger('change');
-                                        $(this).focus()[0].setSelectionRange(
-                                            cursorPosition, cursorPosition);
-                                    });*/
                             });
+							};
                         } else {
                             $(cell).html('');
                         }
@@ -461,7 +494,7 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
             });
 
 
-
+			
 
         });
     </script>
@@ -480,20 +513,51 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
 		});
 		 
 		 
-	
+		$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
+			// Limpiar la validación al cerrar el modal
+			$('#miFormulario').parsley().reset();
+			// Limpiar los campos del formulario
+			$('#modal_orden_id_max').val('');
+			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
+		}); 
+		 
+		 
+		        
+$( document ).ready(function() {
+		$('#miFormulario').submit(function(e) {
+        e.preventDefault();
+        var url = $(this).attr("action");
+        let formData = new FormData(this);
+    
+        $.ajax({
+                type:'POST',
+                url: url,
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: (json) => {
+				if(json['result'] == "success"){
+						$('#modalConfirmarEntregaMax').modal('hide');
+				}else{
+					$('#miFormulario').find(".print-error-msg").find("ul").html('');
+                    $('#miFormulario').find(".print-error-msg").css('display','block');
+                    $.each( json['message'], function( key, value ) {
+					//	console.log(value);
+                        $('#miFormulario').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                    });
+				  }
+				},
+                error: function(response){
+                    $('#ajax-form').find(".print-error-msg").find("ul").html('');
+                    $('#ajax-form').find(".print-error-msg").css('display','block');
+                    $.each( response.responseJSON.errors, function( key, value ) {
+                        $('#ajax-form').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                    });
+                }
+           });
+        
+    });
+});	
  
-		
-		
-		/*$('#orden-despacho-table tbody').on('click', '.view-details', function () {
-    var rowData = $('#orden-despacho-table').DataTable().row($(this).parents('tr')).data();
-    // Populate the modal body with data
-    $('#detailsModal .modal-body').html(
-        '<h5>Name: ' + rowData.name + '</h5>' +
-        '<p>Position: ' + rowData.position + '</p>'
-        // ... more details
-    );
-});*/
-		
-		
     </script>
 @endsection
