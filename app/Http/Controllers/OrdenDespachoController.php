@@ -27,7 +27,9 @@ class OrdenDespachoController extends Controller
         return view('backend.accounting.despacho.list',compact('lugar_entregas'));
     }
 
-
+public function show()
+{
+}
     public function get_table_data(Request $request)
     {
 		 $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();	
@@ -49,7 +51,7 @@ class OrdenDespachoController extends Controller
 		 
 		return DataTables::eloquent($ordenes)
 		  ->addColumn('checkbox', function ($orden) {
-                return '<input type="checkbox" class="row-checkbox" value="' . $orden->id . '">';
+                return '<input type="checkbox" class="row-checkbox" data-id="' . $orden->id . '" value="' . $orden->id . '">';
             })
             ->editColumn('nro', function ($orden) {
                 return $orden->id;
@@ -204,92 +206,6 @@ class OrdenDespachoController extends Controller
 
 				$resultado .= ($resultado != "") ? $botonurl : '';
                 return $resultado;
-				
-				
-				
-				/*<table class="table table-striped">
-                                <thead>
-                                    <th colspan="2">
-                                        <h5>{{ _lang('General Information') }}</h5>
-                                    </th>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>{{ _lang('Profile Type') }}</td>
-                                        <td><b>{{ _lang($contact->profile_type) }}</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('Company Name') }}</td>
-                                        <td><b>{{ $contact->company_name }}</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('Contact Name') }}</td>
-                                        <td><b>{{ $contact->contact_name }}</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('Group') }}</td>
-                                        <td><b>{{ $contact->group->name }}</b></td>
-                                    </tr>
-
-                                    {{-- <tr><td>{{ _lang('Reg No') }}</td><td><b>{{ $contact->reg_no }}</b></td></tr> --}}
-                                    <tr>
-                                        <td>{{ _lang('Contact Email') }}</td>
-                                        <td><b>{{ $contact->contact_email }}</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('Contact Phone') }}</td>
-                                        <td><b>{{ $contact->contact_phone }}</b></td>
-                                    </tr>
-                                    {{-- <tr><td>{{ _lang('Country') }}</td><td><b>{{ $contact->country }}</b></td></tr> --}}
-
-                                    <tr>
-                                        <td>{{ _lang('City') }}</td>
-                                        <td><b>{{ $contact->city }}</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('State') }}</td>
-                                        <td><b>{{ $contact->state }}</b></td>
-                                    </tr>
-
-                                    {{-- <tr>
-                                        <td>{{ _lang('Currency') }}</td>
-                                        <td><b>{{ $contact->currency }} ({!! xss_clean(get_currency_symbol($contact->currency)) !!})</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('Zip') }}</td>
-                                        <td><b>{{ $contact->zip }}</b></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ _lang('Address') }}</td>
-                                        <td><b>{{ $contact->address }}</b></td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>{{ _lang('CUIT - DNI') }}</td>
-                                        <td><b>{{ $contact->dni_cuit }}</b></td>
-                                    </tr> --}}
-                                    {{-- <tr><td>{{ _lang('Facebook') }}</td><td><b>{{ $contact->facebook }}</b></td></tr> --}}
-                                    {{-- <tr><td>{{ _lang('Twitter') }}</td><td><b>{{ $contact->twitter }}</b></td></tr> --}}
-                                    {{-- <tr><td>{{ _lang('Linkedin') }}</td><td><b>{{ $contact->linkedin }}</b></td></tr> --}}
-                                    <tr>
-                                        <td>{{ _lang('Remarks') }}</td>
-                                        <td><b>{{ $contact->remarks }}</b></td>
-                                    </tr>
-                                </tbody>
-                            </table>*/
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
             })
 			
 			 ->addColumn('vendedor', function ($orden) {
@@ -661,6 +577,36 @@ class OrdenDespachoController extends Controller
 
         return back()->with('success', 'Entrega confirmada correctamente.');
     }
+	
+	
+	public function confirmacionesMAX(Request $request)
+    {
+		 $validator = Validator::make($request->all(), [
+			 'orden_id_max' => 'required|exists:ordenes_despacho,id',
+            'fecha_entrega_max' => 'required|date',
+            'forma_entrega_max' => 'required|string',
+            'despachado_por_max' => 'required|string',
+        ]);
+
+		if ($validator->fails()) {
+			if ($request->ajax()) {
+				return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+			} else {
+				return back()->withErrors($validator)
+					->withInput();
+			}
+		}
+			$ids = explode(',', $request->input('orden_id_max'));
+
+			OrdenDespacho::whereIn('id', $ids)->update(['f_entrega' => $request->fecha_entrega_max,'forma_entrega' => $request->forma_entrega_max,'despachado_por' => $request->despachado_por_max,'estatus' => 'despachado']);	
+			
+		return response()->json([
+            'result' => 'success',
+            'message' => 'Orden de despacho actualizada correctamente.',
+            'reload' => true
+        ]);	
+
+	}
 	
 	
 }

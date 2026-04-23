@@ -60,6 +60,7 @@
     </div>
 	
     @include('backend.accounting.despacho.modal.confirmar-entrega')
+    @include('backend.accounting.despacho.modal.confirmar-entrega-max')
 @endsection
 
 @section('js-script')
@@ -277,28 +278,29 @@
                         }
 
                     },
-                    {
-                        text: 'Generar Impresiones',
-                        action: function(e, dt, node, config) {
-                            var selectedIds = [];
-                            $('.row-checkbox:checked').each(function() {
-                                selectedIds.push($(this).data('id'));
-                            });
+					
+					{
+                    text: 'Confirmacion de entrega',
+			        className: 'btn btn-xs',
+					attr: {
+						title: "Confirmacion de entrega",
+						id: "confirmacion-button",
+						"data-title": "Confirmacion de entrega",
+					},
+					action: function (e, dt, node, config) {
+						var selectedIds = [];
+						$('.row-checkbox:checked').each(function() {
+							selectedIds.push($(this).data('id'));
+						});
 
-                            if (selectedIds.length === 0) {
-                                alert('Seleccione al menos una orden para imprimir.');
-                                return;
-                            }
-
-                            // selectedIds.forEach(function(id) {
-                            //     window.open('{{ url('orden-despacho/generar-pdf') }}/' + id,
-                            //         '_blank');
-                            // });
-                            window.open('{{ url('orden-despacho/generar-pdf') }}/' + selectedIds,
-                                '_blank');
-
-                        }
-                    }
+						if (selectedIds.length === 0) {
+							alert('Por favor, seleccione al menos un registro para continuar.');
+							return;
+						}
+					  $('#modal_orden_id_max').val(selectedIds);
+					  $('#modalConfirmarEntregaMax').modal('show');
+					}
+				}
                 ],
 
                 createdRow: function(row, data) {
@@ -510,11 +512,52 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
 			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
 		});
 		 
-		/*$(document).ready(function(){
-			$('.select2').select2({
-                multiple: true,
-                closeOnSelect: false//,
-              }); 	
-		}); */
+		 
+		$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
+			// Limpiar la validación al cerrar el modal
+			$('#miFormulario').parsley().reset();
+			// Limpiar los campos del formulario
+			$('#modal_orden_id_max').val('');
+			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
+		}); 
+		 
+		 
+		        
+$( document ).ready(function() {
+		$('#miFormulario').submit(function(e) {
+        e.preventDefault();
+        var url = $(this).attr("action");
+        let formData = new FormData(this);
+    
+        $.ajax({
+                type:'POST',
+                url: url,
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: (json) => {
+				if(json['result'] == "success"){
+						$('#modalConfirmarEntregaMax').modal('hide');
+				}else{
+					$('#miFormulario').find(".print-error-msg").find("ul").html('');
+                    $('#miFormulario').find(".print-error-msg").css('display','block');
+                    $.each( json['message'], function( key, value ) {
+					//	console.log(value);
+                        $('#miFormulario').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                    });
+				  }
+				},
+                error: function(response){
+                    $('#ajax-form').find(".print-error-msg").find("ul").html('');
+                    $('#ajax-form').find(".print-error-msg").css('display','block');
+                    $.each( response.responseJSON.errors, function( key, value ) {
+                        $('#ajax-form').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                    });
+                }
+           });
+        
+    });
+});	
+ 
     </script>
 @endsection

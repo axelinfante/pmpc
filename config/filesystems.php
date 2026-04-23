@@ -52,7 +52,8 @@ return [
 			'driver' => 'local',
 			'root' => public_path(), // Apunta directamente a la carpeta /public del proyecto
 			//'url' => env('APP_URL'),
-			'url' => asset('public/'),
+			//'url' => asset('public/'),
+			'url' => env('APP_URL') . '/public', 
 			'visibility' => 'public',
 		],
 
