@@ -120,7 +120,7 @@
 				<div class="sidebar-header">
 					<div class="logo">
 						<a href="{{ url('dashboard') }}"><img src="{{ get_company_logo() }}" class="company-logo" alt="logo"></a>
-						<span class="text-white ml-1 d-inline-block">{{ get_company_option('company_name',get_option('company_name','TrickCode')) }}</span>
+						<span class="text-white ml-1 d-inline-block">{{ get_company_option('company_name',get_option('company_name','PMPC')) }}</span>
 					</div>
 				</div>
 

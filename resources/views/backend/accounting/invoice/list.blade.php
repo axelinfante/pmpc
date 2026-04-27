@@ -203,49 +203,7 @@
                         console.log(request.responseText);
                     }
                 }),
-
-             /*   footerCallback: function(row, data, start, end, display) {
-                    let api = this.api();
-
-                    // Remove the formatting to get integer data for summation
-                    let intVal = function(i) {
-                        console.log(i)
-                        return typeof i === 'string' ?
-                            parseFloat(i.replace('&euro;', '').replace('€', '').replace('$', '')
-                                .replace('USD', '').replace('.', '').replace(',', '.').replace(
-                                    /(<([^>]+)>)/ig, '')) :
-                            typeof i === 'number' ?
-                            i :
-                            0;
-                    };
-                    console.log(intVal('€ 2,2'))
-                    // Total over all pages
-                    numb = 9;
-                    @if (strtolower(auth()->user()->role->name) == 'despacho')
-                        numb = 7;
-                    @elseif (strtolower(auth()->user()->role->name) != 'gerencial')
-                        numb = 9;
-                    @endif
-
-                    total = api
-                        .column(numb)
-                        .data()
-                        .reduce((a, b) => intVal(a) + intVal(b), 0);
-
-                    // // Total over this page
-
-                    pageTotal = api
-                        .column(numb, {
-                            page: 'current'
-                        })
-                        .data()
-                        .reduce((a, b) => intVal(a) + intVal(b), 0);
-
-                    api.column(numb).footer().innerHTML = '$' + pageTotal.toFixed(2) + ' ( $' + total
-                        .toFixed(2) + ' total)';
-
-                },*/
-
+            
                     "columns": [{
                             data: "checkbox",
                             name: "checkbox"
@@ -443,12 +401,38 @@
             });
 
 
-            $('#invoice-number').on('keyup', function(e) {
-                invoice_table.draw();
+$('#invoice-table').on('processing.dt', function (e, settings, processing) {
+    if (processing) {
+       	inicioLoading();
+    } else {
+        closeLoading();
+    }
+});
+
+ $('.dataTables_filter input')
+    .unbind('keypress keyup input')
+    .bind('keyup input', function (e) {
+		 var code = e.keyCode || e.which;
+		 if ($(this).val().length >= 2 && code === 13) {
+			invoice_table.search(this.value).draw();
+		}
+		
+    });
+
+
+            $('#invoice-number').on('change', function(e) {
+				//var code = e.keyCode || e.which;
+				//if ($(this).val().length >= 2 && code === 13) {
+					invoice_table.draw();
+				//}
+                
             });
 
             $('.select-filter').on('change', function(e) {
-                invoice_table.draw();
+				//var code = e.keyCode || e.which;
+				//if ($(this).val().length >= 2 && code === 13) {
+					invoice_table.draw();
+				//}	
             });
 
             $('#date_range').daterangepicker({
@@ -469,7 +453,7 @@
                 $(this).val('');
                 invoice_table.draw();
             });
-            invoice_table.search('').columns().search('').draw();
+          //  invoice_table.search('').columns().search('').draw();
 
         })(jQuery);
 
