@@ -106,7 +106,7 @@
 	<a href="javascript: void(0);"><i class="ti-shopping-cart-full"></i><span>{{ _lang('Sales') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 	<ul class="nav-second-level" aria-expanded="false">
 		@if( has_feature('invoice_limit') )
-			<li class="nav-item"><a class="nav-link" href="{{ url('invoices/create') }}">{{ _lang('Crear venta') }}</a></li>
+			<!--<li class="nav-item"><a class="nav-link" href="{{ url('invoices/create') }}">{{ _lang('Crear venta') }}</a></li>-->
 			<li class="nav-item"><a class="nav-link"href="{{ route('invoices.list_comision') }}">{{ _lang('Comisiones') }}</a></li>
 			<li class="nav-item"><a href="{{ route('buscador_de_piezas') }}"><span>{{ _lang
 				('Buscador de piezas')
