@@ -542,7 +542,7 @@
         if( typeof  product.data('display3') !== "undefined" ){
             display3 = "&display3=" +  product.data('display3');
         }
-
+		
         product.select2({
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
@@ -556,6 +556,11 @@
                 }
             }
         });
+		
+		setTimeout(function() {
+			$('#car_id').trigger('change');
+		}, 2000); // Executes after 2 seconds
+		
     }else{
 		$('#productLink').addClass('d-none')
 
