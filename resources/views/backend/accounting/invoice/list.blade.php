@@ -88,8 +88,9 @@
                                     <th>{{ _lang('Fecha de entrega') }}</th>
                                     <th>{{ _lang('Fecha del ultimo pago') }}</th>
                                     <th>{{ _lang('Nro Interno') }}</th>
-                                    <th>{{ _lang('Productos') }}</th>
-                                    <th>{{ _lang('id_Productos') }}</th>
+									<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Pieza') }}</th>
+                                    <!--<th>{{ _lang('Productos') }}</th>
+                                    <th>{{ _lang('id_Productos') }}</th>-->
                                     <th>{{ _lang('Vendedor') }}</th>
 									{{-- <th>{{ _lang('Porcentaje de comision') }}</th>
 									<th>{{ _lang('Comision') }}</th> --}}
@@ -114,7 +115,7 @@
                                     <th></th>
                                     <th></th>
                                     <th></th>
-                                    <th></th>
+                                    <!--<th></th>-->
                                     <th></th>
                                     <th></th>
                                     <th></th>
@@ -142,7 +143,7 @@
             $('#invoice-table thead tr').clone(true).appendTo('#invoice-table thead');
             $('#invoice-table thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 14) {
+                if (i != 0 && i != 13) {
                     $(this).html(
                         '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' +
                         title + '" />');
@@ -232,14 +233,18 @@
                                 data: "nro_interno",
                                 name: "nro_interno"
                             },
-                        {
+                      /*  {
                             data: "producto",
                             name: "producto"
                         },
 						{
                             data: "idproducto",
                             name: "idproducto"
-                        },
+                        },*/
+						{
+                        data: 'pieza',
+                        name: 'pieza'
+						}, // Pieza
                         {
                             data: "vendedor",
                             name: "vendedor"
