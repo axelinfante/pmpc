@@ -176,6 +176,65 @@
 			  </div>
 			</div>
 
+			<div id="chequeSection" class="col-12" style="display:none">
+				<div class="row">
+					<div class="col-md-6">
+						<div class="form-group">
+							<label class="control-label">Banco Emisor</label>
+							<input type="text" class="form-control" id="temp_banco_emisor">
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label class="control-label">N° de Cheque</label>
+							<input type="text" class="form-control" id="temp_cheque_nro">
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label class="control-label">Titular</label>
+							<input type="text" class="form-control" id="temp_cheque_titular">
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label class="control-label">Vto</label>
+							<input type="date" class="form-control" id="temp_cheque_vto">
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label class="control-label">Importe</label>
+							<input type="number" step="0.01" class="form-control" id="temp_cheque_importe">
+						</div>
+					</div>
+					<div class="col-md-12">
+						<div id="chequeSummary" style="display:none">
+							<table class="table table-bordered table-sm">
+								<thead>
+									<tr>
+										<th>Banco</th>
+										<th>N° Cheque</th>
+										<th>Titular</th>
+										<th>Vto</th>
+										<th>Importe</th>
+										<th>Acción</th>
+									</tr>
+								</thead>
+								<tbody id="chequeListBody"></tbody>
+								<tfoot>
+									<tr>
+										<th colspan="4">Total</th>
+										<th id="chequeTotal">0.00</th>
+										<th></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div class="col-md-12">
 				<div class="form-group">
 				<label class="control-label">{{ _lang('Attachment') }}</label>						
@@ -192,10 +251,19 @@
 
 			<input type="hidden" name="invoice_id" value="{{ $id }}">
 			<input type="hidden" name="client_id" value="{{ $invoice->client_id }}">
+			<input type="hidden" name="cheques_data" id="cheques_data" value="">
 
 			<div class="col-md-12">
 			  <div class="form-group">
-				<button type="submit" class="btn btn-primary">{{ _lang('Make Payment') }}</button>
+				<button type="button" id="btnSiguiente" class="btn btn-info" style="display:none">
+				  <i class="ti-arrow-right"></i> Siguiente
+				</button>
+				<button type="button" id="btnGuardar" class="btn btn-success" style="display:none">
+				  <i class="ti-save"></i> Guardar
+				</button>
+				<button type="submit" id="btnMakePayment" class="btn btn-primary">
+				  {{ _lang('Make Payment') }}
+				</button>
 			  </div>
 			</div>
 		</div>
@@ -241,21 +309,35 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
 	const moneda = "{{ $invoice->is_usd == 1 ? 'usd' : 'ars'}}"
 	
 	$('#payment_method_id').change(function() {
-		// alert($(this).val())
 		if($(this).val() == 11) {
 			selectCotizacionSaldo.show();
 			selectCotizacionSaldo.prop('required', true)
 			selectCotizacionSaldo.change(function() {
-
-				// 0 = cotizacion y 1 = saldo a favor del cliente.
 				let arr = $(this).val().split('-');
 				$('#amount').val(arr[1])
-				
 			})
-
 		}else {
 			selectCotizacionSaldo.hide();
 			selectCotizacionSaldo.prop('required', false)
+		}
+
+		if ($(this).val() == 3) {
+			$('#amount').closest('.col-md-6').hide();
+			$('#chequeSection').show();
+			$('#btnMakePayment').hide();
+			$('#btnSiguiente').show();
+			$('#btnGuardar').show();
+		} else {
+			$('#chequeSection').hide();
+			$('#chequeSummary').hide();
+			cheques = [];
+			$('#chequeListBody').empty();
+			$('#chequeTotal').text('0.00');
+			$('#cheques_data').val('');
+			$('#amount').closest('.col-md-6').show();
+			$('#btnMakePayment').show();
+			$('#btnSiguiente').hide();
+			$('#btnGuardar').hide();
 		}
 	});
     $(document).ready(function () {
@@ -365,4 +447,98 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
 		
 	};
 
+	let cheques = [];
+
+	function renderChequeSummary() {
+		let tbody = $('#chequeListBody');
+		tbody.empty();
+		let total = 0;
+		cheques.forEach(function(c, i) {
+			total += parseFloat(c.importe) || 0;
+			tbody.append(
+				'<tr>' +
+					'<td>' + $('<div>').text(c.banco_emisor).html() + '</td>' +
+					'<td>' + $('<div>').text(c.cheque_nro).html() + '</td>' +
+					'<td>' + $('<div>').text(c.cheque_entregado_a).html() + '</td>' +
+					'<td>' + c.cheque_vencimiento + '</td>' +
+					'<td>' + parseFloat(c.importe).toFixed(2) + '</td>' +
+					'<td><button type="button" class="btn btn-danger btn-sm" data-index="' + i + '">Eliminar</button></td>' +
+				'</tr>'
+			);
+		});
+		$('#chequeTotal').text(total.toFixed(2));
+		if (cheques.length > 0) {
+			$('#chequeSummary').show();
+		} else {
+			$('#chequeSummary').hide();
+		}
+	}
+
+	$('#btnSiguiente').click(function() {
+		let banco = $('#temp_banco_emisor').val().trim();
+		let nro = $('#temp_cheque_nro').val().trim();
+		let titular = $('#temp_cheque_titular').val().trim();
+		let vto = $('#temp_cheque_vto').val();
+		let importe = $('#temp_cheque_importe').val();
+
+		if (!banco || !nro || !titular || !vto || !importe) {
+			alert('Complete todos los campos del cheque');
+			return;
+		}
+
+		cheques.push({
+			banco_emisor: banco,
+			cheque_nro: nro,
+			cheque_entregado_a: titular,
+			cheque_vencimiento: vto,
+			importe: importe
+		});
+
+		renderChequeSummary();
+
+		$('#temp_banco_emisor, #temp_cheque_nro, #temp_cheque_titular, #temp_cheque_vto, #temp_cheque_importe').val('');
+		$('#temp_banco_emisor').focus();
+	});
+
+	$(document).on('click', '#chequeListBody button', function() {
+		let index = $(this).data('index');
+		cheques.splice(index, 1);
+		renderChequeSummary();
+	});
+
+	$('#btnGuardar').click(function() {
+		let banco = $('#temp_banco_emisor').val().trim();
+		let nro = $('#temp_cheque_nro').val().trim();
+		let titular = $('#temp_cheque_titular').val().trim();
+		let vto = $('#temp_cheque_vto').val();
+		let importe = $('#temp_cheque_importe').val();
+
+		if (banco && nro && titular && vto && importe) {
+			cheques.push({
+				banco_emisor: banco,
+				cheque_nro: nro,
+				cheque_entregado_a: titular,
+				cheque_vencimiento: vto,
+				importe: importe
+			});
+		}
+
+		let total = 0;
+		cheques.forEach(function(c) {
+			total += parseFloat(c.importe) || 0;
+		});
+
+		$('#amount').val(total.toFixed(2));
+		$('#cheques_data').val(JSON.stringify(cheques));
+
+		$('form.ajax-submit').submit();
+	});
+
+	$('form.ajax-submit').on('submit', function(e) {
+		if ($('#payment_method_id').val() == 3 && !$('#cheques_data').val()) {
+			e.preventDefault();
+			alert('Agregue al menos un cheque antes de guardar');
+			return false;
+		}
+	});
 </script>
