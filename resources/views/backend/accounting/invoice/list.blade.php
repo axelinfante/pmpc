@@ -279,7 +279,16 @@
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
                 },
                 dom: 'Bfrtip',
-                buttons: [{
+                buttons: [
+				{
+                    text: 'Reset Filter',
+                    action: function(e, dt, node, config) {
+                        $('.filtros').val('');
+						$('.select-filter').val(null).trigger('change');
+							invoice_table.search('').columns().search('').draw();
+                      }
+                    },
+				{
                         extend: 'excel',
                         text : "<i class='fa fa-file-export'></i> Exportar a Excel",
 						title: "invoices",
