@@ -1751,6 +1751,15 @@ class InvoiceController extends Controller
             $file->move(public_path() . "/uploads/transactions/", $attachment);
         }
 
+        $cheques = [];
+        $chequeTotal = $request->input('amount');
+        if ($request->input('payment_method_id') == 3 && $request->input('cheques_data')) {
+            $cheques = json_decode($request->input('cheques_data'), true);
+            if (json_last_error() === JSON_ERROR_NONE && !empty($cheques)) {
+                $chequeTotal = array_sum(array_column($cheques, 'importe'));
+            }
+        }
+
         DB::beginTransaction();
 
 
@@ -1808,13 +1817,13 @@ class InvoiceController extends Controller
 
         if (!empty($resultCo)) {
             $montoNuevoUs = $resultCo['paid_dev'];
-            if ($request->input('amount') >  $resultCo['paid_dev']) {
+            if ($chequeTotal >  $resultCo['paid_dev']) {
                 $montoNuevoUs = $resultCo['paid_dev'];
             } else {
-                $montoNuevoUs = $request->input('amount');
+                $montoNuevoUs = $chequeTotal;
             }
         }else{
-            $montoNuevoUs = $request->input('amount');
+            $montoNuevoUs = $chequeTotal;
         }
 
         
@@ -1871,6 +1880,15 @@ class InvoiceController extends Controller
 
 
                 $transaction->save();
+
+                if (!empty($cheques) && isset($cheques[0])) {
+                    $transaction->banco = $cheques[0]['banco_emisor'] ?? null;
+                    $transaction->cheque_nro = $cheques[0]['cheque_nro'] ?? null;
+                    $transaction->cheque_vencimiento = $cheques[0]['cheque_vencimiento'] ?? null;
+                    $transaction->cheque_entregado_a = $cheques[0]['cheque_entregado_a'] ?? null;
+                    $transaction->save();
+                }
+
                 $invoice->paid = $montoFactura;
 
 
@@ -1919,6 +1937,14 @@ class InvoiceController extends Controller
                 $transaction->usd = $request->input('usd');
 
                 $transaction->save();
+
+                if (!empty($cheques) && isset($cheques[0])) {
+                    $transaction->banco = $cheques[0]['banco_emisor'] ?? null;
+                    $transaction->cheque_nro = $cheques[0]['cheque_nro'] ?? null;
+                    $transaction->cheque_vencimiento = $cheques[0]['cheque_vencimiento'] ?? null;
+                    $transaction->cheque_entregado_a = $cheques[0]['cheque_entregado_a'] ?? null;
+                    $transaction->save();
+                }
                 
                 // El excedente se manejará automáticamente por el nuevo sistema de cuenta corriente
                 // NO es necesario crear transacción cc adicional
@@ -1951,6 +1977,14 @@ class InvoiceController extends Controller
             $transaction->usd = $request->input('usd');
 
             $transaction->save();
+
+            if (!empty($cheques) && isset($cheques[0])) {
+                $transaction->banco = $cheques[0]['banco_emisor'] ?? null;
+                $transaction->cheque_nro = $cheques[0]['cheque_nro'] ?? null;
+                $transaction->cheque_vencimiento = $cheques[0]['cheque_vencimiento'] ?? null;
+                $transaction->cheque_entregado_a = $cheques[0]['cheque_entregado_a'] ?? null;
+                $transaction->save();
+            }
 
             $invoice->paid = $invoice->paid + $transaction->base_amount;
             if (round($invoice->paid, 2) >= $invoice->grand_total) {
@@ -2040,6 +2074,40 @@ class InvoiceController extends Controller
             Mail::to($invoice->client->contact_email)->send(new InvoiceReceiptMail($mail));
         } catch (\Exception $e) {
             //Nothing
+        }
+
+        if (!empty($cheques) && count($cheques) > 1) {
+            $accountModel = \App\Account::find($request->input('account_id'));
+            for ($i = 1; $i < count($cheques); $i++) {
+                $chq = $cheques[$i];
+                $extraTx = new Transaction();
+                $extraTx->trans_date = date('Y-m-d');
+                $extraTx->account_id = $request->input('account_id');
+                $extraTx->chart_id = $request->input('chart_id');
+                $extraTx->type = 'income';
+                $extraTx->dr_cr = 'cr';
+                $extraTx->amount = $chq['importe'];
+                $extraTx->base_amount = convert_currency(
+                    $accountModel->account_currency,
+                    base_currency(),
+                    $chq['importe']
+                );
+                $extraTx->payer_payee_id = $request->input('client_id');
+                $extraTx->payment_method_id = 3;
+                $extraTx->invoice_id = $request->input('invoice_id');
+                $extraTx->reference = $request->input('reference');
+                $extraTx->note = $request->input('note');
+                $extraTx->company_id = $company_id;
+                $extraTx->razon_social = $request->input('razon_social');
+                $extraTx->tipo_comprobante_id = $request->input('tipo_comprobante_id');
+                $extraTx->tasa = $request->input('tasa');
+                $extraTx->usd = $request->input('usd');
+                $extraTx->banco = $chq['banco_emisor'] ?? null;
+                $extraTx->cheque_nro = $chq['cheque_nro'] ?? null;
+                $extraTx->cheque_vencimiento = $chq['cheque_vencimiento'] ?? null;
+                $extraTx->cheque_entregado_a = $chq['cheque_entregado_a'] ?? null;
+                $extraTx->save();
+            }
         }
 
         DB::commit();
