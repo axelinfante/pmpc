@@ -142,7 +142,7 @@
             $('#invoice-table thead tr').clone(true).appendTo('#invoice-table thead');
             $('#invoice-table thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 13) {
+                if (i != 0 && i != 14) {
                     $(this).html(
                         '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' +
                         title + '" />');
@@ -279,7 +279,16 @@
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
                 },
                 dom: 'Bfrtip',
-                buttons: [{
+                buttons: [
+				{
+                    text: 'Reset Filter',
+                    action: function(e, dt, node, config) {
+                        $('.filtros').val('');
+						$('.select-filter').val(null).trigger('change');
+							invoice_table.search('').columns().search('').draw();
+                      }
+                    },
+				{
                         extend: 'excel',
                         text : "<i class='fa fa-file-export'></i> Exportar a Excel",
 						title: "invoices",
