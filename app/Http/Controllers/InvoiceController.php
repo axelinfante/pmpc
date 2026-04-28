@@ -1815,24 +1815,26 @@ class InvoiceController extends Controller
         }
 
 
+        $firstTxAmount = !empty($cheques) ? $cheques[0]['importe'] : $request->input('amount');
+
         if (!empty($resultCo)) {
             $montoNuevoUs = $resultCo['paid_dev'];
-            if ($chequeTotal >  $resultCo['paid_dev']) {
+            if ($firstTxAmount >  $resultCo['paid_dev']) {
                 $montoNuevoUs = $resultCo['paid_dev'];
             } else {
-                $montoNuevoUs = $chequeTotal;
+                $montoNuevoUs = $firstTxAmount;
             }
         }else{
-            $montoNuevoUs = $chequeTotal;
+            $montoNuevoUs = $firstTxAmount;
         }
 
         
+
         
 
-
-        if (($invoice->paid + $montoNuevoUs) > $invoice->grand_total) {
+        if (($invoice->paid + $chequeTotal) > $invoice->grand_total) {
             // descontar al pago de la transaccion el monto de la factura
-            $montoPrevioMasPago = $invoice->paid + $montoNuevoUs;
+            $montoPrevioMasPago = $invoice->paid + $chequeTotal;
             $montoFactura = $invoice->grand_total;
 
 
