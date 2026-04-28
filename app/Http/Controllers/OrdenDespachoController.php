@@ -293,18 +293,19 @@ public function show()
 			})
 			->addColumn('deposito', function ($orden) {
             // Add the extra data to the main object
-				return $orden->itemInvoice->product->deposito->nombre ?? ''; 
+					//dd($orden->itemInvoice->product->vehiculo->deposito);
+				return $orden->itemInvoice->product->vehiculo->lugar_entrega->nombre ?? ''; 
 			})
 			->filterColumn('deposito', function ($query, $keyword) {
 				 if ($keyword != "") {
-				$query->whereHas('itemInvoice.product', function ($q) use ($keyword) {
+				$query->whereHas('itemInvoice.product.vehiculo.lugar_entrega', function ($q) use ($keyword) {
 					
                     $ids = explode(",", $keyword);
                     if (in_array("-1", $ids)) {
-                        $q->where('idDeposito', '=', "")
-                            ->orWhereNull('idDeposito');
+                        $q->where('idLugar_entrega', '=', "")
+                            ->orWhereNull('idLugar_entrega');
                     } else {
-                        $q->wherein('idDeposito', $ids);
+                        $q->wherein('idLugar_entrega', $ids);
                     }
 					
 					
