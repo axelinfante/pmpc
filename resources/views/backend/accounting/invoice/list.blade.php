@@ -142,7 +142,7 @@
             $('#invoice-table thead tr').clone(true).appendTo('#invoice-table thead');
             $('#invoice-table thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 13) {
+                if (i != 0 && i != 14) {
                     $(this).html(
                         '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' +
                         title + '" />');
