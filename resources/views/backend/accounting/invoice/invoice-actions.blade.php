@@ -11,7 +11,7 @@
 	@endif
 	@if(auth()->user()->role->name == 'Cajera' || !auth()->user()->role_id )
 	<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
-		Cancelar
+		Anular
 	</button>
 	@endif
 	<a class="btn btn-warning btn-xs" href="{{ action('InvoiceController@edit', $invoice->id) }}"><i class="fas fa-edit"></i> {{ _lang('Edit') }}</a>
@@ -26,7 +26,7 @@
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h5 class="modal-title" id="exampleModalLabel">{{ _lang('Mark As Cancelled') }}</h5>
+				<h5 class="modal-title" id="exampleModalLabel">{{ _lang('Marcar como anulada') }}</h5>
 				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 					<span aria-hidden="true">&times;</span>
 				</button>
@@ -38,7 +38,7 @@
 
 					<div class="col-md-12">
 						<div class="form-group">
-							<label class="control-label">¿Por que cancelas la venta?</label>
+							<label class="control-label">¿Por que se anula la venta?</label>
 							<textarea class="form-control" rows="4" name="note">{{ old('note') }}</textarea>
 						</div>
 					</div>

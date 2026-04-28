@@ -57,10 +57,10 @@
                                     class="ti-briefcase"></i><span>{{ _lang('Buscador de piezas') }}</span></a>
                         </li>
                     @endif
-                    @if (in_array('invoices.create', $permissions))
+                    <!-- @if (in_array('invoices.create', $permissions))
                         <li class="nav-item"><a class="nav-link"
                                 href="{{ url('invoices/create') }}">{{ _lang('Crear venta') }}</a></li>
-                    @endif
+                    @endif -->
 
 
 

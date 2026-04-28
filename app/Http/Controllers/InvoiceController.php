@@ -108,314 +108,6 @@ class InvoiceController extends Controller
         return view('backend.accounting.invoice.list', $data);
     }
 
-    /*public function get_table_data_old(Request $request)
-    {
-
-        $currency = currency();
-        $company_id = company_id();
-
-        //pendienteFacturar
-        $aFacturar = $request->get('facturar', false);
-
-
-
-
-        $projects = DB::table('projects')
-            ->select('id', 'name as contact_name', DB::raw('"projects" as type'));
-        //  ->where('company_id', $company_id);
-
-        $all_contacts = DB::table('contacts')
-            ->select('id', 'contact_name', DB::raw('"contacts" as type'))
-            //->where('company_id', $company_id)
-            ->union($projects);
-
-        $invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
-            $join->on('invoices.related_id', '=', 'all_contacts.id')
-                ->on('invoices.related_to', '=', 'all_contacts.type');
-        })
-            ->select("invoices.*", "all_contacts.contact_name", "all_contacts.id as contact_id")
-            // ->where('invoices.company_id', $company_id)
-            ->orderBy('invoices.id', 'desc');
-        if (strTolower(auth()->user()->role->name) == 'vendedor') {
-            $invoices->where('invoices.user_id', auth()->id());
-        }
-        if ($aFacturar) {
-            $invoices->where('invoices.facturar', 1)->where('invoices.facturado', null);
-        }
-        return Datatables::eloquent($invoices)
-            ->filter(function ($query) use ($request) {
-                if ($request->has('invoice_number')) {
-                    $query->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
-                }
-
-                if ($request->has('vendedor')) {
-                    $query->where('user_id', $request->get('vendedor'));
-                }
-
-                if ($request->has('revendedor')) {
-                    $query->where('revendedor', $request->get('revendedor'));
-                }
-
-                if ($request->has('company_id')) {
-                    $query->where('company_id', $request->get('company_id'));
-                }
-
-                if ($request->has('status')) {
-                    $query->whereIn('status', json_decode($request->get('status')));
-                }
-
-                if ($request->has('date_range')) {
-                    $date_range = explode(" - ", $request->get('date_range'));
-                    //dd($date_range );
-                    //$query->whereBetween('invoice_date', [$date_range[0], $date_range[1]]);
-                    $query->whereRaw("DATE(invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [$date_range[0], $date_range[1]]);
-                }
-            })
-            ->addColumn('checkbox', function ($invoice) {
-                //dd($comision);
-                $d = 'disabled';
-                // dd(!isset($invoice->comision->isPaid));
-                if (!isset($invoice->comision->isPaid)) {
-                    $d = '';
-                }
-                if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
-                    return "<input $d class='form-check' name='paidComi[]' type='checkbox' value='" . $invoice->id . "' >";
-                }
-                return "x";
-            })
-            ->addColumn('invoice_number', function ($invoice) {
-                //dd($comision);
-                $in = 'VEN-';
-                if ($invoice->company_id == 1) {
-                    $in .= 'PM-';
-                } else if ($invoice->company_id == 2) {
-                    $in .= 'PC-';
-                }
-                return '<a href="' . action('InvoiceController@show', $invoice->id) . '">' . $in . $invoice->invoice_number . '</a>';
-            })
-            ->addColumn('contact_name', function ($invoice) {
-                if ($invoice->related_to == 'contacts') {
-                    return '<a href="' . action('ContactController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Customer') . ')</span></a>';
-                }
-                return '<a href="' . action('ProjectController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Project') . ')</span></a>';
-            })
-
-
-            ->addColumn('producto', function ($invoice) {
-                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
-
-                //dd($invoice_item);
-                if (!empty($invoice_item)):
-                    $html = '';
-                    foreach ($invoice_item as $item):
-                        $html .= "(" . (($item->product->item->company_id == 1) ? 'PM-' : 'PC-') . $item->product->item->id . ") " . $item->product->item->item_name . '<br>';
-                    endforeach;
-
-                endif;
-
-                return $html;
-            })
-            ->addColumn('nro_interno', function ($invoice) {
-                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
-
-                //dd($invoice_item);
-                if (!empty($invoice_item)):
-                    $html = '';
-                    $ingresado = array();
-                    foreach ($invoice_item as $item):
-                        if (!in_array($item->product->nro_interno, $ingresado)) {
-                            array_push($ingresado, $item->product->nro_interno);
-                            $html .= nroInternoAlias($item->product->company_id, $item->product->tipo_vehiculo, $item->product->nro_interno) . '<br>';
-                        }
-                    endforeach;
-
-                endif;
-
-                return $html;
-            })->filterColumn('nro_interno', function ($query, $keyword) {
-                $query->orwhereHas('invoice_items', function ($str) use ($keyword) {
-                    $str->whereHas('product', function ($str) use ($keyword) {
-                        $str->where('products.nro_interno', 'like', "%{$keyword}");
-                        
-                    });
-                });
-            })
-            ->filterColumn('producto', function ($query, $keyword) {
-                $query->orwhereHas('invoice_items', function ($str) use ($keyword) {
-                    $str->whereHas('product', function ($str) use ($keyword) {
-                        $str->whereHas('item', function ($str) use ($keyword) {
-                            $str->where('item_name', 'like', "%{$keyword}%");
-                        });
-                    });
-                });
-            })
-
-            ->filterColumn('vendedor', function ($query, $keyword) {
-                $query->orwhereHas('vendedor', function ($str) use ($keyword) {
-                    $str->where('name', 'like', "%{$keyword}%");
-                });
-            })
-
-            ->filterColumn('fecha_pago', function ($query, $keyword) {
-
-
-
-                $query->orwhereHas('transaction', function ($str) use ($keyword) {
-                    $str->where('trans_date', 'like', "%{$keyword}%");
-                });
-            })
-
-            ->filterColumn('porcentajeComision', function ($query, $keyword) {
-
-
-
-                $query->orwhereHas('comision', function ($str) use ($keyword) {
-                    $str->where('porcentaje', 'like', "%{$keyword}%");
-                });
-            })
-            ->filterColumn('invoice_number', function ($query, $keyword) {
-
-
-                $sql = "CONCAT(users.first_name,'-',users.last_name)  like ?";
-                // $query->orwhereHas('tramitador', function ($str) use ($keyword) {
-                //     $str->where('name', 'like', "%{$keyword}%");
-                // });
-
-                $query->where('invoice_number', 'like', "%{$keyword}%");
-            })
-            ->filterColumn('contact_name', function ($query, $keyword) {
-                $sql = "all_contacts.contact_name  like ?";
-                $query->whereRaw($sql, ["%{$keyword}%"]);
-            })
-            ->editColumn('invoice_date', function ($invoice) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return date($date_format, strtotime($invoice->invoice_date));
-            })
-            ->editColumn('fecha_entrega', function ($invoice) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                if ($invoice->fecha_entrega)
-                    return date($date_format, strtotime($invoice->fecha_entrega));
-                else
-                    return '';
-            })
-
-
-            //ultima fecha de pago
-            ->editColumn('fecha_pago', function ($invoice) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                $transactions = Transaction::where("invoice_id", $invoice->id)->orderBy('id', 'desc')->first();
-                if (isset($transactions)) {
-                    return date($date_format, strtotime($transactions->trans_date));
-                }
-                return '';
-            })
-            ->editColumn('monto_adeudado', function ($invoice) use ($currency) {
-                $t = ($invoice->grand_total - $invoice->paid);
-                $acc_currency = currency($invoice->client->currency);
-                if ($invoice->usd) {
-                    $acc_currency = 'USD';
-                }
-
-                // if ($acc_currency != $currency) {
-                //     return "<span class='float-right'>" . decimalPlace($t, $currency) . "</span><br>
-                // 						<span class='float-right'><b>" . decimalPlace($t, $acc_currency) . "</b></span>";
-                // } else {
-                //     return "<span class='float-right'>" . decimalPlace($t, $currency) . "</span>";
-                // }
-                return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
-                //return $t;
-            })
-
-
-
-            ->filterColumn('monto_adeudado', function ($query, $keyword) {})
-            // ->editColumn('due_date', function ($invoice) {
-            //     $date_format = get_company_option('date_format', 'Y-m-d');
-            //     return date($date_format, strtotime($invoice->due_date));
-            // })
-            ->editColumn('vendedor', function ($invoice) {
-                $vend = $invoice->vendedor->name;
-                return $vend;
-            })
-
-            ->editColumn('porcentajeComision', function ($invoice) {
-                $percent = $invoice->comision->porcentaje;
-                return $percent;
-            })
-
-            ->editColumn('comision', function ($invoice) {
-                $comision = $invoice->comision->monto;
-
-
-                return $comision;
-            })
-            ->editColumn('grand_total', function ($invoice) use ($currency) {
-                $acc_currency = currency($invoice->client->currency);
-                // dump($invoice->is_usd);
-                if ($invoice->is_usd) {
-
-                    $acc_currency = 'USD';
-                }
-
-
-                // if ($acc_currency != $currency) {
-                //     return "<span class='float-right'>" . decimalPlace($invoice->grand_total, $currency) . "</span><br>
-                // 						<span class='float-right'><b>" . decimalPlace($invoice->converted_total, $acc_currency) . "</b></span>";
-                // } else {
-                //     return "<span class='float-right'>" . decimalPlace($invoice->grand_total, $currency) . "</span>";
-                // }
-                return "<span class='float-right'>" . decimalPlace($invoice->grand_total, $acc_currency) . "</span>";
-            })
-            ->editColumn('status', function ($invoice) {
-                return invoice_status($invoice->status);
-            })
-            ->addColumn('action', function ($invoice) use ($aFacturar) {
-                if (!$aFacturar) {
-                    $class = 'd-none';
-                    if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
-                        $class = '';
-                    }
-
-                    $html = '<div class="dropdown text-center">'
-                        . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
-                        . _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
-                        . '<div class="dropdown-menu">'
-                        . '<a class="dropdown-item" href="' . action('InvoiceController@edit', $invoice->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a>'
-                        . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_comision', $invoice->id) .
-                        '"><i class="fas fa-usd"></i> ' . _lang('Comisión') . '</a>'
-                        . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_observaciones', $invoice->id) .
-                        '"><i class="fas fa-usd"></i> ' . _lang('Observaciones') . '</a>'
-                        . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>'
-                        . '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>'
-                        . '<a href="' . url('invoices/view_payment/' . $invoice->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>';
-
-                    if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == 'Cajera') {
-                        $html .= '<form action="' . action('InvoiceController@destroy', $invoice['id']) . '" method="post">'
-                            . csrf_field()
-                            . '<input name="_method" type="hidden" value="DELETE">'
-                            . '<button class="button-link btn-remove-invoice" type="submit"><i class="fas fa-recycle"></i> ' . _lang('Delete') . '</button>'
-                            . '</form>';
-                    }
-
-                    $html .= '</div></div>';
-                    return $html;
-                } else {
-                    return '<div class="dropdown text-center">'
-                        . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
-                        . _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
-                        . '<div class="dropdown-menu">'
-                        . '<a class="dropdown-item" href="#"><i class="fas fa-money-bill"></i> ' . _lang('Facturar') . '</a>'
-                        . '</div></div>';
-                }
-            })
-
-            ->setRowId(function ($invoice) {
-                return "row_" . $invoice->id;
-            })
-            ->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno'])
-            ->make(true);
-    }*/
-
     /**
      * Show the form for creating a new resource.
      *
@@ -4469,7 +4161,7 @@ foreach($bids as $bid) {
 }
 DB::table('saved_estimations')->insert($inserts);*/
 
-    public function get_table_data(Request $request)
+    public function get_table_data_old(Request $request)
     {
 
         $currency = currency();
@@ -4841,7 +4533,7 @@ $totalC2 = $results->total_c2;*/
                         $html .= '<form action="' . action('InvoiceController@destroy', $invoice['id']) . '" method="post">'
                             . csrf_field()
                             . '<input name="_method" type="hidden" value="DELETE">'
-                            . '<button class="button-link btn-remove-invoice" type="submit"><i class="fas fa-recycle"></i> ' . _lang('Delete') . '</button>'
+                            . '<button class="button-link btn-remove-invoice" type="submit"><i class="fas fa-recycle"></i> ' . _lang('Anular') . '</button>'
                             . '</form>';
                     //}
 
@@ -5345,7 +5037,334 @@ $totalC2 = $results->total_c2;*/
         }
 		
 	}
-	
+
+public function get_table_data(Request $request)
+    {
+
+        $currency = currency();
+        //$company_id = company_id();
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+
+        //pendienteFacturar
+        $aFacturar = $request->get('facturar', false);
+
+
+
+
+        $projects = DB::table('projects')
+            ->select('id', 'name as contact_name', DB::raw('"projects" as type'))
+			->whereIn('company_id', $company_id);
+        //  ->where('company_id', $company_id);
+			
+
+        $all_contacts = DB::table('contacts')
+            ->select('id', 'contact_name', DB::raw('"contacts" as type'))
+			->whereIn('company_id', $company_id)
+            //->where('company_id', $company_id)
+            ->union($projects);
+			
+ 
+        $invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
+            $join->on('invoices.related_id', '=', 'all_contacts.id')
+                ->on('invoices.related_to', '=', 'all_contacts.type');
+        })
+            ->select("invoices.*", "all_contacts.contact_name", "all_contacts.id as contact_id")
+			->whereIn('company_id', $company_id)
+            // ->where('invoices.company_id', $company_id)
+            ->orderBy('invoices.id', 'desc');
+        if (strTolower(auth()->user()->role->name) == 'vendedor') {
+            $invoices->where('invoices.user_id', auth()->id());
+        }
+        if ($aFacturar) {
+            $invoices->where('invoices.facturar', 1)->where('invoices.facturado', null);
+        }
+
+        $invoices->when($request, function ($query) use ($request) {
+            if ($request->has('invoice_number')) {
+                $query->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
+            }
+
+            if ($request->has('vendedor')) {
+                $query->where('user_id', $request->get('vendedor'));
+            }
+
+            if ($request->has('revendedor')) {
+                $query->where('revendedor', $request->get('revendedor'));
+            }
+
+            if ($request->has('company_id')) {
+                $query->where('company_id', $request->get('company_id'));
+            }
+
+            if ($request->has('status')) {
+                $query->whereIn('status', json_decode($request->get('status')));
+            }
+
+            if ($request->has('date_range')) {
+                $date_range = explode(" - ", $request->get('date_range'));
+                //dd($date_range );
+                //$query->whereBetween('invoice_date', [$date_range[0], $date_range[1]]);
+                $query->whereRaw("DATE(invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [$date_range[0], $date_range[1]]);
+            }
+        });
+
+
+
+        return Datatables::eloquent($invoices)
+            ->addColumn('checkbox', function ($invoice) {
+                $d = 'disabled';
+                if (!isset($invoice->comision->isPaid)) {
+                    $d = '';
+                }
+                if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
+                    return "<input $d class='form-check' name='paidComi[]' type='checkbox' value='" . $invoice->id . "' >";
+                }
+                return "x";
+            })
+            ->addColumn('invoice_number', function ($invoice) {
+                //dd($comision);
+                $in = 'VEN-';
+                if ($invoice->company_id == 1) {
+                    $in .= 'PM-';
+                } else if ($invoice->company_id == 2) {
+                    $in .= 'PC-';
+                }
+                return '<a href="' . action('InvoiceController@show', $invoice->id) . '">' . $in . $invoice->invoice_number . '</a>';
+            })
+            ->addColumn('contact_name', function ($invoice) {
+                if ($invoice->related_to == 'contacts') {
+                    return '<a href="' . action('ContactController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Customer') . ')</span></a>';
+                }
+                return '<a href="' . action('ProjectController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Project') . ')</span></a>';
+            })
+
+
+            ->addColumn('producto', function ($invoice) {
+                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
+                if (!empty($invoice_item)):
+                    $html = '';
+                    foreach ($invoice_item as $item):
+						$mostrar="";
+						
+						if ($item->product_id > 0){
+							$mostrar= $item->product->item->item_name;
+						}else{
+							$mostrar= $item->item->item_name;
+						}	
+							
+                        $html .= $mostrar . (($html != "") ? ',' : '') . '<br>';
+                    endforeach;
+
+                endif;
+
+                return $html;
+            })
+            ->addColumn('idproducto', function ($invoice) {
+                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
+                //dd($invoice_item);
+                if (!empty($invoice_item)):
+                    $html = '';
+                    foreach ($invoice_item as $item):
+                        $in = ($item->company_id == 1) ? 'PM-' : 'PC-';
+                        $html .= $in . $item->product_id . (($html != "") ? ',' : '') . '<br>';
+                    endforeach;
+                endif;
+                return $html;
+            })
+			 ->addColumn('nro_interno', function ($invoice) {
+                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
+
+                //dd($invoice_item);
+                if (!empty($invoice_item)):
+                    $html = '';
+                    $ingresado = array();
+                    foreach ($invoice_item as $item):
+                        if (!in_array($item->product->nro_interno, $ingresado)) {
+                            array_push($ingresado, $item->product->nro_interno);
+                            $html .= nroInternoAlias($item->product->company_id, $item->product->tipo_vehiculo, $item->product->nro_interno) . '<br>';
+                        }
+                    endforeach;
+
+                endif;
+
+                return $html;
+            })
+			            ->addColumn('action', function ($invoice) use ($aFacturar) {
+				if  ($invoice->status == 'Canceled')
+				{
+					return $html = 'Anulada'; 
+				}
+                if (!$aFacturar) {
+                    $class = 'd-none';
+                    if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
+                        $class = '';
+                    }
+
+                    $html = '<div class="dropdown text-center">'
+                        . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
+                        . _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+                        . '<div class="dropdown-menu">'
+                        . '<a class="dropdown-item" href="' . action('InvoiceController@edit', $invoice->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a>'
+                        . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_comision', $invoice->id) .
+                        '"><i class="fas fa-usd"></i> ' . _lang('Comisión') . '</a>'
+                        . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_observaciones', $invoice->id) .
+                        '"><i class="fas fa-usd"></i> ' . _lang('Observaciones') . '</a>'
+                        . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>'
+                        . '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>'
+                        . '<a href="' . url('invoices/view_payment/' . $invoice->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>';
+
+                    //if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == 'Cajera') {
+                        $html .= '<form action="' . action('InvoiceController@destroy', $invoice['id']) . '" method="post">'
+                            . csrf_field()
+                            . '<input name="_method" type="hidden" value="DELETE">'
+                            . '<button class="button-link btn-remove-invoice" type="submit"><i class="fas fa-recycle"></i> ' . _lang('Anular') . '</button>'
+                            . '</form>';
+                    //}
+
+                    $html .= '</div></div>';
+                    return $html;
+                } else {
+                    return '<div class="dropdown text-center">'
+                        . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
+                        . _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+                        . '<div class="dropdown-menu">'
+                        . '<a class="dropdown-item" href="#"><i class="fas fa-money-bill"></i> ' . _lang('Facturar') . '</a>'
+                        . '</div></div>';
+                }
+            })
+			->editColumn('invoice_date', function ($invoice) {
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                return date($date_format, strtotime($invoice->invoice_date));
+            })
+            ->editColumn('fecha_entrega', function ($invoice) {
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                if ($invoice->fecha_entrega)
+                    return date($date_format, strtotime($invoice->fecha_entrega));
+                else
+                    return '';
+            })
+
+
+            //ultima fecha de pago
+            ->editColumn('fecha_pago', function ($invoice) {
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                $transactions = Transaction::where("invoice_id", $invoice->id)->orderBy('id', 'desc')->first();
+                if (isset($transactions)) {
+                    return date($date_format, strtotime($transactions->trans_date));
+                }
+                return '';
+            })
+            ->editColumn('monto_adeudado', function ($invoice) use ($currency) {
+				$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+				$invoicepaidtotal = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
+                $t = (($invoice->grand_total-$salesReturnstotal) - $invoicepaidtotal);
+                $acc_currency = currency($invoice->client->currency);
+                if ($invoice->usd) {
+                    $acc_currency = 'USD';
+                }
+
+                // if ($acc_currency != $currency) {
+                //     return "<span class='float-right'>" . decimalPlace($t, $currency) . "</span><br>
+                // 						<span class='float-right'><b>" . decimalPlace($t, $acc_currency) . "</b></span>";
+                // } else {
+                //     return "<span class='float-right'>" . decimalPlace($t, $currency) . "</span>";
+                // }
+                return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
+                //return $t;
+            })
+			->editColumn('paid', function ($invoice) use ($currency) {
+				$t = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
+                $acc_currency = currency($invoice->client->currency);
+                if ($invoice->usd) {
+                    $acc_currency = 'USD';
+                }
+                //return "<span class='float-right'>" . $acc_currency . "1111</span>";
+                return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
+            })
+			 ->editColumn('status', function ($invoice) {
+                return invoice_status($invoice->status);
+            })
+            ->filterColumn('idproducto', function ($query, $keyword) {
+                $query->whereHas('invoice_items', function ($q) use ($keyword) {
+                    $q->where('product_id', 'like', "%{$keyword}%");
+                });
+            })
+           ->filterColumn('nro_interno', function ($query, $keyword) {
+                $query->orwhereHas('invoice_items', function ($str) use ($keyword) {
+                    $str->whereHas('product', function ($str) use ($keyword) {
+                        $str->where('products.nro_interno', 'like', "%{$keyword}");
+                        /*$str->whereHas('item', function ($str) use ($keyword) {
+                            $str->where('items.product.nro_interno', 'like', "%{$keyword}%");
+                        });*/
+                    });
+                });
+            })
+            ->filterColumn('producto', function ($query, $keyword) {
+                $query->orwhereHas('invoice_items', function ($str) use ($keyword) {
+                    $str->whereHas('product', function ($str) use ($keyword) {
+                        $str->whereHas('item', function ($str) use ($keyword) {
+                            $str->where('item_name', 'like', "%{$keyword}%");
+                        });
+                    });
+                });
+            })
+
+            ->filterColumn('vendedor', function ($query, $keyword) {
+                $query->orwhereHas('vendedor', function ($str) use ($keyword) {
+                    $str->where('name', 'like', "%{$keyword}%");
+                });
+            })
+
+            ->filterColumn('fecha_pago', function ($query, $keyword) {
+                $query->orwhereHas('transaction', function ($str) use ($keyword) {
+                    $str->where('trans_date', 'like', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('invoice_number', function ($query, $keyword) {
+
+
+                $sql = "CONCAT(users.first_name,'-',users.last_name)  like ?";
+                // $query->orwhereHas('tramitador', function ($str) use ($keyword) {
+                //     $str->where('name', 'like', "%{$keyword}%");
+                // });
+
+                $query->where('invoice_number', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('contact_name', function ($query, $keyword) {
+                $sql = "all_contacts.contact_name  like ?";
+                $query->whereRaw($sql, ["%{$keyword}%"]);
+            })
+            ->filterColumn('monto_adeudado', function ($query, $keyword) {})
+            ->editColumn('vendedor', function ($invoice) {
+                $vend = $invoice->vendedor->name;
+                return $vend;
+            })
+
+            ->editColumn('porcentajeComision', function ($invoice) {
+                $percent = $invoice->comision->porcentaje;
+                return $percent;
+            })
+
+            ->editColumn('comision', function ($invoice) {
+                $comision = $invoice->comision->monto;
+                return $comision;
+            })
+            ->editColumn('grand_total', function ($invoice) use ($currency) {
+				$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+                $acc_currency = currency($invoice->client->currency);
+                // dump($invoice->is_usd);
+                if ($invoice->is_usd) {
+
+                    $acc_currency = 'USD';
+                }
+                return "<span class='float-right'>" . decimalPlace(($invoice->grand_total-$salesReturnstotal), $acc_currency) . "</span>";
+            })
+            ->setRowId(function ($invoice) {
+                return "row_" . $invoice->id;
+            })
+            ->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid'])
+            ->make(true);
+    }	
 	
 	
 }
