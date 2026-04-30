@@ -345,14 +345,13 @@
                     <h3 class="mb-3">Video <a href="{{ route('veh_imag_zip',['id' => $cars->id, 'tipo' =>'videos']) }}" class="btn btn-info btn-xs mb-4"><i class="ti-zip"></i> Descargar Videos</a>  <a href="{{ route('veh_imag_zip',['id' => $cars->id, 'tipo' =>'all']) }}" class="btn btn-warning  btn-xs mb-4"><i class="ti-zip"></i> Descargar todo</a></h3>
                     @if (!empty($cars->video))
                         <div class="" id="files">
-
                             @php
-
                                 $videos = explode(';', $cars->video);
-
                             @endphp
                             @forelse ($videos as $v)
-                                <video class="w-100" src="{{ route('carVideo', $v ?? 'default') }}" controls></video>
+								@php
+									echo video_lazy('uploads/vehiculos/' . $v);
+								@endphp
                             @empty
                             @endforelse
 
@@ -376,18 +375,12 @@
 
                             @forelse($cars->img_recepcion as $img)
                                 <div class="card mx-3" style="width: 18rem;">
-                                    <!--<img class="card-img-top img-fluid" src="{{ url(public_path('uploads/vehiculos/'. $img->img)) }}" alt="Card image cap">-->
-                                    <img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="Card image cap">
-                                    <!--<img class="card-img-top img-fluid"
-                                        src="{{ asset('public/uploads/vehiculos/' . $img->img) }}"
-                                        alt="Card image cap">-->
+									@php
+										echo img_lazy('uploads/vehiculos/' . $img);
+									@endphp
+                                    <!--<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="Card image cap">-->
                                     <div class="card-body">
-                                        {{-- <h5 class="card-title">Card title</h5> --}}
-                                        {{-- <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p> --}}
-                                        {{-- <a href="#" class="btn btn-primary">Go somewhere</a> --}}
                                     </div>
-
-
                                 </div>
                             @empty
                                 <p>No hay imágenes 04D disponibles.</p>
@@ -398,7 +391,10 @@
                         @forelse($cars->img as $img)
                             <div class="row">
                                 <div class="col" style="margin-top: 0.50rem !important;">
-                                	<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="">
+									@php
+										echo img_lazy('uploads/vehiculos/' . $img->img);
+									@endphp
+                                	<!--<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="">-->
                                     <!--<img src="{{asset('public/uploads/vehiculos/'.$img->img)}}" alt="">-->
                                 </div>
                             </div>
@@ -426,5 +422,6 @@
 
 
 @section('js-script')
-<script></script>
+<script>
+</script>
 @endsection

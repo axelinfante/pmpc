@@ -2299,8 +2299,9 @@ if (!function_exists('filepondUpload')) {
                 $filename = $baseName . '.webp';
                 // Guardar optimizado
                 //$image->toWebp(70)->save($path . '/' . $filename);
+				
 				Image::make($uploaded_file)
-                    ->encode('webp', 70)
+                    ->encode('webp', 90)
                     ->save($path . '/' . $filename);
             } else {
                 $filename = $baseName . '.' . $extension;
@@ -2311,15 +2312,77 @@ if (!function_exists('filepondUpload')) {
         return $filename; // Retorna el nombre exacto guardado (con .webp o extensión original)
     }
 }
-  
+if (!function_exists('buscarImagen')) {  
 function buscarImagen($nombreArchivo)
 {
-	$url=asset("public/images/no-img.jpg");
-	$discos = ['raiz_publica', 'gcs'];
+    // URL por defecto si nada funciona
+    $url = asset("public/images/no-img.jpg");
+    $discos = ['raiz_publica', 'gcs'];
+
     foreach ($discos as $disco) {
-        if (Storage::disk($disco)->exists($nombreArchivo)) {
-			return Storage::disk($disco)->url($nombreArchivo);
+        try {
+            // Verificamos si el archivo existe en el disco actual
+            if (Storage::disk($disco)->exists($nombreArchivo)) {
+                return Storage::disk($disco)->url($nombreArchivo);
+            }
+        } catch (Exception $e) {
+			report($e); // Opcional: registra el error en laravel.log sin detener la app
+            continue; 
         }
     }
-	return $url;
-}  
+
+    return $url;
+}
+}
+
+if (!function_exists('buscarVideo')) {
+function buscarVideo($video)
+{
+    $url = 'default';
+    $discos = ['raiz_publica', 'gcs'];
+
+    foreach ($discos as $disco) {
+        try {
+            // Verificamos si el archivo existe en el disco actual
+            if (Storage::disk($disco)->exists($video)) {
+                return Storage::disk($disco)->url($video);
+            }
+        } catch (Exception $e) {
+            report($e); // Opcional: registra el error en laravel.log sin detener la app
+            continue;
+        }
+    }
+
+    return $url;
+}
+}
+
+if (!function_exists('video_lazy'))
+{
+	function video_lazy($src = '')
+	{
+		$imagen_opcional = asset("public/images/lazyload/video-placeholder.jpg");  
+		$url=buscarVideo($src);
+		//$url="https://samplelib.com/mp4/sample-5s.mp4";
+		
+		$video = '<video class="lozad" data-src="'.$url.'" data-poster="'.$imagen_opcional.'" controls style="width: 100%; display: block;" preload="none"></video>';
+
+		
+		/*$video = '<video class="lozad" data-poster="'.$imagen_opcional.'">
+											<source data-src="'.$url.'" type="video/mp4">
+										</video>';*/
+		return $video;
+	}
+}
+
+if ( ! function_exists('img_lazy'))
+{
+function img_lazy($src = '')
+	{
+		$imagen_opcional = asset("public/images/lazyload/loader.gif");  
+	
+		$url=buscarImagen($src);
+		$image ='<img class="card-img-top img-fluid lozad" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'">';
+		return $image;
+	}
+}
