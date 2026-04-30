@@ -487,27 +487,26 @@ class InvoiceController extends Controller
         //$this->orden_desarme($invoice, $desarme, $prioridad);
         DB::commit();
 
-        // Intentar pagar automáticamente desde saldo a favor en cuenta corriente
-        // Se pueden configurar días máximos de antigüedad del saldo (0 = sin límite)
-        $diasMaximosAntiguedad = 0; // Por defecto sin límite, se puede configurar
-        $resultadoPago = \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id, $diasMaximosAntiguedad);
-        if ($resultadoPago['success']) {
-            // Log del pago automático exitoso con detalles
-            \Log::info('Pago automático desde cuenta corriente exitoso', [
-                'invoice_id' => $invoice->id,
-                'client_id' => $invoice->client_id,
-                'monto_pagado' => $resultadoPago['monto_pagado'],
-                'mensaje' => $resultadoPago['message'],
-                'dias_antiguedad_filtro' => $diasMaximosAntiguedad
-            ]);
-        } else {
-            // Log si no se pudo pagar automáticamente (solo si era esperable que se pagara)
-            \Log::debug('No se pudo realizar pago automático desde cuenta corriente', [
-                'invoice_id' => $invoice->id,
-                'client_id' => $invoice->client_id,
-                'razon' => $resultadoPago['message'],
-                'dias_antiguedad_filtro' => $diasMaximosAntiguedad
-            ]);
+        // Pagar desde saldo a favor solo si el usuario lo solicitó
+        if ($request->input('usar_saldo_cuenta_corriente') == '1') {
+            $diasMaximosAntiguedad = 0;
+            $resultadoPago = \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id, $diasMaximosAntiguedad);
+            if ($resultadoPago['success']) {
+                \Log::info('Pago desde cuenta corriente exitoso', [
+                    'invoice_id' => $invoice->id,
+                    'client_id' => $invoice->client_id,
+                    'monto_pagado' => $resultadoPago['monto_pagado'],
+                    'mensaje' => $resultadoPago['message'],
+                    'dias_antiguedad_filtro' => $diasMaximosAntiguedad
+                ]);
+            } else {
+                \Log::debug('No se pudo realizar pago desde cuenta corriente', [
+                    'invoice_id' => $invoice->id,
+                    'client_id' => $invoice->client_id,
+                    'razon' => $resultadoPago['message'],
+                    'dias_antiguedad_filtro' => $diasMaximosAntiguedad
+                ]);
+            }
         }
 
         if (!$request->ajax()) {
