@@ -5138,7 +5138,7 @@ public function get_table_data(Request $request)
             })
 
 
-            ->addColumn('producto', function ($invoice) {
+          /*  ->addColumn('producto', function ($invoice) {
                 $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
                 if (!empty($invoice_item)):
                     $html = '';
@@ -5168,6 +5168,27 @@ public function get_table_data(Request $request)
                         $html .= $in . $item->product_id . (($html != "") ? ',' : '') . '<br>';
                     endforeach;
                 endif;
+                return $html;
+            })*/
+			 ->addColumn('pieza', function ($invoice) {
+				
+				/*$producto_completo=$invoice->invoice_items->item->item_name ?? '';
+				$producto_id=$invoice->invoice_items->product->id ?? ''; ($invoice->invoice_items->item->item_name ?? '');
+				return ($producto_completo) ? "($producto_id) $producto_completo":"";*/
+				
+				$invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
+                $html = '';
+                if (!empty($invoice_item)):
+
+                    $ingresado = array();
+                    foreach ($invoice_item as $item):
+									$producto_completo=$item->product->item->item_name ?? '';
+									$producto_id=$item->product->id ?? '';
+									$html .= "($producto_id) $producto_completo";
+                    endforeach;
+
+                endif;
+
                 return $html;
             })
 			 ->addColumn('nro_interno', function ($invoice) {
@@ -5283,11 +5304,11 @@ public function get_table_data(Request $request)
 			 ->editColumn('status', function ($invoice) {
                 return invoice_status($invoice->status);
             })
-            ->filterColumn('idproducto', function ($query, $keyword) {
+           /* ->filterColumn('idproducto', function ($query, $keyword) {
                 $query->whereHas('invoice_items', function ($q) use ($keyword) {
                     $q->where('product_id', 'like', "%{$keyword}%");
                 });
-            })
+            })*/
            ->filterColumn('nro_interno', function ($query, $keyword) {
                 $query->orwhereHas('invoice_items', function ($str) use ($keyword) {
                     $str->whereHas('product', function ($str) use ($keyword) {
@@ -5298,7 +5319,7 @@ public function get_table_data(Request $request)
                     });
                 });
             })
-            ->filterColumn('producto', function ($query, $keyword) {
+           /* ->filterColumn('producto', function ($query, $keyword) {
                 $query->orwhereHas('invoice_items', function ($str) use ($keyword) {
                     $str->whereHas('product', function ($str) use ($keyword) {
                         $str->whereHas('item', function ($str) use ($keyword) {
@@ -5306,7 +5327,7 @@ public function get_table_data(Request $request)
                         });
                     });
                 });
-            })
+            })*/
 
             ->filterColumn('vendedor', function ($query, $keyword) {
                 $query->orwhereHas('vendedor', function ($str) use ($keyword) {
@@ -5361,7 +5382,32 @@ public function get_table_data(Request $request)
             ->setRowId(function ($invoice) {
                 return "row_" . $invoice->id;
             })
-            ->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid'])
+			 ->filterColumn('pieza', function ($query, $keyword) {
+                  $query->whereHas('invoice_items', function ($q) use ($keyword) {
+					   $q->whereHas('product', function ($q) use ($keyword) {
+                                $q->whereRaw('products.id LIKE ?', ['%' . strtolower($keyword) . '%']);
+                       });
+                    
+						$q->orwhereHas('item', function ($q) use ($keyword) {
+							$q->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
+						});
+					
+					
+                });
+				
+				
+				  /*if (!empty($invoice_item)):
+
+                    $ingresado = array();
+                    foreach ($invoice_item as $item):
+									$producto_completo=$item->product->item->item_name ?? '';
+									$producto_id=$item->product->id ?? '';
+									$html .= "($producto_id) $producto_completo";
+                    endforeach;*/
+				
+				
+            })
+            ->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid','pieza'])
             ->make(true);
     }	
 	

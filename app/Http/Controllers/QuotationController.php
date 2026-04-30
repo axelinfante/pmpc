@@ -140,6 +140,16 @@ class QuotationController extends Controller
                 $query->whereRaw($sql, ["%{$keyword}%"]);
 
             })
+			 ->filterColumn('modelo', function ($query, $keyword) {
+				 $query->orwhereHas('vehiculo.marca_modelo', function ($str) use ($keyword) {
+                    $str->whereHas('marca', function ($str) use ($keyword) {
+                        $str->where('marca', 'like', "%{$keyword}%");
+                    });
+                    $str->orwhereHas('modelo', function ($str) use ($keyword) {
+                        $str->where('modelo', 'like', "%{$keyword}%");
+                    });
+                });
+            })
             ->editColumn('quotation_number', function ($quotation) {
                 return '<a href="' . action('QuotationController@show', $quotation->id) . '">' . $quotation->quotation_number . '</a>';
             })
@@ -167,17 +177,7 @@ class QuotationController extends Controller
                 return $status;
             })
             ->editColumn('modelo', function ($quotation) {
-                $items = QuotationItem::where('quotation_id', $quotation->id)->with('product')
-                    ->first();
-					
-			    $items_pieza = Cars::with('marca_modelo')->where('id',$quotation->car_id)->first();					
-                $html = $quotation->car_id . ' ' . ($items_pieza->marca_modelo->marca->marca ?? '') . ' ' .
-                    ($items_pieza->marca_modelo->modelo->modelo ?? '') . ' '
-                    . ($items->product->vehiculo->siniestro ?? '');
-					
-
-                //						   dd($html);
-                return $html;
+				  return ($quotation->vehiculo->marca_modelo->marca->marca ?? '') ." ". ($quotation->vehiculo->marca_modelo->modelo->modelo ?? '');
             })
             ->addColumn('action', function ($quotation) {
 			//	return $quotation->status;
@@ -228,6 +228,21 @@ class QuotationController extends Controller
                         . '</div>';
                 }
             })
+			 ->filterColumn('status', function ($query, $keyword) {
+                    if ($keyword != "todos") {
+                        $query->where('status', '=', $keyword);
+					}		
+                    
+                })
+				
+				->filterColumn('quotation_date', function ($query, $keyword) {
+				 $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('quotation_date', '>=', $date_range[0])
+                            ->whereDate('.quotation_date', '<=', $date_range[1]);
+                    }                   
+                })
+				
             ->setRowId(function ($invoice) {
                 return "row_" . $invoice->id;
             })

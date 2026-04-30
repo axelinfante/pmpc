@@ -47,7 +47,7 @@ class Product extends Model implements AuditableTable
     }
     public function vehiculo()
     {
-        return $this->belongsTo('App\Cars', 'car_id', 'id');
+        return $this->belongsTo('App\Cars', 'nro_interno', 'id');
     }
     public function img()
     {

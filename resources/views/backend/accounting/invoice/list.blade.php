@@ -88,8 +88,9 @@
                                     <th>{{ _lang('Fecha de entrega') }}</th>
                                     <th>{{ _lang('Fecha del ultimo pago') }}</th>
                                     <th>{{ _lang('Nro Interno') }}</th>
-                                    <th>{{ _lang('Productos') }}</th>
-                                    <th>{{ _lang('id_Productos') }}</th>
+									<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Pieza') }}</th>
+                                    <!--<th>{{ _lang('Productos') }}</th>
+                                    <th>{{ _lang('id_Productos') }}</th>-->
                                     <th>{{ _lang('Vendedor') }}</th>
 									{{-- <th>{{ _lang('Porcentaje de comision') }}</th>
 									<th>{{ _lang('Comision') }}</th> --}}
@@ -114,7 +115,7 @@
                                     <th></th>
                                     <th></th>
                                     <th></th>
-                                    <th></th>
+                                    <!--<th></th>-->
                                     <th></th>
                                     <th></th>
                                     <th></th>
@@ -232,14 +233,18 @@
                                 data: "nro_interno",
                                 name: "nro_interno"
                             },
-                        {
+                      /*  {
                             data: "producto",
                             name: "producto"
                         },
 						{
                             data: "idproducto",
                             name: "idproducto"
-                        },
+                        },*/
+						{
+                        data: 'pieza',
+                        name: 'pieza'
+						}, // Pieza
                         {
                             data: "vendedor",
                             name: "vendedor"
@@ -279,7 +284,16 @@
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
                 },
                 dom: 'Bfrtip',
-                buttons: [{
+                buttons: [
+				{
+                    text: 'Reset Filter',
+                    action: function(e, dt, node, config) {
+                        $('.filtros').val('');
+						$('.select-filter').val(null).trigger('change');
+							invoice_table.search('').columns().search('').draw();
+                      }
+                    },
+				{
                         extend: 'excel',
                         text : "<i class='fa fa-file-export'></i> Exportar a Excel",
 						title: "invoices",
