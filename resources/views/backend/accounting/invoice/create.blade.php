@@ -438,6 +438,16 @@
 				</select>
 			</div>
 
+			<div class="col-md-12" id="saldo-cc-container" style="display:none;">
+				<div class="form-check">
+					<input type="checkbox" name="usar_saldo_cuenta_corriente" id="usar_saldo_cc" class="form-check-input" value="1">
+					<label class="form-check-label" for="usar_saldo_cc">
+						{{ _lang('Abonar con saldo de cuenta corriente') }}
+						(Saldo disponible: <span id="saldo-cc-disponible">$0.00</span>)
+					</label>
+				</div>
+			</div>
+
 			<div class="col-md-12">
 			  <div class="form-group">
 				<button id="btn-submit" type="submit" class="btn btn-primary">{{ _lang('Save') }}</button>
@@ -511,7 +521,36 @@
         }else{
             $('#tasa_usd').prop('disabled',true);
         }
+		checkSaldoAFavor();
 	})
+	function checkSaldoAFavor() {
+		let clientId = $('#client_id').val();
+		if (!clientId) {
+			$('#saldo-cc-container').hide();
+			$('#usar_saldo_cc').prop('checked', false);
+			return;
+		}
+		let isUsd = $('#is_usd').is(':checked');
+		$.ajax({
+			url: '{{ url("cuenta_corriente") }}' + '/' + clientId + '/resumen',
+			dataType: 'json',
+			success: function(data) {
+				let saldo = isUsd ? data.saldo_actual_usd : data.saldo_actual_peso;
+				if (saldo < 0) {
+					let disponible = Math.abs(saldo);
+					let currency = isUsd ? 'USD' : 'ARS';
+					$('#saldo-cc-disponible').text(currency + ' ' + disponible.toFixed(2));
+					$('#saldo-cc-container').show();
+				} else {
+					$('#saldo-cc-container').hide();
+					$('#usar_saldo_cc').prop('checked', false);
+				}
+			}
+		});
+	}
+
+	$('#client_id').change(checkSaldoAFavor);
+
 	let interval = setInterval(habilitarBtn, 300);
 	function habilitarBtn(){
 		let btn = $('#btn-submit');
