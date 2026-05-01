@@ -2318,12 +2318,20 @@ function buscarImagen($nombreArchivo)
     // URL por defecto si nada funciona
     $url = asset("public/images/no-img.jpg");
     $discos = ['raiz_publica', 'gcs'];
-
+	$pathCompleto = $nombreArchivo;
+	$partes = explode('/', $pathCompleto);
+    $nombreArchivo = end($partes);
+    $directorioPadre = $partes[count($partes) - 2] ?? '';	
+	
     foreach ($discos as $disco) {
         try {
-            // Verificamos si el archivo existe en el disco actual
-            if (Storage::disk($disco)->exists($nombreArchivo)) {
-                return Storage::disk($disco)->url($nombreArchivo);
+			$tmp_image = $nombreArchivo;
+			if ($disco=='gcs'){
+				$tmp_image = "/$directorioPadre/$nombreArchivo";
+			} 
+            if (Storage::disk($disco)->exists($tmp_image)) {
+				//dd($disco,Storage::disk($disco)->url($tmp_image));
+                return Storage::disk($disco)->url($tmp_image);
             }
         } catch (Exception $e) {
 			report($e); // Opcional: registra el error en laravel.log sin detener la app
@@ -2338,23 +2346,8 @@ function buscarImagen($nombreArchivo)
 if (!function_exists('buscarVideo')) {
 function buscarVideo($video)
 {
-    $url = 'default';
-    $discos = ['raiz_publica', 'gcs'];
-
-    foreach ($discos as $disco) {
-        try {
-            // Verificamos si el archivo existe en el disco actual
-            if (Storage::disk($disco)->exists($video)) {
-                return Storage::disk($disco)->url($video);
-            }
-        } catch (Exception $e) {
-            report($e); // Opcional: registra el error en laravel.log sin detener la app
-            continue;
-        }
-    }
-
-    return $url;
-}
+	return route('carVideo', $video ?? 'default');
+	}
 }
 
 if (!function_exists('video_lazy'))
@@ -2363,17 +2356,11 @@ if (!function_exists('video_lazy'))
 	{
 		$imagen_opcional = asset("public/images/lazyload/video-placeholder.jpg");  
 		$url=buscarVideo($src);
-		//$url="https://samplelib.com/mp4/sample-5s.mp4";
-		
-		$video = '<video class="lozad" data-src="'.$url.'" data-poster="'.$imagen_opcional.'" controls style="width: 100%; display: block;" preload="none"></video>';
-
-		
-		/*$video = '<video class="lozad" data-poster="'.$imagen_opcional.'">
-											<source data-src="'.$url.'" type="video/mp4">
-										</video>';*/
+		$video = '<video class="lozad" scr="'.$url.'"  data-src="'.$url.'" data-poster="'.$imagen_opcional.'" controls style="width: 100%; display: block;" preload="none"></video>';
 		return $video;
 	}
 }
+
 
 if ( ! function_exists('img_lazy'))
 {
@@ -2382,7 +2369,7 @@ function img_lazy($src = '')
 		$imagen_opcional = asset("public/images/lazyload/loader.gif");  
 	
 		$url=buscarImagen($src);
-		$image ='<img class="card-img-top img-fluid lozad" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'">';
+		$image ='<img class="card-img-top img-fluid lozad" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'" alt="">';
 		return $image;
 	}
 }
