@@ -350,8 +350,9 @@
                             @endphp
                             @forelse ($videos as $v)
 								@php
-									echo video_lazy('uploads/vehiculos/' . $v);
+									echo video_lazy($v);
 								@endphp
+									<!--<video class="w-100" src="{{ route('carVideo', $v ?? 'default') }}" controls></video>-->
                             @empty
                             @endforelse
 
@@ -405,7 +406,7 @@
                     </div>
 
 
-                    <div class="crm-scroll">
+                    <div class="crm-scroll_old">
                         <table id="activity_log_table" class="table table-bordered">
                             <tbody>
                             </tbody>
