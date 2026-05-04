@@ -2312,6 +2312,74 @@ if (!function_exists('filepondUpload')) {
         return $filename; // Retorna el nombre exacto guardado (con .webp o extensión original)
     }
 }
+
+if (!function_exists('filepondUploadRequest')) {
+    function filepondUploadRequest($file, $path = '') {
+        $filename = "";
+
+        // Verificamos que sea un objeto de archivo válido
+        if ($file instanceof \Illuminate\Http\UploadedFile) {
+            $extension = $file->getClientOriginalExtension();
+            $mime = $file->getMimeType();
+            
+            $baseName = now()->timestamp . '-' . uniqid();
+
+            if (str_starts_with($mime, 'image/')) {
+                $filename = $baseName . '.webp';
+                
+                // Procesar con Intervention Image
+                \Image::make($file)
+                    ->encode('webp', 90)
+                    ->save($path . '/' . $filename);
+            } else {
+                $filename = $baseName . '.' . $extension;
+                // Mover archivo original (videos, pdf, etc)
+                $file->move($path, $filename);
+            }
+        }
+        
+        return $filename; 
+    }
+}
+
+/*
+if (!function_exists('filepondUpload')) {
+    function filepondUpload($campo = 'image', $path = '') {
+        $nombresSubidos = [];
+
+        if (request()->hasFile($campo)) {
+            // Laravel devuelve un archivo o un array de archivos
+            $files = request()->file($campo);
+            
+            // Si es un solo archivo, lo convertimos a array para usar el mismo foreach
+            $filesArray = is_array($files) ? $files : [$files];
+
+            foreach ($filesArray as $uploaded_file) {
+                $extension = $uploaded_file->getClientOriginalExtension();
+                $mime = $uploaded_file->getMimeType();
+                $baseName = now()->timestamp . '-' . uniqid();
+
+                if (str_starts_with($mime, 'image/')) {
+                    $filename = $baseName . '.webp';
+                    
+                    Image::make($uploaded_file)
+                        ->encode('webp', 90)
+                        ->save($path . '/' . $filename);
+                } else {
+                    $filename = $baseName . '.' . $extension;
+                    $uploaded_file->move($path, $filename);
+                }
+
+                $nombresSubidos[] = $filename;
+            }
+        }
+
+        // Retorna "nombre1.webp;nombre2.mp4" o un string vacío si no hubo archivos
+        return implode(';', $nombresSubidos);
+    }
+}
+*/
+
 if (!function_exists('buscarImagen')) {  
 function buscarImagen($nombreArchivo)
 {
@@ -2325,12 +2393,14 @@ function buscarImagen($nombreArchivo)
 	
     foreach ($discos as $disco) {
         try {
-			$tmp_image = $nombreArchivo;
+			$tmp_image = $pathCompleto;
 			if ($disco=='gcs'){
 				$tmp_image = "/$directorioPadre/$nombreArchivo";
 			} 
+			//$fullPath = Storage::disk($disco)->path($tmp_image);
+			//dd($tmp_image);
             if (Storage::disk($disco)->exists($tmp_image)) {
-				//dd($disco,Storage::disk($disco)->url($tmp_image));
+			//	dd($disco,Storage::disk($disco)->url($tmp_image));
                 return Storage::disk($disco)->url($tmp_image);
             }
         } catch (Exception $e) {
