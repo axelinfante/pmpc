@@ -1334,7 +1334,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
         }
     }
 
-    public function uploadVideo(Request $request)
+    /*public function uploadVideo(Request $request)
     {
 
 
@@ -1360,7 +1360,39 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
 
         return $nombre;
+    }*/
+	
+	public function uploadVideo(Request $request)
+{
+    // Validamos que existan archivos
+    $videos = $request->file('video');
+    
+    if (!$videos || !is_array($videos)) {
+        return response()->json(['error' => 'No se subieron videos'], 400);
     }
+
+    $nombresSubidos = [];
+
+    foreach ($videos as $v) {
+        // Generamos el nombre único
+       // $nombre = time() . '_' . $v->getClientOriginalName();
+        
+        // Guardamos directamente usando el disco 'vehiculo'
+        // Esto es mucho más eficiente en memoria que \File::get()
+//        $v->storeAs('/', $nombre, 'vehiculo');
+        
+  //      $nombresSubidos[] = $nombre;
+  
+   // Guarda en el disco 'vehiculo' y genera el nombre único
+        $path = $v->store('/', 'vehiculo'); 
+        // Extrae solo el nombre (ej: "asdf123.mp4") del path completo
+        $nombresSubidos[] = basename($path);
+  
+    }
+
+    // Retornamos los nombres separados por punto y coma
+    return implode(';', $nombresSubidos);
+}
 
     public function getVideo($video)
     {

@@ -375,14 +375,21 @@
 
 
                             @forelse($cars->img_recepcion as $img)
-                                <div class="card mx-3" style="width: 18rem;">
+							 <div class="row">
+                                <div class="col" style="margin-top: 0.50rem !important;">
 									@php
-										echo img_lazy('uploads/vehiculos/' . $img);
+										echo img_lazy('uploads/vehiculos/' . $img->img);
 									@endphp
-                                    <!--<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="Card image cap">-->
+                                </div>
+                            </div> 
+                                <!--<div class="card mx-3" style="width: 18rem;">
+									@php
+										echo img_lazy('uploads/vehiculos/' . $img->img);
+									@endphp
+                                    <img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="Card image cap">-
                                     <div class="card-body">
                                     </div>
-                                </div>
+                                </div>-->
                             @empty
                                 <p>No hay imágenes 04D disponibles.</p>
                             @endforelse
@@ -395,8 +402,8 @@
 									@php
 										echo img_lazy('uploads/vehiculos/' . $img->img);
 									@endphp
-                                	<!--<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img->img) }}" alt="">-->
-                                    <!--<img src="{{asset('public/uploads/vehiculos/'.$img->img)}}" alt="">-->
+                                	<!--<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$cars->company_id,'/vehiculos/'.$img) }}" alt="">-->
+                                    <!--<img src="{{asset('public/uploads/vehiculos/'.$img)}}" alt="">-->
                                 </div>
                             </div>
                         @empty
