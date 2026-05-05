@@ -29,7 +29,7 @@
 	<a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('Vehiculo') }}</span><span
 				class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 	<ul class="nav-second-level" aria-expanded="false">
-		<li class="nav-item"> <a class="nav-link" href="{{ route('list_estado_vehiculo') }}"><i class="ti-link"> </i>{{ _lang('Estado y Seguimiento') }}</a></li>
+		<!--<li class="nav-item"> <a class="nav-link" href="{{ route('list_estado_vehiculo') }}"><i class="ti-link"> </i>{{ _lang('Estado y Seguimiento') }}</a></li>-->
 		<li class="nav-item"><a class="nav-link" href="{{ route('list_consu_orden') }}"><i class="ti-link"> </i>{{ _lang('Consulta Ordenes de desarme')
 		}}</a></li>
 		<li class="nav-item"><a href="{{ route('vehiculo.index') }}"><i class="ti-car"></i><span>{{ _lang('Vehiculos')
