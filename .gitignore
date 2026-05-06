@@ -27,3 +27,7 @@ pmpc-476217-7b27892d567f.json
 # HTML Purifier Cache
 /storage/app/purifier/HTML/*
 !/storage/app/purifier/HTML/.gitignore
+/storage/fonts/dompdf_font_family_cache.php
+/storage/fonts/*.ufm
+/storage/fonts/*.afm
+/storage/fonts/*.php

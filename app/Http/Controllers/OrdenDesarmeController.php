@@ -1200,8 +1200,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 return $orden->venta->client->contact_name ?? '';
             })
             ->addColumn('action', function ($orden) use ($ocultar) {
+				return view('backend.accounting.desarme.partials.actions', compact('orden','ocultar'));
 				
-				 $url = route('orden-desarme-one.generar-pdf', $orden->id);
+				 /*$url = route('orden-desarme-one.generar-pdf', $orden->id);
 
                 $ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarame '.$orden->id.' " data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
                       <i class="ti-printer"></i>
@@ -1218,7 +1219,7 @@ data-title="' . _lang('Update Vehicle') . '" class="btn btn-warning btn-xs ajax-
 class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
                     . '</form>'.$ordenDesarmeBtn;
 					
-					
+					*/
 					
             })
             ->editColumn('puesto', function ($orden) use ($opciones, $gerenciales_autorizado) {
