@@ -20,6 +20,18 @@ class SalesReturnObserver
     {
         // Registrar en cuenta corriente cuando se crea una devolución
         $this->registrarEnCuentaCorriente($salesReturn);
+
+        // FIFO automático: reimputar saldo a favor a facturas impagas
+        try {
+            if ($salesReturn->customer_id && $salesReturn->grand_total > 0) {
+                CuentaCorriente::reimputarSaldoFavorFIFO($salesReturn->customer_id, null, $salesReturn->invoice_id);
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Error en FIFO (created SalesReturn): ' . $e->getMessage(), [
+                'sales_return_id' => $salesReturn->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     /**
@@ -44,6 +56,109 @@ class SalesReturnObserver
             // Recalcular saldo del cliente
             if ($salesReturn->customer_id) {
                 CuentaCorriente::recalcular($salesReturn->customer_id);
+            }
+
+            // Si la devolución referencia una factura que tenía pagos, transferir el pago
+            // a la factura impaga más antigua
+            if ($salesReturn->invoice_id) {
+                $invoice = Invoice::find($salesReturn->invoice_id);
+                if ($invoice && $invoice->paid > 0) {
+                    $montoFreed = $invoice->paid;
+
+                    // 1. Eliminar DEBE de la factura anulada (siempre)
+                    CuentaCorriente::where('comprobable_type', 'App\Invoice')
+                        ->where('comprobable_id', $invoice->id)
+                        ->where('fue_revertido', 0)
+                        ->delete();
+
+                    // 2. Buscar facturas impagas ordenadas FIFO (excluyendo la anulada)
+                    $targetInvoices = Invoice::where('client_id', $invoice->client_id)
+                        ->where('id', '!=', $invoice->id)
+                        ->whereIn('status', ['Unpaid', 'Partially_Paid'])
+                        ->where(function ($q) {
+                            $q->whereNull('paid')
+                              ->orWhereRaw('paid < grand_total');
+                        })
+                        ->orderBy('invoice_date')
+                        ->orderBy('id')
+                        ->get();
+
+                    if ($targetInvoices->isNotEmpty()) {
+                        // Hay facturas impagas: eliminar HABERs y redistribuir via FIFO
+                        CuentaCorriente::where('comprobable_type', 'App\SalesReturn')
+                            ->where('comprobable_id', $salesReturn->id)
+                            ->delete();
+
+                        $incomeTxs = \App\Transaction::where('invoice_id', $invoice->id)
+                            ->where('type', 'income')
+                            ->get();
+
+                        if ($incomeTxs->isNotEmpty()) {
+                            CuentaCorriente::where('comprobable_type', 'App\Transaction')
+                                ->whereIn('comprobable_id', $incomeTxs->pluck('id'))
+                                ->delete();
+                        }
+
+                        $txRef = $incomeTxs->first();
+                        $restante = $montoFreed;
+
+                        foreach ($targetInvoices as $targetInvoice) {
+                            if ($restante <= 0) break;
+
+                            $saldoPendiente = $targetInvoice->grand_total - max(0, $targetInvoice->paid ?? 0);
+                            if ($saldoPendiente <= 0) continue;
+
+                            $aplicar = min($restante, $saldoPendiente);
+
+                            $newTx = new \App\Transaction();
+                            $newTx->trans_date = date('Y-m-d');
+                            $newTx->account_id = $txRef ? $txRef->account_id : 0;
+                            $newTx->chart_id = $txRef ? $txRef->chart_id : 0;
+                            $newTx->type = 'income';
+                            $newTx->dr_cr = 'cr';
+                            $newTx->amount = $aplicar;
+                            $newTx->amount_peso = $aplicar;
+                            $newTx->amount_usd = 0;
+                            $newTx->base_amount = $aplicar;
+                            $newTx->payer_payee_id = $invoice->client_id;
+                            $newTx->invoice_id = $targetInvoice->id;
+                            $newTx->payment_method_id = $txRef ? $txRef->payment_method_id : 0;
+                            $newTx->note = "reimputacion FIFO - Factura #{$invoice->invoice_number}";
+                            $newTx->company_id = $invoice->company_id;
+                            $newTx->usd = $invoice->is_usd ? 1 : 0;
+                            $newTx->tasa = $invoice->tasa ?? 1;
+                            $newTx->save();
+
+                            $targetInvoice->paid = ($targetInvoice->paid ?? 0) + $aplicar;
+                            if (round($targetInvoice->paid, 2) >= $targetInvoice->grand_total) {
+                                $targetInvoice->status = 'Paid';
+                            } elseif ($targetInvoice->paid > 0) {
+                                $targetInvoice->status = 'Partially_Paid';
+                            }
+                            $targetInvoice->save();
+
+                            $restante -= $aplicar;
+                        }
+                    }
+                    // Si no hay facturas impagas: los HABERs (devolucion + pago original)
+                    // se quedan en cuenta corriente como credito disponible
+
+                    if ($salesReturn->customer_id) {
+                        CuentaCorriente::recalcular($salesReturn->customer_id);
+                    }
+                }
+            }
+
+            // FIFO automático: reimputar saldo a favor a facturas impagas
+            try {
+                if ($salesReturn->customer_id && $salesReturn->grand_total > 0) {
+                    CuentaCorriente::reimputarSaldoFavorFIFO($salesReturn->customer_id, null, $salesReturn->invoice_id);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error en FIFO (updated SalesReturn): ' . $e->getMessage(), [
+                    'sales_return_id' => $salesReturn->id,
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
         }
     }

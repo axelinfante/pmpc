@@ -240,7 +240,7 @@ class CuentaCorriente extends Model
      * @param int $diasMaximosAntiguedad Días máximos de antigüedad del saldo a usar (0 = sin límite)
      * @return array Resultado de la operación con detalles del pago
      */
-    public static function pagarFacturaDesdeSaldoAFavor($invoiceId, $clientId, $diasMaximosAntiguedad = 0)
+    public static function pagarFacturaDesdeSaldoAFavor($invoiceId, $clientId, $diasMaximosAntiguedad = 0, $notaPersonalizada = null)
     {
         try {
             DB::beginTransaction();
@@ -330,11 +330,17 @@ class CuentaCorriente extends Model
 
             // Buscar rubro de venta o usar uno por defecto
             $rubroVenta = \App\ChartOfAccount::where('type', 'income')
+                ->where('name', 'like', '%Venta%')
                 ->where('company_id', $invoice->company_id)
                 ->first();
-        
+
             if (!$rubroVenta) {
-                // Si no hay rubro de income, buscar cualquier rubro
+                $rubroVenta = \App\ChartOfAccount::where('type', 'income')
+                    ->where('company_id', $invoice->company_id)
+                    ->first();
+            }
+
+            if (!$rubroVenta) {
                 $rubroVenta = \App\ChartOfAccount::where('company_id', $invoice->company_id)
                     ->first();
                     
@@ -346,7 +352,7 @@ class CuentaCorriente extends Model
             // Crear transacción para registrar el pago desde cuenta corriente
             // No es de tipo dr_cr porque el dinero ya está en la cuenta corriente del cliente
             // Usamos withoutEvents para evitar que el TransactionObserver cree un movimiento duplicado en cuenta_corriente
-            $transaction = \App\Transaction::withoutEvents(function () use ($invoice, $rubroVenta, $methodP, $montoAPagar, $clientId, $invoiceId) {
+            $transaction = \App\Transaction::withoutEvents(function () use ($invoice, $rubroVenta, $methodP, $montoAPagar, $clientId, $invoiceId, $notaPersonalizada) {
                 $transaction = new \App\Transaction();
                 $transaction->trans_date = date('Y-m-d');
                 $transaction->chart_id = $rubroVenta->id;
@@ -367,7 +373,7 @@ class CuentaCorriente extends Model
                 $transaction->payer_payee_id = $clientId;
                 $transaction->payment_method_id = $methodP->id;
                 $transaction->invoice_id = $invoiceId;
-                $transaction->note = 'Factura #' . $invoice->invoice_number . ' pagada automáticamente desde saldo a favor en cuenta corriente';
+                $transaction->note = $notaPersonalizada ?? 'Factura #' . $invoice->invoice_number . ' pagada automáticamente desde saldo a favor en cuenta corriente';
                 $transaction->company_id = $invoice->company_id;
                 $transaction->usd = $invoice->is_usd ? 1 : 0;
                 $transaction->tasa = $invoice->tasa ?? 1;
@@ -481,7 +487,7 @@ class CuentaCorriente extends Model
                 // Determinar símbolo de moneda
                 $simboloMoneda = $invoice->is_usd ? 'USD ' : '$';
                 
-                $movimientoNeto->nota = 'Factura #' . $invoice->invoice_number . 
+                $movimientoNeto->nota = $notaPersonalizada ?? 'Factura #' . $invoice->invoice_number . 
                                        ' pagada automáticamente desde saldo a favor: ' . $simboloMoneda . number_format($montoAPagar, 2);
                 $movimientoNeto->fue_revertido = 0;
                 
@@ -564,7 +570,7 @@ class CuentaCorriente extends Model
                 }
                 
                 $movimientoCancelacionSaldo->tasa_cambio = $invoice->tasa ?? 1;
-                $movimientoCancelacionSaldo->nota = 'Cancelación de saldo a favor: ' . ($invoice->is_usd ? 'USD ' : '$') . number_format($montoAPagar, 2) . 
+                $movimientoCancelacionSaldo->nota = $notaPersonalizada ?? 'Cancelación de saldo a favor: ' . ($invoice->is_usd ? 'USD ' : '$') . number_format($montoAPagar, 2) . 
                                                   ' aplicado a Factura #' . $invoice->invoice_number;
                 $movimientoCancelacionSaldo->fue_revertido = 0;
                 $movimientoCancelacionSaldo->save();
@@ -611,7 +617,7 @@ class CuentaCorriente extends Model
                 // Determinar símbolo de moneda
                 $simboloMoneda = $invoice->is_usd ? 'USD ' : '$';
                 
-                $movimientoPagoParcial->nota = 'Pago parcial desde saldo a favor: ' . $simboloMoneda . number_format($montoAPagar, 2) . 
+                $movimientoPagoParcial->nota = $notaPersonalizada ?? 'Pago parcial desde saldo a favor: ' . $simboloMoneda . number_format($montoAPagar, 2) . 
                                              ' aplicado a Factura #' . $invoice->invoice_number;
                 $movimientoPagoParcial->fue_revertido = 0;
                 
@@ -961,5 +967,85 @@ class CuentaCorriente extends Model
             'estado_factura' => $invoice->status,
             'pagado_factura' => $invoice->paid
         ];
+    }
+
+    /**
+     * Reimputar saldo a favor FIFO a las facturas impagas más antiguas
+     * 
+     * @param int $clientId ID del cliente
+     * @param string $notaFifo Nota personalizada para los movimientos FIFO
+     * @return array Resultado de la operación
+     */
+    public static function reimputarSaldoFavorFIFO($clientId, $notaFifo = 'reimputacion FIFO automatica', $exceptInvoiceId = null)
+    {
+        try {
+            $saldo = self::obtenerSaldoCliente($clientId);
+
+            if ($saldo['saldo_peso'] >= 0 && $saldo['saldo_usd'] >= 0) {
+                return ['success' => true, 'message' => 'No hay crédito disponible para FIFO'];
+            }
+
+            $invoicesQuery = \App\Invoice::where('client_id', $clientId)
+                ->whereIn('status', ['Unpaid', 'Partially_Paid'])
+                ->where(function ($q) {
+                    $q->whereNull('paid')
+                      ->orWhereRaw('paid < grand_total');
+                });
+
+            if ($exceptInvoiceId) {
+                $invoicesQuery->where('id', '!=', $exceptInvoiceId);
+            }
+
+            $invoices = $invoicesQuery->orderBy('invoice_date')
+                ->orderBy('id')
+                ->get();
+
+            $totalAplicado = 0;
+            $creditoPeso = max(0, -$saldo['saldo_peso']);
+            $creditoUsd = max(0, -$saldo['saldo_usd']);
+
+            foreach ($invoices as $invoice) {
+                $saldoPendiente = $invoice->grand_total - max(0, $invoice->paid ?? 0);
+                if ($saldoPendiente <= 0) continue;
+
+                // Verificar si hay crédito disponible en la moneda de la factura
+                $creditoDisponible = $invoice->is_usd ? $creditoUsd : $creditoPeso;
+                if ($creditoDisponible <= 0) {
+                    // Sin crédito en esta moneda, intentar siguiente factura
+                    continue;
+                }
+
+                $resultado = self::pagarFacturaDesdeSaldoAFavor($invoice->id, $clientId, 0, $notaFifo);
+
+                if ($resultado['success']) {
+                    $montoPagado = $resultado['monto_pagado'];
+                    $totalAplicado += $montoPagado;
+                    // Consumir del crédito local para evitar aplicar el mismo crédito múltiples veces
+                    if ($invoice->is_usd) {
+                        $creditoUsd = max(0, $creditoUsd - $montoPagado);
+                    } else {
+                        $creditoPeso = max(0, $creditoPeso - $montoPagado);
+                    }
+                    \Log::info("FIFO: Pago aplicado a factura #{$invoice->invoice_number} - \${$montoPagado}");
+                } else {
+                    \Log::warning("FIFO: No se pudo pagar factura #{$invoice->invoice_number}: " . $resultado['message']);
+                }
+            }
+
+            return [
+                'success' => true,
+                'total_aplicado' => $totalAplicado,
+                'message' => "FIFO: Se aplicaron \${$totalAplicado} a facturas pendientes"
+            ];
+        } catch (\Throwable $e) {
+            \Log::error("Error en reimputarSaldoFavorFIFO para cliente {$clientId}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error en FIFO: ' . $e->getMessage()
+            ];
+        }
     }
 }
