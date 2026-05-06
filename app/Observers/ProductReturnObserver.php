@@ -4,7 +4,9 @@ namespace App\Observers;
 
 use App\CuentaCorriente;
 use App\ProductReturn;
+use App\Invoice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductReturnObserver
 {
@@ -19,6 +21,8 @@ class ProductReturnObserver
         //
         if ($productReturn->status == 'procesada') {
             $this->registrarEnCuentaCorriente($productReturn);
+
+            $this->ejecutarFifo($productReturn);
         }
     }
 
@@ -33,6 +37,8 @@ class ProductReturnObserver
         // Verificamos si el estado cambió a procesada en esta actualización
         if ($productReturn->wasChanged('status') && $productReturn->status == 'procesada') {
             $this->registrarEnCuentaCorriente($productReturn);
+
+            $this->ejecutarFifo($productReturn);
         }
     }
 
@@ -99,5 +105,49 @@ class ProductReturnObserver
     public function forceDeleted(ProductReturn $productReturn)
     {
         //
+    }
+
+    protected function ejecutarFifo(ProductReturn $productReturn)
+    {
+        try {
+            $invoice = $productReturn->invoice;
+            if ($invoice && $invoice->client_id) {
+                if ($invoice->paid > 0) {
+                    CuentaCorriente::where('comprobable_type', 'App\Invoice')
+                        ->where('comprobable_id', $invoice->id)
+                        ->where('fue_revertido', 0)
+                        ->delete();
+
+                    // Buscar facturas impagas
+                    $targetInvoices = Invoice::where('client_id', $invoice->client_id)
+                        ->where('id', '!=', $invoice->id)
+                        ->whereIn('status', ['Unpaid', 'Partially_Paid'])
+                        ->where(function ($q) {
+                            $q->whereNull('paid')
+                              ->orWhereRaw('paid < grand_total');
+                        })
+                        ->orderBy('invoice_date')
+                        ->orderBy('id')
+                        ->get();
+
+                    if ($targetInvoices->isNotEmpty()) {
+                        // Solo eliminar HABERs si hay donde redistribuir
+                        CuentaCorriente::where('comprobable_type', 'App\ProductReturn')
+                            ->where('comprobable_id', $productReturn->id)
+                            ->delete();
+                    }
+                    // Sin facturas impagas: los HABERs se quedan como credito
+
+                    CuentaCorriente::recalcular($invoice->client_id);
+                }
+
+                CuentaCorriente::reimputarSaldoFavorFIFO($invoice->client_id);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error en FIFO (ProductReturn): ' . $e->getMessage(), [
+                'product_return_id' => $productReturn->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 }
