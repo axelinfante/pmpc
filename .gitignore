@@ -19,3 +19,11 @@ yarn-error.log
 .env.production
 pmpc-476217-7b27892d567f.json
 /storage/app/vehiculo/*
+/storage/*.key
+/storage/app/*
+!/storage/app/.gitignore
+/storage/framework/cache/data/*
+/storage/framework/views/*.php
+# HTML Purifier Cache
+/storage/app/purifier/HTML/*
+!/storage/app/purifier/HTML/.gitignore

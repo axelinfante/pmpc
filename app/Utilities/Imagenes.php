@@ -23,8 +23,9 @@ trait Imagenes
         $files = $request->file('imagen');
         if ($files && is_array($files)) {
             foreach ($files as $file) {
-                $fileName = time() . $file->getClientOriginalName();
-                $file->move($path, $fileName);
+                $fileName = filepondUploadRequest($file,$path);
+                //$fileName = time() . $file->getClientOriginalName();
+                //$file->move($path, $fileName);
 
                 $imagen = new \App\Imagen();
                 $imagen->idCar = $param['idCar'] ?? null;
@@ -35,11 +36,12 @@ trait Imagenes
             }
         }
 
-        $files = $request->file('imagen_recepcion');
-        if ($files && is_array($files)) {
-            foreach ($files as $file) {
-                $fileName = time() . $file->getClientOriginalName();
-                $file->move($path, $fileName);
+        $files1 = $request->file('imagen_recepcion');
+        if ($files1 && is_array($files1)) {
+            foreach ($files1 as $file1) {
+                 $fileName = filepondUploadRequest($file1,$path);
+               // $fileName = time() . $file->getClientOriginalName();
+               // $file->move($path, $fileName);
 
                 $imagen = new \App\Imagen();
                 $imagen->idCar = $param['idCar'] ?? null;

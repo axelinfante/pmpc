@@ -2319,8 +2319,9 @@ if (!function_exists('filepondUpload')) {
                 $filename = $baseName . '.webp';
                 // Guardar optimizado
                 //$image->toWebp(70)->save($path . '/' . $filename);
+				
 				Image::make($uploaded_file)
-                    ->encode('webp', 70)
+                    ->encode('webp', 90)
                     ->save($path . '/' . $filename);
             } else {
                 $filename = $baseName . '.' . $extension;
@@ -2331,15 +2332,134 @@ if (!function_exists('filepondUpload')) {
         return $filename; // Retorna el nombre exacto guardado (con .webp o extensión original)
     }
 }
-  
+
+if (!function_exists('filepondUploadRequest')) {
+    function filepondUploadRequest($file, $path = '') {
+        $filename = "";
+
+        // Verificamos que sea un objeto de archivo válido
+        if ($file instanceof \Illuminate\Http\UploadedFile) {
+            $extension = $file->getClientOriginalExtension();
+            $mime = $file->getMimeType();
+            
+            $baseName = now()->timestamp . '-' . uniqid();
+
+            if (str_starts_with($mime, 'image/')) {
+                $filename = $baseName . '.webp';
+                
+                // Procesar con Intervention Image
+                \Image::make($file)
+                    ->encode('webp', 90)
+                    ->save($path . '/' . $filename);
+            } else {
+                $filename = $baseName . '.' . $extension;
+                // Mover archivo original (videos, pdf, etc)
+                $file->move($path, $filename);
+            }
+        }
+        
+        return $filename; 
+    }
+}
+
+/*
+if (!function_exists('filepondUpload')) {
+    function filepondUpload($campo = 'image', $path = '') {
+        $nombresSubidos = [];
+
+        if (request()->hasFile($campo)) {
+            // Laravel devuelve un archivo o un array de archivos
+            $files = request()->file($campo);
+            
+            // Si es un solo archivo, lo convertimos a array para usar el mismo foreach
+            $filesArray = is_array($files) ? $files : [$files];
+
+            foreach ($filesArray as $uploaded_file) {
+                $extension = $uploaded_file->getClientOriginalExtension();
+                $mime = $uploaded_file->getMimeType();
+                $baseName = now()->timestamp . '-' . uniqid();
+
+                if (str_starts_with($mime, 'image/')) {
+                    $filename = $baseName . '.webp';
+                    
+                    Image::make($uploaded_file)
+                        ->encode('webp', 90)
+                        ->save($path . '/' . $filename);
+                } else {
+                    $filename = $baseName . '.' . $extension;
+                    $uploaded_file->move($path, $filename);
+                }
+
+                $nombresSubidos[] = $filename;
+            }
+        }
+
+        // Retorna "nombre1.webp;nombre2.mp4" o un string vacío si no hubo archivos
+        return implode(';', $nombresSubidos);
+    }
+}
+*/
+
+if (!function_exists('buscarImagen')) {  
 function buscarImagen($nombreArchivo)
 {
-	$url=asset("public/images/no-img.jpg");
-	$discos = ['raiz_publica', 'gcs'];
+    // URL por defecto si nada funciona
+    $url = asset("public/images/no-img.jpg");
+    $discos = ['raiz_publica', 'gcs'];
+	$pathCompleto = $nombreArchivo;
+	$partes = explode('/', $pathCompleto);
+    $nombreArchivo = end($partes);
+    $directorioPadre = $partes[count($partes) - 2] ?? '';	
+	
     foreach ($discos as $disco) {
-        if (Storage::disk($disco)->exists($nombreArchivo)) {
-			return Storage::disk($disco)->url($nombreArchivo);
+        try {
+			$tmp_image = $pathCompleto;
+			if ($disco=='gcs'){
+				$tmp_image = "/$directorioPadre/$nombreArchivo";
+			} 
+			//$fullPath = Storage::disk($disco)->path($tmp_image);
+			//dd($tmp_image);
+            if (Storage::disk($disco)->exists($tmp_image)) {
+			//	dd($disco,Storage::disk($disco)->url($tmp_image));
+                return Storage::disk($disco)->url($tmp_image);
+            }
+        } catch (Exception $e) {
+			report($e); // Opcional: registra el error en laravel.log sin detener la app
+            continue; 
         }
     }
-	return $url;
-}  
+
+    return $url;
+}
+}
+
+if (!function_exists('buscarVideo')) {
+function buscarVideo($video)
+{
+	return route('carVideo', $video ?? 'default');
+	}
+}
+
+if (!function_exists('video_lazy'))
+{
+	function video_lazy($src = '')
+	{
+		$imagen_opcional = asset("public/images/lazyload/video-placeholder.jpg");  
+		$url=buscarVideo($src);
+		$video = '<video class="lozad" scr="'.$url.'"  data-src="'.$url.'" data-poster="'.$imagen_opcional.'" controls style="width: 100%; display: block;" preload="none"></video>';
+		return $video;
+	}
+}
+
+
+if ( ! function_exists('img_lazy'))
+{
+function img_lazy($src = '')
+	{
+		$imagen_opcional = asset("public/images/lazyload/loader.gif");  
+	
+		$url=buscarImagen($src);
+		$image ='<img class="card-img-top img-fluid lozad" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'" alt="">';
+		return $image;
+	}
+}
