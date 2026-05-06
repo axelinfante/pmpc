@@ -104,10 +104,10 @@
                                 class="ti-link"></i><span>{{ _lang('Consulta Ordenes de desarme') }}</span></a></li>
                 @endif -->
 
-                @if (in_array('list_estado_vehiculo', $permissions))
+                <!--@if (in_array('list_estado_vehiculo', $permissions))
                     <li class="nav-item"> <a class="nav-link" href="{{ route('list_estado_vehiculo') }}"><i
                                 class="ti-link"> </i><span>{{ _lang('Estado y Seguimiento') }}</span></a></li>
-                @endif
+                @endif-->
 
                 {{-- <li class="nav-item"><a class="nav-link" href="{{ url('estado') }}">{{ _lang('Estados') }}</a></li> --}}
                 @if (in_array('aseguradora', $permissions))
