@@ -2167,7 +2167,7 @@ if (!function_exists('saldo_sql_list')) {
 			FROM sales_return t1 inner join invoices t2 
 			 ON t2.id=t1.invoice_id
 			),
-			cotizaciones AS(	
+        cotizaciones AS(	
 			select t1.id as number,t1.invoice_number as referencia,t1.id as documento_id, related_id as clientesid,invoice_date as date,note,'invoice' as movimiento,grand_total as debe,'0.00' as haber,status, 'invoices' as tipo,  '' AS adicional 
 			from invoices t1 
 			union all
@@ -2178,10 +2178,27 @@ if (!function_exists('saldo_sql_list')) {
 			select t1.id as number, t1.id as referencia, t1.transaccion_revertida_id as documento_id, payer_payee_id as clientesid,trans_date as date,note, 			'retiros cliente' as movimiento, amount AS debe, '0.00' as haber,  t1.status, 'retiros' as tipo, '' AS adicional
  		   from transactions t1 where t1.type='expense' and t1.dr_cr in ('dr')
        ),
-       retiros_coti AS(	
+        retiros_coti AS(	
 			select t1.id as number, t1.id as referencia, t1.transaccion_revertida_id as documento_id, payer_payee_id as clientesid,trans_date as date,note, 'retiros cliente' as movimiento, amount AS debe, '0.00' as haber,  t1.status, 'retiros_coti' as tipo, '' AS adicional
  		   from transactions t1 where t1.type='expense' and t1.dr_cr in ('dr') AND transaccion_revertida_id IS NOT null
        ),
+        ajuste_fifo as(
+          select sr.id as number, sr.id as referencia, 0 as documento_id,
+                 sr.customer_id as clientesid, sr.return_date as date,
+                 'Compensacion FIFO' as note,
+                 'ajuste FIFO' as movimiento,
+                 sr.grand_total as debe, '0.00' as haber,
+                 '' as status, 'sales_return' as tipo, '' as adicional
+          from sales_return sr
+          inner join invoices inv on inv.id = sr.invoice_id
+          where inv.status = 'Canceled'
+          and sr.customer_id in (
+            select distinct t.payer_payee_id 
+            from transactions t 
+            where t.note like 'reimputacion FIFO%'
+            and t.payer_payee_id = sr.customer_id
+          )
+        ),
 			 generardatos as (
 				select * 
 				from inicial  
@@ -2200,6 +2217,9 @@ if (!function_exists('saldo_sql_list')) {
 				union all
 				select *
 				from retiros_coti 
+				union all
+				select *
+				from ajuste_fifo 
 				),cte_first as (
 				select *, row_number()over(order by clientesid,date) rn 
 				from generardatos

@@ -487,26 +487,14 @@ class InvoiceController extends Controller
         //$this->orden_desarme($invoice, $desarme, $prioridad);
         DB::commit();
 
-        // Pagar desde saldo a favor solo si el usuario lo solicitó
-        if ($request->input('usar_saldo_cuenta_corriente') == '1') {
-            $diasMaximosAntiguedad = 0;
-            $resultadoPago = \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id, $diasMaximosAntiguedad);
-            if ($resultadoPago['success']) {
-                \Log::info('Pago desde cuenta corriente exitoso', [
-                    'invoice_id' => $invoice->id,
-                    'client_id' => $invoice->client_id,
-                    'monto_pagado' => $resultadoPago['monto_pagado'],
-                    'mensaje' => $resultadoPago['message'],
-                    'dias_antiguedad_filtro' => $diasMaximosAntiguedad
-                ]);
-            } else {
-                \Log::debug('No se pudo realizar pago desde cuenta corriente', [
-                    'invoice_id' => $invoice->id,
-                    'client_id' => $invoice->client_id,
-                    'razon' => $resultadoPago['message'],
-                    'dias_antiguedad_filtro' => $diasMaximosAntiguedad
-                ]);
-            }
+        // Pagar desde saldo a favor automáticamente (si hay saldo disponible)
+        try {
+            \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id);
+        } catch (\Throwable $e) {
+            \Log::warning('Error en pago automático desde saldo a favor: ' . $e->getMessage(), [
+                'invoice_id' => $invoice->id,
+                'client_id' => $invoice->client_id
+            ]);
         }
 
         if (!$request->ajax()) {
@@ -5029,6 +5017,21 @@ $totalC2 = $results->total_c2;*/
 				}
 			}// final
 			DB::commit();
+
+			// Recalcular despues de commit para que el FIFO vea el saldo correcto
+			if (isset($invoice) && $invoice) {
+			    \App\CuentaCorriente::recalcular($invoice->client_id);
+			}
+
+			// FIFO automático: reimputar saldo a favor a facturas impagas (excluir la factura anulada)
+			try {
+			    if (isset($invoice) && $invoice) {
+			        \App\CuentaCorriente::reimputarSaldoFavorFIFO($invoice->client_id, "reimputacion FIFO de coti {$invoice->invoice_number}", $invoice->id);
+			    }
+			} catch (\Throwable $e) {
+			    \Log::error('Error en FIFO reimputation: ' . $e->getMessage());
+			}
+
 			return redirect('invoices')->with('success', _lang('Invoice deleted sucessfully'));
 		} catch (Throwable $e) {
             DB::rollBack();
