@@ -703,9 +703,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 		 
         $orden_desarme->save();
 		
-        if (!empty($orden_desarme->idCadete_operario) && $cadete_operario_aterior != $orden_desarme->idCadete_operario) {
+        /*if (!empty($orden_desarme->idCadete_operario) && $cadete_operario_aterior != $orden_desarme->idCadete_operario) {
             Notification::send(User::find($orden_desarme->idCadete_operario), new OrdenUpdated($orden_desarme));
-        }
+        }*/
         //dd($orden_desarme);
         //if (trim($orden_desarme->estado) != '' && $orden_desarme->estado != $estado_anterior) {
         if ($orden_desarme->fecha_desarmado_anulado !== null)
@@ -728,7 +728,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 				
 				$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden_desarme->venta->id)->where('invoiceitem_id', '=',  $orden_desarme->product_id)->first();
 
-					if(!$orden_despacho_){
+					/*if(!$orden_despacho_){
 						Notification::send(User::find($orden_desarme->venta->user_id), new OrdenUpdated($orden_desarme));
 
 						$orden_despacho = new OrdenDespacho();
@@ -748,7 +748,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 						$user = User::find($orden_desarme->venta->user_id);
 						$email = $user->email;
 						Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
-					 }
+					 }*/
 
 
 			}		
@@ -1292,7 +1292,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         $orden->f_ingreso_puesto = $request->f_ingreso_puesto;
         $orden->idCadete_operario = $operario->id;
 		
-		if (in_array($compania, array("2"))) {		
+		/*if (in_array($compania, array("2"))) {		
 			$orden->puesto_final = '';
 			$orden->fecha_desarmado_anulado = $request->f_ingreso_puesto;
 			$orden->estado = 'completado'; 
@@ -1311,7 +1311,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 				$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden->venta->id)->where('invoiceitem_id', '=',  $orden->product_id)->first();
 
 					if(!$orden_despacho_){
-						Notification::send(User::find($orden->venta->user_id), new OrdenUpdated($orden));
+					//	Notification::send(User::find($orden->venta->user_id), new OrdenUpdated($orden));
 
 						$orden_despacho = new OrdenDespacho();
 
@@ -1325,17 +1325,18 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 						$orden_despacho->save();
 
-						$message = "Cambio de estado en orden de desarme <b><a href='" . route('orden-desarme.show', $orden->id) . "'>$orden->id</a></b>";
+						//$message = "Cambio de estado en orden de desarme <b><a href='" . route('orden-desarme.show', $orden->id) . "'>$orden->id</a></b>";
 
-						$user = User::find($orden->venta->user_id);
-						$email = $user->email;
-						Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
+						//$user = User::find($orden->venta->user_id);
+						//$email = $user->email;
+						//Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
 					 }
 
 
 			}		
 			
 		 }//
+		 */
 
         $orden->save();
 

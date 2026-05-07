@@ -298,11 +298,11 @@
 	   }
 	});
 	
-	 $(document).on('change', '#puesto', function(e) {
+	 /*$(document).on('change', '#puesto', function(e) {
                 e.stopPropagation();
                 var operario = $(this).find('option:selected').data('operario');
 				 $("#idcadete_operario").val(operario);
-            });
+            });*/
 	
 })(jQuery);
 </script>
