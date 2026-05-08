@@ -252,7 +252,7 @@
 			
 			 <div class="col-md-6 "> 
 				<div class="form-group"> 
-					<label class="control-label">{{ _lang('Puesto desarme') }}</label> 
+					<label class="control-label">{{ _lang('Puesto desarme final(Opcional)') }}</label> 
 					<input type="hidden" name="idcadete_operario" id="idcadete_operario" value="{{$o->idCadete_operario}}">
 					<select id="puesto_final"  name="puesto_final" class="form-control">
                                     <option value="">Seleccionar</option>
@@ -298,11 +298,11 @@
 	   }
 	});
 	
-	 $(document).on('change', '#puesto', function(e) {
+	 /*$(document).on('change', '#puesto', function(e) {
                 e.stopPropagation();
                 var operario = $(this).find('option:selected').data('operario');
 				 $("#idcadete_operario").val(operario);
-            });
+            });*/
 	
 })(jQuery);
 </script>
