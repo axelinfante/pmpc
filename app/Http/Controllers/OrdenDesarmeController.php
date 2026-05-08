@@ -728,8 +728,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 				
 				$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden_desarme->venta->id)->where('invoiceitem_id', '=',  $orden_desarme->product_id)->first();
 
-					/*if(!$orden_despacho_){
-						Notification::send(User::find($orden_desarme->venta->user_id), new OrdenUpdated($orden_desarme));
+					if(!$orden_despacho_){
+						//Notification::send(User::find($orden_desarme->venta->user_id), new OrdenUpdated($orden_desarme));
 
 						$orden_despacho = new OrdenDespacho();
 
@@ -743,12 +743,12 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 						$orden_despacho->save();
 
-						$message = "Cambio de estado en orden de desarme <b><a href='" . route('orden-desarme.show', $orden_desarme->id) . "'>$orden_desarme->id</a></b>";
+						//$message = "Cambio de estado en orden de desarme <b><a href='" . route('orden-desarme.show', $orden_desarme->id) . "'>$orden_desarme->id</a></b>";
 
-						$user = User::find($orden_desarme->venta->user_id);
-						$email = $user->email;
-						Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
-					 }*/
+						//$user = User::find($orden_desarme->venta->user_id);
+						//$email = $user->email;
+						//Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
+					 }
 
 
 			}		
