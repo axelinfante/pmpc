@@ -37,8 +37,15 @@
 		<li class="nav-item"><a href="{{ route('buscador_de_piezas') }}"><i class="ti-briefcase"></i><span>{{ _lang
 		('Buscador de piezas')
 		}}</span></a></li>
-		<li class="nav-item"><a class="nav-link" href="{{ route('marcamodelo.index') }}">{{ _lang('Marcas Modelos')
+		
+		@canany(['crear-marca', 'editar-marca', 'eliminar-marca','ver-marca'])
+		<li class="nav-item"><a class="nav-link" href="{{ route('marcas.index') }}"><i class="nav-icon bi bi-chevron-double-right" style="line-height: 1;"></i>{{ _lang('Marcas')
 		}}</a></li>
+		@endcanany
+		@canany(['crear-modelo', 'editar-modelo', 'eliminar-modelo'])
+		<li class="nav-item"><a class="nav-link" href="{{ route('modelos.index') }}"><i class="nav-icon bi bi-chevron-double-right" style="line-height: 1;"></i>{{ _lang('Modelos')
+		}}</a></li>
+		@endcanany
 		{{--<li class="nav-item"><a class="nav-link" href="{{ url('estado') }}">{{ _lang('Estados') }}</a></li>--}}
 		<li class="nav-item"><a class="nav-link" href="{{ url('aseguradora') }}">{{ _lang('Aseguradoras') }}</a></li>
 

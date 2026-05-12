@@ -1490,3 +1490,9 @@ Route::resource("puestos", "PuestosController");
 		   Route::post('products/detalle-post', 'ProductController@table_detalle_post')->name('table.detalle.post');
    	       Route::post("orden-despacho/confirmaciones","OrdenDespachoController@confirmacionesMAX")->name("orden-despacho.confirmaciones");
 		   
+		   Route::resource('marcas', MarcasController::class)->except('show');
+		   Route::post("marcas/actualiza-activo", "MarcasController@actualizaActivo",)->name("marcas.actualizaactivos");
+		   
+		   Route::resource('modelos', ModelosController::class)->except('show');
+		   Route::get('modelos/buscar-ajax', [App\Http\Controllers\ModelosController::class, 'buscarAjax'])->name('modelos.buscar.ajax');
+		   Route::post("modelos/actualiza-activo", "ModelosController@actualizaActivo",)->name("modelos.actualizaactivos");
