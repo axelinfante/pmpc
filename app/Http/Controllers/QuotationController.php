@@ -39,6 +39,8 @@ use DataTables;
 use DB;
 use Illuminate\Support\Facades\Notification;
 use PDF;
+use OwenIt\Auditing\Models\Audit;
+
 
 class QuotationController extends Controller
 {
@@ -189,6 +191,7 @@ class QuotationController extends Controller
                         . '&nbsp;<i class="fas fa-angle-down"></i></button>'
                         . '<div class="dropdown-menu">'
                         . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
+                        . '<a href="' . route('auditoriaQuoHistorial', $quotation->id) . '" data-title="' . _lang('Historial de Quotations') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a></li>'
                         . '</div>'
                         . '</div>';
 				}
@@ -219,6 +222,7 @@ class QuotationController extends Controller
                         . '<div class="dropdown-menu">'
                         . '<a class="dropdown-item" href="' . action('QuotationController@edit', $quotation->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a></li>'
                         . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
+                        
                         . '<form action="' . action('QuotationController@destroy', $quotation['id']) . '" method="post">'
                         . csrf_field()
                         . '<input name="_method" type="hidden" value="DELETE">'
@@ -1376,5 +1380,58 @@ $hasPiezaSavedForUser = Product::query()
 			return $pdf->download("reserva_$id.pdf");
 		}
 
+
+
+
+        public function auditoriaQuoHistorial(Request $request, $id)
+{
+
+    return view('backend.accounting.quotation.modal.historial', compact('id')); 
+}
+
+
+public function auditoriaQuotation(Request $request)
+    {
+		   $id = $request->id;
+		   
+		  if (request()->ajax()) {
+            $datosAudit = Audit::where('auditable_type', Quotation::class)
+                ->where('auditable_id', $id)
+                ->with('user')
+                ->with('auditable');
+            return DataTables::eloquent($datosAudit)
+			->addIndexColumn()
+				->addColumn('model', function ($data) {
+					return "$data->auditable_type (id: $data->auditable_id )";
+				})
+				->addColumn('usuario', function ($data) {
+					return $data->user->name ?? '';
+				})
+				->addColumn('valores_ant', function ($data) {
+					$datos='<table>';
+                    foreach($data->old_values as $attribute => $value){
+                      $datos.='<tr>
+                        <td><b>'.$attribute .'</b></td>
+                        <td>'. $value .'</td>
+                      </tr>';
+                    }
+                  $datos.= '</table>';
+					return $datos;
+				})
+				->addColumn('valores_nue', function ($data) {
+					$datos='<table>';
+                    foreach($data->new_values as $attribute => $value){
+                      $datos.='<tr>
+                        <td><b>'.$attribute .'</b></td>
+                        <td>'. $value .'</td>
+                      </tr>';
+                    }
+                  $datos.= '</table>';
+					return $datos;
+				})
+				->rawColumns(['valores_ant','valores_nue'])
+                ->make(true);
+        }
+    }
 
 }

@@ -3,14 +3,18 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableInvoiceItem;
 
-class InvoiceItem extends Model
+class InvoiceItem extends Model implements AuditableInvoiceItem
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
+
+    use Auditable;
     protected $table = 'invoice_items';
 
     public function item()

@@ -3,14 +3,18 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableQuotation;
 
-class Quotation extends Model
+class Quotation extends Model implements AuditableQuotation
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
+
+     use Auditable;
     protected $table = 'quotations';
     
 	public function quotation_items()

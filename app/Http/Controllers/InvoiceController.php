@@ -47,6 +47,7 @@ use App\Anulados_comision;
 use App\OrdenDespacho;
 use App\Transaciones_cotizaciones;
 use App\Puesto;
+use OwenIt\Auditing\Models\Audit;
 
 use function PHPUnit\Framework\isNull;
 use Illuminate\Validation\Rule;
@@ -5234,8 +5235,12 @@ public function get_table_data(Request $request)
                         '"><i class="fas fa-usd"></i> ' . _lang('Observaciones') . '</a>'
                         . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>'
                         . '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>'
+                        . '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
                         . '<a href="' . url('invoices/view_payment/' . $invoice->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>';
 
+
+                       // $result .= '<a href="' .  route('auditoriaInvHistorial', $data->id) . '" 
+					//data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
                     //if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == 'Cajera') {
                         $html .= '<form action="' . action('InvoiceController@destroy', $invoice['id']) . '" method="post">'
                             . csrf_field()
@@ -5413,6 +5418,58 @@ public function get_table_data(Request $request)
             ->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid','pieza'])
             ->make(true);
     }	
+
+
+    public function auditoriaInvHistorial(Request $request, $id)
+{
+
+    return view('backend.accounting.invoice.modal.historial', compact('id')); 
+}
+
+
+public function auditoriaInvoice(Request $request)
+    {
+		   $id = $request->id;
+		   
+		  if (request()->ajax()) {
+            $datosAudit = Audit::where('auditable_type', Invoice::class)
+                ->where('auditable_id', $id)
+                ->with('user')
+                ->with('auditable');
+            return DataTables::eloquent($datosAudit)
+			->addIndexColumn()
+				->addColumn('model', function ($data) {
+					return "$data->auditable_type (id: $data->auditable_id )";
+				})
+				->addColumn('usuario', function ($data) {
+					return $data->user->name ?? '';
+				})
+				->addColumn('valores_ant', function ($data) {
+					$datos='<table>';
+                    foreach($data->old_values as $attribute => $value){
+                      $datos.='<tr>
+                        <td><b>'.$attribute .'</b></td>
+                        <td>'. $value .'</td>
+                      </tr>';
+                    }
+                  $datos.= '</table>';
+					return $datos;
+				})
+				->addColumn('valores_nue', function ($data) {
+					$datos='<table>';
+                    foreach($data->new_values as $attribute => $value){
+                      $datos.='<tr>
+                        <td><b>'.$attribute .'</b></td>
+                        <td>'. $value .'</td>
+                      </tr>';
+                    }
+                  $datos.= '</table>';
+					return $datos;
+				})
+				->rawColumns(['valores_ant','valores_nue'])
+                ->make(true);
+        }
+    }
 	
 	
 }

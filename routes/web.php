@@ -782,7 +782,18 @@ Route::group(["middleware" => ["install"]], function () {
             Route::get(
                 "invoices/get_items/{id}",
                 "InvoiceController@get_list_item",
+  
             );
+
+            Route::get(
+                "invoices/list-auditoria/{id}",
+                "InvoiceController@auditoriaInvoice",
+            )->name("invoices.auditoriaInvoice");
+            Route::get(
+                "invoices/auditoria/{id}",
+                "InvoiceController@auditoriaInvHistorial",
+            )->name("auditoriaInvHistorial");
+
 
             //Quotation Controller
 
@@ -916,6 +927,15 @@ Route::group(["middleware" => ["install"]], function () {
             Route::post("permission/store", "PermissionController@store")->name(
                 "permission.manage",
             );
+
+            Route::get(
+                "quotations/list-auditoria/{id}",
+                "QuotationController@auditoriaQuotation",
+            )->name("quotations.auditoriaQuotation");
+            Route::get(
+                "quotations/auditoria/{id}",
+                "QuotationController@auditoriaQuoHistorial",
+            )->name("auditoriaQuoHistorial");
 
             //Report Controller
             Route::match(

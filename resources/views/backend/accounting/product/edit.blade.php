@@ -1,5 +1,90 @@
 @extends('layouts.app')
+<style>
+    .custom-switch-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
 
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 75px;  
+        height: 38px;
+        margin-bottom: 0;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    /* El círculo blanco */
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 30px;
+        width: 30px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+        z-index: 2;
+    }
+
+    .slider:after {
+        position: absolute;
+        content: "NO";
+        height: 30px;
+        width: 30px;
+        left: 4px;
+        bottom: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        font-family: 'Poppins', sans-serif;
+        color: #888;
+        transition: .4s;
+        z-index: 3; 
+    }
+
+    input:checked + .slider {
+        background-color: #28a745;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(37px); 
+    }
+
+    input:checked + .slider:after {
+        content: "SI";
+        transform: translateX(37px);
+        color: #28a745; 
+    }
+
+    .switch-label {
+        font-weight: bold;
+        font-family: 'Poppins', sans-serif;
+        font-size: 15px;
+        color: #333;
+    }
+</style>
 @section('content')
     <div class="row">
         <div class="col-12">
@@ -246,12 +331,16 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md py-4">
-                                    <div class="form-check">
-                    
-                                        <input type="checkbox" id="mercado_libre" name="mercado_libre" class="form-check-input" {{ $product->mercado_libre==1 ? 'checked':'' }} value="1">
-                                        <label class="form-check-label" for="mercado_libre">PUBLICADA EN MERCADO LIBRE</label>
-                    
+                                <div class="col-md-6 py-4">
+                                    <div class="form-group">
+                                        <div class="custom-switch-container">
+                                            <label class="switch">
+                                                <input type="checkbox" id="mercado_libre" name="mercado_libre" 
+                                                    {{ $product->mercado_libre == 1 ? 'checked' : '' }} value="1">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="switch-label">PUBLICADA EN MERCADO LIBRE</span>
+                                        </div>
                                     </div>
                                 </div>
 
