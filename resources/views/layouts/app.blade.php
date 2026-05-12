@@ -349,6 +349,7 @@
         <!-- App js -->
 		<script src="{{ asset('public/backend/assets/js/jquery.blockUI.js') }}"></script>
         <script src="{{ asset('public/backend/assets/js/scripts.js?v=2.0') }}"></script>
+        <script src="{{ asset('public/backend/assets/js/appTable.min.js?v=2.0') }}"></script>
 
 		<script type="text/javascript">
 		(function($){

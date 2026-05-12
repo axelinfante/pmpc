@@ -11,4 +11,14 @@ class Modelo extends Model
     protected $fillable = [
         'modelo',
     ];
+	
+	public function marcas()
+{
+    return $this->belongsToMany(
+        Marca::class, 
+        'marca_modelos', 
+        'idModelo', 
+        'idMarca'
+    )->withTimestamps();
+	}
 }
