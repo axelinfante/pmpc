@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Rules\SimilarNameRule;
 use DataTables;
 
 class MarcaModeloController extends Controller
@@ -108,10 +109,18 @@ class MarcaModeloController extends Controller
     {
         //
         $validator = Validator::make($request->all(), [
-            'marca' => 'required|max:50',
-            'modelo' => 'required',
+            'marca' => [
+					'required',
+					'max:50',
+					'unique:marcas,marca',
+					new SimilarNameRule('marcas', 'marca')
+				],'modelo' => [
+					'required',
+					'max:50',
+					'unique:modelos,modelo',
+					new SimilarNameRule('modelos', 'modelo') // Ajustado a tu tabla y columna
+				],
         ]);
-
         if ($validator->fails()) {
             if($request->ajax()){
                 return response()->json(['result'=>'error','message'=>$validator->errors()->all()]);
