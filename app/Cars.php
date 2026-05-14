@@ -116,5 +116,9 @@ class Cars extends Model implements AuditableTable
        
     ];
 
+    public function estado_relacion()
+{
+    return $this->belongsTo('App\CambioEstadoCar', 'idEstado', 'id_estado');
+}
 	
 }
