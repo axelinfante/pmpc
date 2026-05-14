@@ -218,5 +218,122 @@ class MarcasController extends Controller
 				'message' => "Registro actualizado correctamente...",
 				'data' => $marca->id
 			]);
-    }		
+    }
+
+// Dentro de ProductController.php
+	public function createLinea()
+	{
+		return view('backend.accounting.marca.modal.createlinea');
+	}
+
+	public function storelinea(Request $request)
+	{
+		 $validator = Validator::make($request->all(), [
+					'marca' => [
+					'required',
+					'max:50',
+					'unique:marcas,marca',
+					new SimilarNameRule('marcas', 'marca') // Ajustado a tu tabla y columna
+				],	]);
+
+        if ($validator->fails()) {
+            if($request->ajax()){
+                return response()->json(['result'=>'error','message'=>$validator->errors()->all()]);
+            }else{
+                return redirect()->route('marcas.createLinea')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+		
+			    // Crear la marca
+		$marca = Marca::create($request->only('marca'));
+		
+		 if(! $request->ajax()){
+            return redirect()->route('marcas.createLinea')->with('success', _lang('Saved Successfully'));
+        }else{
+			 return response()->json([
+            'result' => 'success',
+            'action' => 'store',
+            'message' => _lang('Saved Successfully'),
+            'id' => $marca->id,
+            'marca' => $marca->marca
+			]);
+			
+        }
+		
+
+	}
+	
+	
+	public function createMarcaModeloLinea(Request $request)
+	{
+		
+		 $idMarca = $request->query('idMarca');
+		 $marca = Marca::find($idMarca);
+		 if (!$marca) {
+            return back()->with('error', _lang('Sorry, Car not found !'));
+         }
+		return view('backend.accounting.marca.modal.createlineaModelo', compact('marca'));
+	}
+	
+	
+	
+	public function storeMarcaModeloLinea(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'idMarca' => 'required|integer|exists:marcas,id',
+        'modelo'  => [
+            'required',
+            'max:150',
+            new SimilarNameRule('modelos', 'modelo'), // Valida nombres sospechosamente parecidos
+        ],
+    ], [
+        'idMarca.required' => 'La marca es obligatoria.',
+        'idMarca.exists'   => 'La marca seleccionada no es válida.',
+        'modelo.required'  => 'El nombre del modelo es obligatorio.',
+        'modelo.max'       => 'El nombre del modelo no puede superar los 150 caracteres.',
+    ]); 
+
+    if ($validator->fails()) {
+        if ($request->ajax()) {
+            return response()->json([
+                'result'  => 'error', 
+                'message' => $validator->errors()->all()
+            ]);
+        }
+        return redirect()->back()->withErrors($validator)->withInput();
+    }
+    
+    $modelo = Modelo::firstOrCreate([
+        'modelo' => $request->modelo
+    ]);
+   
+    $marca = Marca::find($request->idMarca);
+    
+    if ($marca->modelos()->where('idModelo', $modelo->id)->exists()) {
+        return response()->json([
+            'result'  => 'error',
+            'message' => ['Este modelo ya se encuentra asociado a la marca seleccionada.']
+        ]);
+    }
+
+    $marca->modelos()->attach($modelo->id);
+
+    if ($request->ajax()) {
+        return response()->json([
+            'result'  => 'success',
+            'action'  => 'store',
+            'message' => _lang('Saved Successfully'),
+            'id'      => $modelo->id,       
+            'modelo'  => $modelo->modelo,   
+            'idMarca' => $marca->id         
+        ]);
+    }
+
+    return redirect()->back()->with('success', _lang('Saved Successfully'));
+}
+
+
+	
 }
