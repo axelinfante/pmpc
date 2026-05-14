@@ -1,4 +1,5 @@
 @extends('layouts.app')
+<link href="{{ asset('public/dropzone/dropzone.min.css') }}" rel="stylesheet" type="text/css" />
 
 @section('content')
     <style type="text/css">
@@ -133,6 +134,37 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalPieza" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel" style="font-family: 'Poppins'; font-weight: 600; color: #333;">
+                    Detalles de la Pieza - Factura <span id="modal-nro-factura"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th style="font-family: 'Poppins'; color: #666; font-weight: 600;">Descripción de Información</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-piezas-cuerpo">
+                        </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="font-family: 'Poppins';">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @endsection
 
 
@@ -243,7 +275,18 @@
                         },*/
 						{
                         data: 'pieza',
-                        name: 'pieza'
+                        name: 'pieza',
+                        render: function(data, type, row) {
+                        if(!data) return '---';
+                        
+                        var cleanInvoice = String(row.invoice_number).replace(/<[^>]*>?/gm, '').trim();
+
+                        return `<button type="button" class="btn btn-xs btn-primary btn-block view-pieza" 
+                                    data-info="${data}" 
+                                    data-invoice="${cleanInvoice}">
+                                    <i class="fa fa-list"></i> Ver Detalles
+                                </button>`;
+                    }
 						}, // Pieza
                         {
                             data: "vendedor",
@@ -529,5 +572,24 @@ dt.one('preXhr', function (e, s, data) {
 dt.ajax.reload();
 this.processing( false );
 }
+
+
+$('#invoice-table').on('click', '.view-pieza', function() {
+    var infoPieza = $(this).data('info');
+    var nroFactura = $(this).data('invoice');
+
+    $('#modal-nro-factura').text(nroFactura);
+
+    var cuerpoTabla = $('#tabla-piezas-cuerpo');
+    cuerpoTabla.empty(); 
+
+    cuerpoTabla.append(`
+        <tr>
+            <td style="font-family: 'Poppins';">${infoPieza}</td>
+        </tr>
+    `);
+
+    $('#modalPieza').modal('show');
+});
     </script>
 @endsection

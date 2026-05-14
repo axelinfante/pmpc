@@ -17,7 +17,7 @@
   max-width: 0 !important;
   padding: 0 !important;
   border-width: 0 !important;
-  font-size: 0 !important; /* Optionally hide text completely */
+  font-size: 0 !important; 
 }
 </style>
 
