@@ -1492,6 +1492,12 @@ Route::resource("puestos", "PuestosController");
 		   
 		   Route::resource('marcas', MarcasController::class)->except('show');
 		   Route::post("marcas/actualiza-activo", "MarcasController@actualizaActivo",)->name("marcas.actualizaactivos");
+
+		   Route::get('marcas/create/linea', [App\Http\Controllers\MarcasController::class, 'createLinea'])->name('marcas.createLinea');
+   		   Route::post('marcas/linea', [App\Http\Controllers\MarcasController::class, 'storeLinea'])->name('marcas.storeLinea');
+		   
+		   Route::get('marcas/create/lineamarca', [App\Http\Controllers\MarcasController::class, 'createMarcaModeloLinea'])->name('marcas.createMarcaModeloLinea');
+   		   Route::post('marcas/lineamarca', [App\Http\Controllers\MarcasController::class, 'storeMarcaModeloLinea'])->name('marcas.storeMarcaModeloLinea');
 		   
 		   Route::resource('modelos', ModelosController::class)->except('show');
 		   Route::get('modelos/buscar-ajax', [App\Http\Controllers\ModelosController::class, 'buscarAjax'])->name('modelos.buscar.ajax');

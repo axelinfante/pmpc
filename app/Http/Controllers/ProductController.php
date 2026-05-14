@@ -1061,8 +1061,21 @@ class ProductController extends Controller
 
             $product->save();
             if (!empty($request->file())) {
+				$path = public_path('uploads/products');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
                 $this->uploadImg($request, ['dir' => 'products', 'idProduct' => $product->id]);
             }
+			
+			/*if ($request->hasFile('imagen')) {
+            foreach ($request->file('imagen') as $file) {
+                // Guarda en storage/app/public/vehiculos
+                $path = $file->store('vehiculos', 'public');
+                $imagePaths[] = $path;
+				}
+			}*/
+			
+			
+			
         } else {
             //Create pieza para todos los autos
             /*$car = Cars::where('idEstado', '!=', 1)->get();

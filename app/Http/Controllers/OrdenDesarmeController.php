@@ -946,21 +946,24 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         //}
         $gerenciales_autorizado = Puesto::where("predeterminada", 1)->pluck('user_id')->toArray();
         $ordenes = Orden_desarme::select('ordenes_desarme.*')
-            ->with('venta')
-            //->with('aseguradoras')
-            ->with('cotizacion')
-            ->whereHas('car', function ($str) use ($isHistorial,$company_id) {
-                if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete' || strtolower(auth()->user()->role->name) == 'administrativo de desarme') { //|| strtolower(auth()->user()->role->name) == 'gerente de operarios'
-                    if (!$isHistorial)
-                        $str->where('company_id', auth()->user()->company_id);
-                }else{
-					    $str->whereIn('company_id', $company_id);
-				}
-                $str->where(function ($row) use ($isHistorial) {
-                    if (!$isHistorial)
-                        $row->where('idEstado', '!=', 1);
-                });
-            });
+    ->with([
+        'venta', 
+        'cotizacion', 
+        'car.estado_relacion' 
+    ])
+    ->whereHas('car', function ($str) use ($isHistorial, $company_id) {
+        if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete' || strtolower(auth()->user()->role->name) == 'administrativo de desarme') {
+            if (!$isHistorial)
+                $str->where('company_id', auth()->user()->company_id);
+        } else {
+            $str->whereIn('company_id', $company_id);
+        }
+        
+        $str->where(function ($row) use ($isHistorial) {
+            if (!$isHistorial)
+                $row->where('idEstado', '!=', 1);
+        });
+    });
 
 		// $ordenes->whereIn('company_id', $company_id)
 		
@@ -1132,7 +1135,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 return $orden->car->lugar_entrega->nombre ?? '';
             })
             ->editColumn('estado', function ($orden) {
-                return $orden->estado;
+                return $orden->car->estado->estado ?? 'Sin Estado';
             })
            ->editColumn('autorizo', function ($orden) {
                 return $orden->autorizo;
@@ -1258,7 +1261,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;
             })
-            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza'])
+            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado'])
             ->make(true);
     }
 
