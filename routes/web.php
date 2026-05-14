@@ -1502,3 +1502,4 @@ Route::resource("puestos", "PuestosController");
 		   Route::resource('modelos', ModelosController::class)->except('show');
 		   Route::get('modelos/buscar-ajax', [App\Http\Controllers\ModelosController::class, 'buscarAjax'])->name('modelos.buscar.ajax');
 		   Route::post("modelos/actualiza-activo", "ModelosController@actualizaActivo",)->name("modelos.actualizaactivos");
+   		   Route::get('/Products/buscar', 'ProductController@buscar')->name('products.buscar');

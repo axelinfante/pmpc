@@ -33,19 +33,15 @@
 								<!--<a id="productLink" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
 						<label class="control-label">{{ _lang('Producto en vehiculo') }}</label>
                                     <label class="control-label">Productos</label>
-									<select id="item_id" required name="item_id" class="form-control select2" style="width: 100%;">
-							</select>
-                            <!--        <select id="item_id" name="item_id" required class="form-control select2">
+                                    <select id="item_id" name="item_id" required class="form-control select2">
                                         <option value="">Seleccionar</option>
                                          @forelse ($items as $item)
                                             <option value="{{ $item->id }}">{{ $item->item_name }}</option>
                                             @empty
                                         @endforelse
-                                    </select>-->
+                                    </select>
                                 </div>
                             </div>
-							
-							
 
                             <div id="contNroMotor" class="col-md-12 d-none">
                                 <div class="form-group">
@@ -1010,53 +1006,6 @@ $('#miFormulario').submit(function(e) {
                     cache: true
                 }
             });
-			
-
-    $('#item_id').select2({
-        placeholder: 'Escribe el modelo o producto...',
-        minimumInputLength: 2,
-        allowClear: true,
-        width: '100%',
-        ajax: {
-            url: "{{ route('products.buscar') }}",
-            dataType: 'json',
-            delay: 400, 
-            data: function (params) {
-                return {
-                    q: params.term,          
-                    page: params.page || 1,  
-                    nro_interno:  nro_interno.val()
-                };
-            },
-            processResults: function (data, params) {
-                return {
-                    results: data.items 
-                };
-            },
-            cache: true
-        },
-        language: {
-            noResults: function() {
-                return "No se encontraron resultados";
-            },
-            searching: function() {
-                return "Buscando..."; 
-            }
-        }
-    });
-
-
-    $('#item_id').on('select2:select', function (e) {
-        let datosProducto = e.params.data; 
-        
-        if (!datosProducto.id) return; 
-
-        console.log("Procesando Selección:", {
-            id: datosProducto.id,
-            text: datosProducto.text,
-            wasDisabled: datosProducto.disabled 
-        });
-    });
 
      })
     </script>

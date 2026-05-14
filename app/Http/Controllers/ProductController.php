@@ -28,6 +28,8 @@ use OwenIt\Auditing\Models\Audit;
 use Yajra\DataTables\Facades\DataTables;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
+
 
 
 use ZipArchive;
@@ -2049,4 +2051,42 @@ class ProductController extends Controller
         }
     }
 	
+
+public function buscar(Request $request): JsonResponse
+{
+    $search = $request->input('q');
+    $carId = $request->input('nro_interno'); 
+    if (empty($search)) {
+        return response()->json(['items' => [], 'more' => false]);
+    }
+    $itemsPaginados = Item::query()
+        ->select('id', 'item_name')
+        ->where('activo', 'Si')
+        ->where('item_name', 'LIKE', "%{$search}%")
+        ->orderBy('item_name', 'ASC')
+        ->paginate(30);
+    $itemsFormateados = $itemsPaginados->getCollection()->map(function ($item) use ($carId) {
+        if (empty($carId)) {
+            $existePieza = false;
+        } else {
+            $existePieza = Product::where('item_id', $item->id)
+                ->whereNull('car_id')
+                ->where('nro_interno', $carId)
+                ->exists();
+        }
+
+        return [
+            'id'       => $item->id,
+            'text'     => $item->item_name,
+            'disabled' => $existePieza
+        ];
+    });
+
+    return response()->json([
+        'items' => $itemsFormateados->values()->all(), 
+        'more'  => $itemsPaginados->hasMorePages()
+    ]);
+}
+
+
 }
