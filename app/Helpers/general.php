@@ -2346,11 +2346,13 @@ if (!function_exists('filepondUploadRequest')) {
 
             if (str_starts_with($mime, 'image/')) {
                 $filename = $baseName . '.webp';
-                
+                $relative_path =$path . '/' . $filename;
+				$absolute_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative_path);
                 // Procesar con Intervention Image
                 \Image::make($file)
                     ->encode('webp', 90)
-                    ->save($path . '/' . $filename);
+                    ->save($absolute_path);
+                 //   ->save($path . '/' . $filename);
             } else {
                 $filename = $baseName . '.' . $extension;
                 // Mover archivo original (videos, pdf, etc)
@@ -2360,6 +2362,16 @@ if (!function_exists('filepondUploadRequest')) {
         
         return $filename; 
     }
+	
+	/*$filename = time() . '-' . uniqid() . '.webp';
+$relative_path = 'uploads/products/' . $filename;
+
+// Esto convierte todas las barras fijas a la barra diagonal de Windows (\)
+$absolute_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, public_path($relative_path));
+
+// Guardar la imagen con la ruta ya normalizada
+$image->save($absolute_path);*/
+	
 }
 
 /*

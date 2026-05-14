@@ -164,20 +164,24 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <a href="{{ route('marcamodelo.create') }}" data-reload="false"
-                                        data-title="{{ _lang('Create Marca') }}" class="ajax-modal-2 select2-add"><i
+                                    <a href="{{ route('marcas.createLinea') }}" data-reload="false"
+                                        data-select="vendedor_id" data-title="{{ _lang('Create Marca') }}" class="ajax-modal-2 select2-add"><i
                                             class="ti-plus"></i> {{ _lang('Add New') }}</a>
                                     <label class="control-label">{{ _lang('Marca') }}</label>
                                     <select class="form-control select2" data-value="id" data-display="marca"
-                                        data-table="marcas" data-where="" id="marca">
+                                        data-table="marca" data-where="" id="marca" name="marca">
                                         <option value="">{{ _lang('Select One') }}</option>
-                                        {{ create_option('marcas', 'id', 'marca', old('marca')) }}
+                                        {{ create_option('marcas', 'id', 'marca', old('marca'),array('activo=' => 'Si')) }}
                                     </select>
                                 </div>
                             </div>
-
-                            <div class="col-md-6">
+                           
+						  <div class="col-md-6">
                                 <div class="form-group">
+								<a href="#" id="btn-add-modelo" data-reload="false" style="pointer-events: none; opacity: 0.5;"
+										data-select="modelo" data-title="{{ _lang('Create Modelo') }}" class="ajax-modal-2 select2-add">
+										<i class="ti-plus"></i> {{ _lang('Add New') }}
+									</a>
                                     <label class="control-label">{{ _lang('Modelo') }}</label>
                                     <select class="form-control select2" id="modelo">
                                         <option value="">{{ _lang('Select One') }}</option>
@@ -234,20 +238,41 @@
                                 </div>
                             </div>
 
-                            <div class="col-md py-4">
+                            <!--<div class="col-md py-4">
                                 <div class="form-check">
                 
                                     <input type="checkbox" id="mercado_libre" name="mercado_libre" class="form-check-input" value="1">
                                     <label class="form-check-label" for="mercado_libre">PUBLICADA EN MERCADO LIBRE</label>
                 
                                 </div>
-                            </div>
+                            </div>-->
+							
+							<div class="col-md-6 py-4">
+                                    <div class="form-group">
+                                        <div class="custom-switch-container">
+                                            <label class="switch">
+                                                <input type="checkbox" id="mercado_libre" name="mercado_libre" 
+                                                     value="1">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="switch-label">PUBLICADA EN MERCADO LIBRE</span>
+                                        </div>
+                                    </div>
+                             </div>
 
-                            <div class="col-md-12 mb-3">
+                           <!-- <div class="col-md-12 mb-3">
                                 <label class="control-label">{{ _lang('Fotos') }}</label>
                                 <input type="file" class="form-control" id="imagen[]" name="imagen[]"
                                     multiple="">
-                            </div>
+                            </div>-->
+							
+							<div class="col-md-12">
+									<x-dropzone-input 
+										id="dropzone-productos" 
+										url="{{ url('products') }}"
+										:serverFiles="$productosFiles ?? []"
+									/>
+							</div>
 
 
                             <div class="col-md-12 mt-3">
@@ -464,7 +489,20 @@
             
 
             marca.change(function() {
-                modelo.html(`<option value="">{{ _lang('Select One') }}</option>`);
+					var idMarca = $(this).val();
+			        var $btnModelo = $('#btn-add-modelo');
+					modelo.html(`<option value="">{{ _lang('Select One') }}</option>`);
+					
+					if (marca.val()) {
+					  $btnModelo.css({ 'pointer-events': 'auto', 'opacity': '1' });
+				      var urlBase = "{{ route('marcas.createMarcaModeloLinea') }}"; // Ajusta a tu nombre de ruta real
+					  $btnModelo.attr('href', urlBase + '?idMarca=' + idMarca);
+					  
+					} else {
+						// Deshabilitar el acceso si no hay marca
+						$btnModelo.css({ 'pointer-events': 'none', 'opacity': '0.5' }).attr('href', '#');
+					} 
+					
                 $.ajax({
                     url: "{{ route('modelosByMarca') . '/' }}" + marca.val(),
                     dataType: 'json',
@@ -477,7 +515,10 @@
                         result = res;
 
                         modelo.html(html);
-
+						//$btnModelo.css({ 'pointer-events': 'auto', 'opacity': '1' });
+						//var urlBase = "{{ url('modelos/createLinea') }}"; // Ajusta a tu nombre de ruta real
+						//$btnModelo.attr('href', urlBase + '?idMarca=' + marca.val());
+						//modelo.prop('disabled', false).trigger('change');
                     }
 
                 })
@@ -580,7 +621,7 @@
                 }
             }
 
-            $('#myForm').on('submit', function(event) {
+/*            $('#myForm').on('submit', function(event) {
               event.preventDefault(); // Prevent the default action
                 $("#printsinQR").empty();
 				$('#myForm').find(".print-error-msg").find("ul").html('');
@@ -618,21 +659,88 @@
                                 
                             }
 
-
-                         /*if (response.data.id!=""){
-                            $( "#printsinQR" ).load("{{ url('product/printsin-qr') }}/"+response.data.id);
-                            $('#myModal').modal({show:true});
-                         }
-                            nro_interno.trigger('change');*/
-
                             setTimeout(function(){  $(':input[type="submit"]').prop('disabled', false); }, 5000); // Habilitar después de 5 segundos
                   },
                   error: function() {
                       alert('Error submitting form');
                   }
               });
-              });
-			  
+              });*/
+
+
+$('#myForm').on('submit', function(e) {			  
+    e.preventDefault();
+    $("#printsinQR").empty();
+	$('#myForm').find(".print-error-msg").find("ul").html('');
+    $('#myForm').find(".print-error-msg").css('display','none');
+    $(':input[type="submit"]').prop('disabled', true);
+	
+	let masterFormData = new FormData(this);
+	  //let formData = new FormData(this);
+    const formMethod = $(this).find('input[name="_method"]').val() || 'POST';
+    masterFormData.append("_method", formMethod);
+	
+	$('.dropzone-drag-area').each(function() {
+        const elementId = $(this).attr('id');
+        const paramName = $(this).data('name');
+        const type = $(this).data('type');
+        const dz = document.getElementById(elementId).dropzoneInstance;
+        if (dz) {
+            let queuedFiles = dz.getQueuedFiles();
+            
+            // SOLO adjuntar si realmente hay archivos nuevos esperando en cola
+            if (queuedFiles.length > 0) {
+                if (type === 'video') {
+                    masterFormData.append(paramName, queuedFiles[0]); // Envía el archivo individual directo
+                } else {
+                    queuedFiles.forEach(file => {
+                        masterFormData.append(`${paramName}[]`, file);
+                    });
+                }
+            }
+        }
+    });
+	
+	
+	
+	 $.ajax({
+        url: $(this).attr("action"),
+        method: 'POST',
+        data: masterFormData,
+         processData: false,
+            contentType: false,
+			dataType: 'json',
+            cache: false,
+        headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+        success: function(response) {
+           
+		   
+            if(response.result == "success"){
+                                    if (response.data.id!=""){
+                                        $( "#printsinQR" ).load("{{ url('product/printsin-qr') }}/"+response.data.id);
+                                        $('#myModal').modal({show:true});
+                                        }
+                                        nro_interno.trigger('change');
+                            }else{
+                                    //$('#myForm').find(".print-error-msg").find("ul").html('');
+                                    $('#myForm').find(".print-error-msg").css('display','block');
+                                    $.each( response.message, function( key, value ) {
+                                        $('#myForm').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                                    });
+                                
+                            }
+
+                            setTimeout(function(){  $(':input[type="submit"]').prop('disabled', false); }, 5000); // Habilitar después de 5 segundos
+				
+		   
+		   
+        },
+        error: function(xhr) {
+            alert("Error al procesar los componentes multimedia.");
+        }
+    });
+  });	
+
 
 $("#productLink").click(function(e){
   e.preventDefault();
@@ -686,10 +794,210 @@ $('#miFormulario').submit(function(e) {
     // Limpiar los campos del formulario
     $('#item_name').val('');
   });
+  
+  
+    // Procesar el formulario del modal
+	$(document).on("submit", ".ajax-submitz", function(e) {	
+    e.preventDefault();
+    var elem = $(this);
+    var link = $(this).attr("action");
+    var current_modal = $(this).closest('.modal');
+    
+    $(elem).find("button[type=submit]").prop("disabled", true);
+     
+    $.ajax({
+        method: "POST",
+        url: link,
+        data: new FormData(this),
+        mimeType: "multipart/form-data",
+        dataType: 'json',
+        contentType: false,
+        cache: false,
+        processData: false,
+        beforeSend: function() {
+            $("#preloader").css("display", "block");  
+        },
+        success: function(response) {
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $("#preloader").css("display", "none"); 
+
+            // CORRECCIÓN: Se usa 'response' en lugar de 'json'
+            if (response['result'] == "success") {
+                // Limpiar alertas
+                $(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
+                $(current_modal).find(".alert-danger").addClass('d-none');
+                
+                // CORRECCIÓN: Usar '#idMarca' para que coincida con tu HTML
+                var nuevaOpcion = new Option(response['marca'], response['id'], true, true);
+                $('#marca').append(nuevaOpcion).trigger('change');
+                
+                // Resetear formulario y cerrar modal
+                elem[0].reset(); 
+                $(current_modal).modal('hide');
+            } else {
+                // Limpiar errores previos en los contenedores de alerta antes de iterar
+                $("#main_modal .alert-danger").html("");
+                $(current_modal).find(".alert-danger").html("");
+
+                if (Array.isArray(response['message'])) {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        // Main Modal
+                        jQuery.each(response['message'], function(i, val) {
+                           $("#main_modal .alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        // Secondary Modal
+                        jQuery.each(response['message'], function(i, val) {
+                           $(current_modal).find(".alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                } else {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        $("#main_modal .alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");	
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        $(current_modal).find(".alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");						
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                }
+            }
+        },
+        error: function(xhr) {
+            $("#preloader").css("display", "none"); 
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $(current_modal).find(".alert-secondary").addClass('d-none');
+            
+            var response = xhr.responseJSON;
+            var $dangerAlert = $(current_modal).find(".alert-danger");
+            $dangerAlert.html('').removeClass('d-none');
+
+            if (response && response.result === "error" && response.message) {
+                var mensajes = response.message; 
+
+                if (Array.isArray(mensajes)) {
+                    $.each(mensajes, function(index, msg) {
+                        $dangerAlert.append("<p class='m-0'>" + msg + "</p>");
+                    });
+                } else {
+                    $dangerAlert.html("<p class='m-0'>" + mensajes + "</p>");
+                }
+            } else {
+                $dangerAlert.html("<p class='m-0'>Ocurrió un error inesperado en el servidor.</p>");
+            }
+        }
+    });
+
+    return false;
+});
 
 
-		
 
-        })
+ // Procesar el formulario del modal
+	$(document).on("submit", "#marca_modelo", function(e) {	
+    e.preventDefault();
+    var elem = $(this);
+    var link = $(this).attr("action");
+    var current_modal = $(this).closest('.modal');
+    
+    $(elem).find("button[type=submit]").prop("disabled", true);
+     
+    $.ajax({
+        method: "POST",
+        url: link,
+        data: new FormData(this),
+        mimeType: "multipart/form-data",
+        dataType: 'json',
+        contentType: false,
+        cache: false,
+        processData: false,
+        beforeSend: function() {
+            $("#preloader").css("display", "block");  
+        },
+        success: function(response) {
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $("#preloader").css("display", "none"); 
+
+            // CORRECCIÓN: Se usa 'response' en lugar de 'json'
+            if (response['result'] == "success") {
+                // Limpiar alertas
+                $(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
+                $(current_modal).find(".alert-danger").addClass('d-none');
+                
+                // CORRECCIÓN: Usar '#idMarca' para que coincida con tu HTML
+                //var nuevaOpcion = new Option(response['modelo'], response['id'], true, true);
+                //$('#modelo').append(nuevaOpcion).trigger('change');
+                 marca.trigger('change'); 
+                // Resetear formulario y cerrar modal
+                elem[0].reset(); 
+                $(current_modal).modal('hide');
+            } else {
+                // Limpiar errores previos en los contenedores de alerta antes de iterar
+                $("#main_modal .alert-danger").html("");
+                $(current_modal).find(".alert-danger").html("");
+
+                if (Array.isArray(response['message'])) {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        // Main Modal
+                        jQuery.each(response['message'], function(i, val) {
+                           $("#main_modal .alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        // Secondary Modal
+                        jQuery.each(response['message'], function(i, val) {
+                           $(current_modal).find(".alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                } else {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        $("#main_modal .alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");	
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        $(current_modal).find(".alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");						
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                }
+            }
+        },
+        error: function(xhr) {
+            $("#preloader").css("display", "none"); 
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $(current_modal).find(".alert-secondary").addClass('d-none');
+            
+            var response = xhr.responseJSON;
+            var $dangerAlert = $(current_modal).find(".alert-danger");
+            $dangerAlert.html('').removeClass('d-none');
+
+            if (response && response.result === "error" && response.message) {
+                var mensajes = response.message; 
+
+                if (Array.isArray(mensajes)) {
+                    $.each(mensajes, function(index, msg) {
+                        $dangerAlert.append("<p class='m-0'>" + msg + "</p>");
+                    });
+                } else {
+                    $dangerAlert.html("<p class='m-0'>" + mensajes + "</p>");
+                }
+            } else {
+                $dangerAlert.html("<p class='m-0'>Ocurrió un error inesperado en el servidor.</p>");
+            }
+        }
+    });
+
+    return false;
+});
+
+     })
     </script>
 @endsection
