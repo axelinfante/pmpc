@@ -949,11 +949,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
     ->with([
         'venta', 
         'cotizacion', 
-        'car.estado_relacion' // <--- ESTA es la forma correcta de traer el nombre del catálogo
+        'car.estado_relacion' 
     ])
     ->whereHas('car', function ($str) use ($isHistorial, $company_id) {
-        // ... (el resto de tus filtros de roles y company_id se mantienen igual)
-        
         if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete' || strtolower(auth()->user()->role->name) == 'administrativo de desarme') {
             if (!$isHistorial)
                 $str->where('company_id', auth()->user()->company_id);
@@ -1137,13 +1135,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 return $orden->car->lugar_entrega->nombre ?? '';
             })
             ->editColumn('estado', function ($orden) {
-                $nombreEstado = $orden->car->estado_relacion->estado ?? null;
-
-                if ($nombreEstado) {
-                    return $nombreEstado;
-                }
-
-                return $orden->estado ?? 'Sin Estado';
+                return $orden->car->estado->estado ?? 'Sin Estado';
             })
            ->editColumn('autorizo', function ($orden) {
                 return $orden->autorizo;
