@@ -78,7 +78,7 @@ class ModelosController extends Controller
         $validator = Validator::make($request->all(), [
 					'modelo' => [
 					'required',
-					'max:50',
+					'max:150',
 					'unique:modelos,modelo',
 					new SimilarNameRule('modelos', 'modelo') // Ajustado a tu tabla y columna
 				],			
@@ -122,7 +122,7 @@ class ModelosController extends Controller
 	$validator = Validator::make($request->all(), [
         'modelo' => [
             'required',
-            'max:50',
+            'max:150',
             Rule::unique('modelos', 'modelo')->ignore($modelo->id),
             new SimilarNameRule('modelos', 'modelo', $modelo->id)
         ],
