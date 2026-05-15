@@ -372,12 +372,13 @@ class ProductsReturnController extends Controller
             //if (strtolower(auth()->user()->role->name) !== 'despacho' && $ProductReturn->status === 'pendiente') {
             if (strtolower(auth()->user()->role->name) !== 'despacho' &&  (in_array($ProductReturn->status, array('pendiente','descompuesto')))) {
                 return '<div class="dropdown">
-                            <button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">' . _lang('Action') . '
-                                <i class="fa fa-angle-down"></i>
-                            </button>
+                            <button class="btn btn-xs dropdown-toggle" type="button" data-toggle="dropdown" 
+                        		style="background-color: white; color: black; border: 1px solid #ced4da; font-family: \'Poppins\', sans-serif;">
+                        		' . _lang('Actions') . ' <i class="fa fa-angle-down"></i>
+                    		</button>
                             <div class="dropdown-menu" style = "z-index: 10000; position: relative;">
                                 <a class="dropdown-item procesar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
-                                    <i class="far fa-check-circle"></i> ' . _lang('Devolucion a stock') . '
+                                    <i class="far fa-check-circle"></i> ' . _lang('Devolver a stock') . '
                                 </a>
                                 <a class="dropdown-item anular-devolucion" href="#" data-id="' . $ProductReturn->id . '">
                                     <i class="fas fa-trash-alt"></i> ' . _lang('Producto defectuoso') . '
