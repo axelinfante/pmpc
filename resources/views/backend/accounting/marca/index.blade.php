@@ -68,14 +68,12 @@
 
 @section('js-script')
     <script>
-// Inicialización limpia
 $(document).ready(function() {
   var table = $("#data-table").appTable({
 		title:"marcas",
         ajax: {
             url: "{{ route('marcas.index') }}",
             data: function (d) {
-                // Inyectamos nuestros filtros en el request de DataTables
                 d.activo = $('#filtro_activo').val();
                 d.modelo_id = $('#filtro_modelo').val();
 				d._token = $('meta[name="csrf-token"]').attr('content');
@@ -92,29 +90,43 @@ $(document).ready(function() {
             {data: 'action', name: 'action', orderable: false, searchable: false},
         ],
     });
-	
-	 $('#filtro_modelo').select2({
-        allowClear: true,
-        placeholder: "Escribe el modelo...",
-        minimumInputLength: 2,
-        ajax: {
-            url: "{{ route('modelos.buscar.ajax') }}",
-            dataType: 'json',
-            delay: 250,
-            data: function (params) { return { q: params.term }; },
-            processResults: function (data) { return { results: data }; },
-            cache: true
-        }
-    });
-	
-	 // Recargar la tabla automáticamente cuando cambie cualquier filtro
+
+
+	$( '#filtro_modelo' ).select2({
+    width: '100%', 
+    allowClear: true,
+    placeholder: 'Escribe el modelo...',
+    minimumInputLength: 2,
+    ajax: {
+        url: '{{ route("modelos.buscar.ajax") }}',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+            return {
+                q: params.term,
+                page: params.page || 1 
+            };
+        },
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+            return {
+                results: data.data,
+                pagination: {
+                    more: data.current_page < data.last_page 
+                }
+            };
+        },
+        cache: true
+    }
+});
+
+
     $('.filtro-dt').on('change', function() {
 		if (table) {
 			table.ajax.reload(null, false);
 		}
     });
 
-    // Botón para resetear los componentes
     $('#btn_limpiar_filtros').on('click', function() {
         $('#filtro_activo').val('');
         $('#filtro_modelo').val(null).trigger('change');
