@@ -46,9 +46,9 @@
                                         @endforelse
                                     </select>-->
 								<select id="item_id" name="item_id" style="width: 100%;">
-										@if(isset($item->id))
-											<option value="{{ $item->id }}" selected>
-												{{ $item->item_name }}
+										@if(isset($product->item_id))
+											<option value="{{ $product->item_id }}" selected>
+												{{ $product->item->item_name }}
 											</option>
 										@endif
 								</select>
@@ -484,12 +484,6 @@
         let datosProducto = e.params.data; 
         
         if (!datosProducto.id) return; 
-
-        /*console.log("Procesando Selección:", {
-            id: datosProducto.id,
-            text: datosProducto.text,
-            wasDisabled: datosProducto.disabled 
-        });*/
     });
 			
 			
