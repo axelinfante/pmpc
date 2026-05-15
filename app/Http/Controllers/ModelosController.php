@@ -186,32 +186,26 @@ class ModelosController extends Controller
 		
        return response()->json([
 				'result' => 'success',
-				'action' => 'update', // Mantener 'delete' para que tu JS detecte la acción
+				'action' => 'update',
 				'message' => "Registro actualizado correctamente...",
 				'data' => $modelo->id
 			]);
     }		
 
 
-public function buscarAjax(Request $request)
-{
-    $search = $request->input('q');
-    // Limitamos a 30 resultados para mantener la consulta ultra veloz
-    $modelos = Modelo::where('activo', 'Si')
-        ->where('modelo', 'LIKE', "%{$search}%")
-        ->limit(30) 
-        ->get(['id', 'modelo']);
 
-    // Estructuramos la respuesta con el formato exacto requerido por Select2
-    $formatted = $modelos->map(function ($item) {
+public function buscarAjax(Request $request) {
+    $q = $request->input('q');
+    $paginator = Modelo::where('activo', 'Si')->where('modelo', 'LIKE', "%{$q}%")->paginate(30);
+    $paginator->getCollection()->transform(function ($item) {
         return [
-            'id' => $item->id,
-            'text' => $item->modelo
+            'id'   => $item->id,
+            'text' => $item->modelo,
         ];
     });
-
-    return response()->json($formatted);
+    return response()->json($paginator);
 }
+
 	
 		
 }
