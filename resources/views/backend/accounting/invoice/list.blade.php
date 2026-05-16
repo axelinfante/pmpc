@@ -1,6 +1,4 @@
 @extends('layouts.app')
-<link href="{{ asset('public/dropzone/dropzone.min.css') }}" rel="stylesheet" type="text/css" />
-
 @section('content')
     <style type="text/css">
         #invoice-table td:nth-child(5),
@@ -276,17 +274,6 @@
 						{
                         data: 'pieza',
                         name: 'pieza',
-                        render: function(data, type, row) {
-                        if(!data) return '---';
-                        
-                        var cleanInvoice = String(row.invoice_number).replace(/<[^>]*>?/gm, '').trim();
-
-                        return `<button type="button" class="btn btn-xs btn-primary btn-block view-pieza" 
-                                    data-info="${data}" 
-                                    data-invoice="${cleanInvoice}">
-                                    <i class="fa fa-list"></i> Ver Detalles
-                                </button>`;
-                    }
 						}, // Pieza
                         {
                             data: "vendedor",
@@ -574,22 +561,6 @@ this.processing( false );
 }
 
 
-$('#invoice-table').on('click', '.view-pieza', function() {
-    var infoPieza = $(this).data('info');
-    var nroFactura = $(this).data('invoice');
 
-    $('#modal-nro-factura').text(nroFactura);
-
-    var cuerpoTabla = $('#tabla-piezas-cuerpo');
-    cuerpoTabla.empty(); 
-
-    cuerpoTabla.append(`
-        <tr>
-            <td style="font-family: 'Poppins';">${infoPieza}</td>
-        </tr>
-    `);
-
-    $('#modalPieza').modal('show');
-});
     </script>
 @endsection
