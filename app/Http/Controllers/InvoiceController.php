@@ -5140,47 +5140,74 @@ public function get_table_data(Request $request)
                 }
                 return '<a href="' . action('ProjectController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Project') . ')</span></a>';
             })
-
-
-          /*  ->addColumn('producto', function ($invoice) {
-                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
-                if (!empty($invoice_item)):
-                    $html = '';
-                    foreach ($invoice_item as $item):
-						$mostrar="";
-						
-						if ($item->product_id > 0){
-							$mostrar= $item->product->item->item_name;
-						}else{
-							$mostrar= $item->item->item_name;
-						}	
-							
-                        $html .= $mostrar . (($html != "") ? ',' : '') . '<br>';
-                    endforeach;
-
-                endif;
-
-                return $html;
-            })
-            ->addColumn('idproducto', function ($invoice) {
-                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
-                //dd($invoice_item);
-                if (!empty($invoice_item)):
-                    $html = '';
-                    foreach ($invoice_item as $item):
-                        $in = ($item->company_id == 1) ? 'PM-' : 'PC-';
-                        $html .= $in . $item->product_id . (($html != "") ? ',' : '') . '<br>';
-                    endforeach;
-                endif;
-                return $html;
-            })*/
+         
 			 ->addColumn('pieza', function ($invoice) {
+				 
+			$invoice_items = InvoiceItem::with(['product.item']) 
+			->where('invoice_id', $invoice->id)
+			->get()
+			->filter()
+			->sortBy('product.nro_interno');
+
+
+if ($invoice_items->count() === 1) {
+    $item = $invoice_items->first();
+    $producto_id = $item->product->id ?? '';
+    $nro_interno = $item->product->nro_interno ?? null;
+    $company_id = $item->product->company_id ?? null;
+    $tipo_vehiculo = $item->product->tipo_vehiculo ?? null;
+    $item_nombre = $item->product->item->item_name ?? '';
+    
+    $alias_producto = nroInternoAlias($company_id, $tipo_vehiculo, $nro_interno);
+    $alias_mostrar = $alias_producto ? $alias_producto : 'Sin Nro Interno';
+
+    return "({$producto_id}) {$alias_mostrar} - {$item_nombre}";
+}
+
+$tabla_html = '';
+
+if ($invoice_items->isNotEmpty()):
+    $tabla_html .= '<table class="table table-striped">';
+    $tabla_html .= '<thead><tr><th>ID</th><th>Nro Interno</th><th>Ítem</th></tr></thead>';
+    $tabla_html .= '<tbody>';
+
+    foreach ($invoice_items as $item):
+        $producto_id = $item->product->id ?? '';
+        $nro_interno = $item->product->nro_interno ?? null;
+        $company_id = $item->product->company_id ?? null;
+        $tipo_vehiculo = $item->product->tipo_vehiculo ?? null;
+        $item_nombre = $item->product->item->item_name ?? '';
+        
+        $alias_producto = nroInternoAlias($company_id, $tipo_vehiculo, $nro_interno);
+        $alias_mostrar = $alias_producto ? $alias_producto : 'Sin Nro Interno';
+            
+        $tabla_html .= '<tr>';
+        $tabla_html .= '<td>'.$producto_id.'</td>';
+        $tabla_html .= '<td>'.$alias_mostrar.'</td>';
+        $tabla_html .= '<td>'.$item_nombre.'</td>';
+        $tabla_html .= '</tr>';
+    endforeach;
+
+    $tabla_html .= '</tbody></table>';
+endif;
+
+$boton_modal = '<a class="view-details" href="javascript:void(0)" 
+    data-title="Detalles de Factura : '. ($invoice->invoice_number ?? '') .'"
+    data-body=\''.$tabla_html.'\' 
+    data-toggle="modal" 
+    data-target="#detailsModal">
+    <i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+</a>';
+
+if (!isset($request->exportar)) {
+    return $boton_modal;	
+}
+
+return $tabla_html;
+
+
 				
-				/*$producto_completo=$invoice->invoice_items->item->item_name ?? '';
-				$producto_id=$invoice->invoice_items->product->id ?? ''; ($invoice->invoice_items->item->item_name ?? '');
-				return ($producto_completo) ? "($producto_id) $producto_completo":"";*/
-				
-				$invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
+				/*$invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
                 $html = '';
                 if (!empty($invoice_item)):
 
@@ -5193,10 +5220,66 @@ public function get_table_data(Request $request)
 
                 endif;
 
-                return $html;
+                return $html;*/
             })
-			 ->addColumn('nro_interno', function ($invoice) {
-                $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
+			 ->addColumn('nro_interno', function ($invoice)  {
+			
+			$invoice_items = InvoiceItem::with(['product'])
+    ->where('invoice_id', $invoice->id)
+    ->get()
+    ->groupBy('product.nro_interno')
+    ->sortKeys()
+    ->map(function ($grupo) {
+        return $grupo->first();
+    })
+    ->filter();
+
+if ($invoice_items->count() === 1) {
+    $item = $invoice_items->first();
+    $nro_interno = $item->product->nro_interno ?? null;
+    $company_id = $item->product->company_id ?? null;
+    $tipo_vehiculo = $item->product->tipo_vehiculo ?? null;
+    
+    return nroInternoAlias($company_id, $tipo_vehiculo, $nro_interno);
+}
+
+$tabla_html = '';
+
+if ($invoice_items->isNotEmpty()):
+    $tabla_html .= '<table class="table table-striped">';
+    $tabla_html .= '<thead><tr><th>Nro Interno</th></tr></thead>';
+    $tabla_html .= '<tbody>';
+
+    foreach ($invoice_items as $item):
+        $nro_interno = $item->product->nro_interno ?? null;
+        $company_id = $item->product->company_id ?? null;
+        $tipo_vehiculo = $item->product->tipo_vehiculo ?? null;
+        $alias_producto = nroInternoAlias($company_id, $tipo_vehiculo, $nro_interno);
+            
+        $tabla_html .= '<tr>';
+        $tabla_html .= '<td>'.($alias_producto ? $alias_producto : 'Sin Nro Interno').'</td>';
+        $tabla_html .= '</tr>';
+    endforeach;
+
+    $tabla_html .= '</tbody></table>';
+endif;
+
+$boton_modal = '<a class="view-details" href="javascript:void(0)" 
+    data-title="Detalles de Factura : '. ($invoice->invoice_number ?? '') .'"
+    data-body=\''.$tabla_html.'\' 
+    data-toggle="modal" 
+    data-target="#detailsModal">
+    <i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+</a>';
+
+if (!isset($request->exportar)) {
+    return $boton_modal;	
+}
+
+return $tabla_html;
+
+				 
+              /* $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
 
                 //dd($invoice_item);
                 if (!empty($invoice_item)):
@@ -5211,7 +5294,7 @@ public function get_table_data(Request $request)
 
                 endif;
 
-                return $html;
+                return $html;*/
             })
 			            ->addColumn('action', function ($invoice) use ($aFacturar) {
 				if  ($invoice->status == 'Canceled')
