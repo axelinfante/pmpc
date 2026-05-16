@@ -2412,8 +2412,8 @@ if (!function_exists('filepondUpload')) {
 }
 */
 
-if (!function_exists('buscarImagen')) {  
-function buscarImagen($nombreArchivo)
+if (!function_exists('buscarImagen1')) {  
+function buscarImagen1($nombreArchivo)
 {
     // URL por defecto si nada funciona
     $url = asset("public/images/no-img.jpg");
@@ -2444,6 +2444,46 @@ function buscarImagen($nombreArchivo)
     return $url;
 }
 }
+
+if (!function_exists('buscarImagen')) {  
+    function buscarImagen($nombreArchivo, $devolverSize = false)
+    {
+        $resultado = [
+            'url'   => asset("public/images/no-img.jpg"),
+            'size'  => 0,
+            'disco' => null
+        ];
+
+        $discos = ['raiz_publica', 'gcs'];
+        $pathCompleto = $nombreArchivo;
+        $partes = explode('/', $pathCompleto);
+        $nombreArchivo = end($partes);
+        $directorioPadre = $partes[count($partes) - 2] ?? '';	
+        
+        foreach ($discos as $disco) {
+            try {
+                $tmp_image = $pathCompleto;
+                if ($disco == 'gcs') {
+                    $tmp_image = "/$directorioPadre/$nombreArchivo";
+                } 
+
+                if (Storage::disk($disco)->exists($tmp_image)) {
+                    $resultado['url']   = Storage::disk($disco)->url($tmp_image);
+                    $resultado['size']  = Storage::disk($disco)->size($tmp_image); 
+                    $resultado['disco'] = $disco;
+                    //return $resultado; 
+					$devolverSize ? $resultado : $resultado['url'];
+                }
+            } catch (\Exception $e) {
+                report($e);
+                continue; 
+            }
+        }
+
+        return  $devolverSize ? $resultado : $resultado['url'];
+    }
+}
+
 
 if (!function_exists('buscarVideo')) {
 function buscarVideo($video)

@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('content')
     <style type="text/css">
         #invoice-table td:nth-child(5),
@@ -133,6 +132,37 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalPieza" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel" style="font-family: 'Poppins'; font-weight: 600; color: #333;">
+                    Detalles de la Pieza - Factura <span id="modal-nro-factura"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th style="font-family: 'Poppins'; color: #666; font-weight: 600;">Descripción de Información</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-piezas-cuerpo">
+                        </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="font-family: 'Poppins';">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @endsection
 
 
@@ -243,7 +273,7 @@
                         },*/
 						{
                         data: 'pieza',
-                        name: 'pieza'
+                        name: 'pieza',
 						}, // Pieza
                         {
                             data: "vendedor",
@@ -529,5 +559,8 @@ dt.one('preXhr', function (e, s, data) {
 dt.ajax.reload();
 this.processing( false );
 }
+
+
+
     </script>
 @endsection
