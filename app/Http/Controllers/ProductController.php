@@ -1186,7 +1186,8 @@ class ProductController extends Controller
      */
     public function edit(Request $request, $id)
     {
-        $product = Product::where('id', $id)->with('category')->with('marcaModelo')->first();
+        $product = Product::where('id', $id)->with(['category', 'marcaModelo', 'img'])->first();
+
         $item = Item::where("id", $product->item->id)->first(); // ->where("company_id",company_id())
         $categorias = Categoria::all();
         $comp = Company::all();
@@ -1208,11 +1209,25 @@ class ProductController extends Controller
 
         $idCar = $auto->car_id ?? false;
         $auto = Cars::where('id', $product->car_id ?? null)->with('marca_modelo')->first();
-        //dd($auto);
+		
+		$galeriaFiles = [];	
+		if ($product && $product->img) {
+			$galeriaFiles = $product->img->where('img')->map(function ($file) {
+				$path = 'uploads/products/';
+				$datos_imagen=buscarImagen($path.$file->img, true);
+				return [
+					//'id'       => $file->id,
+					'name'     => $file->img,
+					'filesize' => $datos_imagen['size'], //file_exists($path) ? filesize($path) : ($file->peso ?? 0), 
+					'path'      => $datos_imagen['url'] //asset('storage/' . $file->path)
+				];
+			})->values()->toArray();
+		}
+
         if (!$request->ajax() || empty($auto->id)) {
-            return view('backend.accounting.product.edit', compact('item', 'id', 'product', 'categorias', 'interno', 'cias', 'marcas', 'nro_interno_datos', 'items'));
+            return view('backend.accounting.product.edit', compact('item', 'id', 'product', 'categorias', 'interno', 'cias', 'marcas', 'nro_interno_datos', 'items','galeriaFiles'));
         } else {
-            return view('backend.accounting.product.modal.edit', compact('item', 'id', 'auto', 'product', 'categorias', 'interno', 'marcas', 'nro_interno_datos', 'items'));
+            return view('backend.accounting.product.modal.edit', compact('item', 'id', 'auto', 'product', 'categorias', 'interno', 'marcas', 'nro_interno_datos', 'items','galeriaFiles'));
         }
     }
 
@@ -1244,7 +1259,7 @@ class ProductController extends Controller
             }
         }
 
-
+		//dd($request);
         //Update item
         DB::beginTransaction();
 
@@ -1347,8 +1362,24 @@ class ProductController extends Controller
                 //dd($product);
             }
 
+			if ($request->has('removed_imagen')) {
+				$imagenes = Imagen::whereIn('img', $request->removed_imagen)->get();
+				foreach ($imagenes as $imagen) {
+					if (file_exists(public_path('uploads/products/' . $imagen->img))) {
+						unlink(public_path('uploads/products/' . $imagen->img));
+					}
+					$imagen->delete();
+				}
+			}
+			
+			if (!empty($request->file('imagen'))) {
+                $this->uploadImg($request, ['dir' => 'products', 'idProduct' => $product->id]);
+            }
+			
+		
+		
             //eliminar las imagenes seleccionadas
-            $arrImgDelete = $request->input('imgDelete', false);
+            /*$arrImgDelete = $request->input('imgDelete', false);
             if ($arrImgDelete && isset($arrImgDelete[0])) {
                 foreach ($arrImgDelete as $imgdelete) {
                     $img = Imagen::where('id', $imgdelete)->first();
@@ -1363,7 +1394,7 @@ class ProductController extends Controller
             if (!empty($request->file('imagen'))) {
                 //                $this->deleteImgsByIdCarOridProd(['idProduct' => $product->id]);
                 $this->uploadImg($request, ['dir' => 'products', 'idProduct' => $product->id]);
-            }
+            }*/
 
             $cate = $request->input('categoria');
 
@@ -2054,38 +2085,42 @@ class ProductController extends Controller
 
 public function buscar(Request $request): JsonResponse
 {
-    $search = $request->input('q');
-    $carId = $request->input('nro_interno'); 
-    if (empty($search)) {
-        return response()->json(['items' => [], 'more' => false]);
-    }
-    $itemsPaginados = Item::query()
-        ->select('id', 'item_name')
-        ->where('activo', 'Si')
-        ->where('item_name', 'LIKE', "%{$search}%")
-        ->orderBy('item_name', 'ASC')
-        ->paginate(30);
-    $itemsFormateados = $itemsPaginados->getCollection()->map(function ($item) use ($carId) {
-        if (empty($carId)) {
-            $existePieza = false;
-        } else {
-            $existePieza = Product::where('item_id', $item->id)
-                ->whereNull('car_id')
-                ->where('nro_interno', $carId)
-                ->exists();
-        }
+				$search = $request->input('q');
+				$carId = $request->input('nro_interno');
 
-        return [
-            'id'       => $item->id,
-            'text'     => $item->item_name,
-            'disabled' => $existePieza
-        ];
-    });
+				if (empty($search)) {
+					return response()->json(['items' => [], 'more' => false]);
+				}
 
-    return response()->json([
-        'items' => $itemsFormateados->values()->all(), 
-        'more'  => $itemsPaginados->hasMorePages()
-    ]);
+				$itemsPaginados = Item::query()
+					->select('id', 'item_name')
+					->where('activo', 'Si')
+					->where('item_name', 'LIKE', "%{$search}%")
+					->orderBy('item_name', 'ASC')
+					->paginate(10);
+
+				if (empty($carId) || $itemsPaginados->isEmpty()) {
+					$existingItemsIds = [];
+				} else {
+					$existingItemsIds = Product::whereIn('item_id', $itemsPaginados->pluck('id'))
+						->whereNull('car_id')
+						->where('nro_interno', $carId)
+						->pluck('item_id')
+						->toArray();
+				}
+
+				$itemsFormateados = $itemsPaginados->getCollection()->map(function ($item) use ($existingItemsIds) {
+					return [
+						'id' =>   $item->id,
+						'text' => $item->item_name,
+						'disabled' => in_array($item->id, $existingItemsIds),
+					];
+				});
+
+				return response()->json([
+					'items' => $itemsFormateados->values()->all(),
+					'more' => $itemsPaginados->hasMorePages()
+				]);
 }
 
 

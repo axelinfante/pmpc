@@ -10,7 +10,7 @@
                 <span class="d-none panel-title">{{ _lang('Update Product') }}</span>
 
                 <div class="card-body">
-                    <form method="post"  id="myForm" class="validate" autocomplete="off"
+                    <form method="post" class="validate" autocomplete="off"
                         action="{{ action('ProductController@update', $id) }}" enctype="multipart/form-data">
                         {{ csrf_field() }}
                         <input name="_method" type="hidden" value="PATCH">
@@ -284,7 +284,34 @@
                                    <input type="file" class="form-control" id="imagen[]" name="imagen[]"
                                         multiple="">
                                 </div>-->
-							
+
+								@forelse($product->img as $img) 
+                                    <!--<div class="card mx-3" style="width: 18rem;">
+                                        <img class="card-img-top img-fluid"
+											src="{{  buscarImagen('uploads/products/' . $img->img) }}"
+											{{-- asset('public/uploads/products/' . $img->img) --}}
+                                            alt="Card image cap">
+                                        <div class="card-body">
+                                            {{-- <h5 class="card-title">Card title</h5> --}}
+                                            {{-- <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p> --}}
+                                            {{-- <a href="#" class="btn btn-primary">Go somewhere</a> --}}
+
+                                        </div>
+
+                                        <div class="card-footer">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" name="imgDelete[]"
+                                                    value="{{ $img->id }}">
+                                                <label class="form-check-label">
+                                                    Eliminar
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div> -->
+									
+
+										@empty 
+										@endforelse 
                             @endif
 
                             <div class="col-md-12 mt-3">
@@ -452,74 +479,6 @@
         
         if (!datosProducto.id) return; 
     });
-			
-			
- $('#myForm').on('submit', function(e) {			  
-    e.preventDefault();
-	$('#myForm').find(".print-error-msg").find("ul").html('');
-    $('#myForm').find(".print-error-msg").css('display','none');
-    $(':input[type="submit"]').prop('disabled', true);
-	
-	let masterFormData = new FormData(this);
-    const formMethod = $(this).find('input[name="_method"]').val() || 'POST';
-    masterFormData.append("_method", formMethod);
-	
-	$('.dropzone-drag-area').each(function() {
-        const elementId = $(this).attr('id');
-        const paramName = $(this).data('name');
-        const type = $(this).data('type');
-        const dz = document.getElementById(elementId).dropzoneInstance;
-        if (dz) {
-            let queuedFiles = dz.getQueuedFiles();
-            
-            // SOLO adjuntar si realmente hay archivos nuevos esperando en cola
-            if (queuedFiles.length > 0) {
-                if (type === 'video') {
-                    masterFormData.append(paramName, queuedFiles[0]); // Envía el archivo individual directo
-                } else {
-                    queuedFiles.forEach(file => {
-                        masterFormData.append(`${paramName}[]`, file);
-                    });
-                }
-            }
-        }
-    });
-
-	 $.ajax({
-        url: $(this).attr("action"),
-        method: 'POST',
-        data: masterFormData,
-         processData: false,
-            contentType: false,
-			dataType: 'json',
-            cache: false,
-        headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
-        success: function(response) {
-		   
-					if(response.result == "success"){
-                              window.location.href = "{{ route('products.index') }}";
-							  	//window.setTimeout(function(){window.location.reload()}, 500);
-                     }else{
-                                    //$('#myForm').find(".print-error-msg").find("ul").html('');
-                                    $('#myForm').find(".print-error-msg").css('display','block');
-                                    $.each( response.message, function( key, value ) {
-                                        $('#myForm').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
-                                    });
-                                
-                     }
-
-                            setTimeout(function(){  $(':input[type="submit"]').prop('disabled', false); }, 5000); // Habilitar después de 5 segundos
-				
-		   
-		   
-        },
-        error: function(xhr) {
-            alert("Error al procesar los componentes multimedia.");
-        }
-    });
-  });	
-
-
 			
 			
         })
