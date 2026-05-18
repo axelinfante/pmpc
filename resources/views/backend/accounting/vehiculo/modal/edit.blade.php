@@ -174,9 +174,9 @@
 
         <div class="col-md-3 {{ $class }}">
             <div class="form-group">
-                <a href="{{ route('marcamodelo.create') }}" data-reload="false"
+               <!-- <a href="{{ route('marcamodelo.create') }}" data-reload="false"
                     data-title="{{ _lang('Create Marca') }}" class="ajax-modal-2 select2-add"><i class="ti-plus"></i>
-                    {{ _lang('Add New') }}</a>
+                    {{ _lang('Add New') }}</a>-->
                 <label class="control-label">{{ _lang('Marca') }}</label>
                 <select {{ $option }} {{ $option }} class="form-control select2-ajax" data-value="id"
                     data-display="marca" data-table="marcas" data-where="" id="marca">

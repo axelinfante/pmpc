@@ -136,7 +136,8 @@ class Select2Controller extends Controller
                 }
 
                 if ($company != 'undefined' && $company) {
-                    $display_option .= ", IF(items.company_id = " . $company . ", false, true) as disabled";
+                   // $display_option .= ", IF(items.company_id = " . $company . ", false, true) as disabled";
+                    $display_option .= ", IF(products.company_id = " . $company . ", false, true) as disabled";
                 }
 
                 $result = DB::table($table)
