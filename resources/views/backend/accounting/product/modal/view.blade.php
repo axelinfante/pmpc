@@ -21,7 +21,10 @@
 				<div class="row">
 						<div class="col" style="margin-top: 0.50rem !important;">
 						<!--<img src="{{asset('public/uploads/products/'.$img->img)}}" alt="">-->
-						<img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/products/'. $img->img),$img->company_id,'/products/'.$img->img) }}" alt="">
+						<!--<img class="card-img-top img-fluid" src="{{ buscarImagen('uploads/products/' . $img->img) }}" alt="">-->
+						@php
+										echo img_lazy('uploads/products/' . $img->img);
+						@endphp
 					</div>
 				</div>
 				@empty

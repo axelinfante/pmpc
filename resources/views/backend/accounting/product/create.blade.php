@@ -355,10 +355,10 @@
 
                     $(':input[type="submit"]').prop('disabled', false);
                     //let item_id_actual=1;//select.val();
-                    select.find("option").prop("disabled", false);
-                    select.prop('selectedIndex', 0);
-                    limpiarItems();
-                    select.select2();
+                   // select.find("option").prop("disabled", false);
+                    //select.prop('selectedIndex', 0);
+                    //limpiarItems();
+                    //select.select2();
                     //MostrarModelo();
 					
 					if ($('#nro_interno').val() > 0){
@@ -373,9 +373,14 @@
 						marca.trigger('change'); 
 
 					}
-                    
+                      MostrarModelo();
+					  $('#item_id').val(null).trigger('change');
+
+					  
                  // Llamada AJAX para verificar pieza y obtener nro_motor
-                if ($('#item_id').val() != '' && $('#nro_interno').val() > 0 ) {
+				 
+            /*   if ($('#item_id').val() != '' && $('#nro_interno').val() > 0 ) {
+				   $('#item_id').trigger('change'); 
                     $.ajax({
                         url: "{{ url('vehiculo/verifica-pieza') }}" + "/" + $('#item_id').val() +
                             "/" +
@@ -402,7 +407,7 @@
 
                 }else{
                      MostrarModelo();
-                }
+                }*/
 
                /* 
                 $.ajax({
@@ -446,7 +451,7 @@
                
             })
 
-            item_id.change(function(e) {
+       /*     item_id.change(function(e) {
                 $(':input[type="submit"]').prop('disabled', false);  
                if ($('#item_id').val() != '' && $('#nro_interno').val() > 0 ) {
                     $.ajax({
@@ -478,7 +483,7 @@
                 }else{
                                 MostrarNroMotor();
                             }
-                })
+                })*/
             
 
             marca.change(function() {
@@ -594,6 +599,7 @@
 
 
             function limpiarItems() {
+				return;
                 let nro_interno = $('#nro_interno');
                  if (nro_interno.val() > 0) {
                     $.ajax({
@@ -1051,11 +1057,11 @@ $('#miFormulario').submit(function(e) {
         
         if (!datosProducto.id) return; 
 
-        console.log("Procesando Selección:", {
+        /*console.log("Procesando Selección:", {
             id: datosProducto.id,
             text: datosProducto.text,
             wasDisabled: datosProducto.disabled 
-        });
+        });*/
     });
 
      })
