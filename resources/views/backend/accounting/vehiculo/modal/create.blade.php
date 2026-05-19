@@ -139,7 +139,7 @@
         </div>
         <div class="col-md-3">
             <div class="form-group">
-                <a href="{{ route('marcamodelo.create') }}" data-reload="false"
+                <a href="{{ route('marcas.createLinea') }}" data-reload="false"
                     data-title="{{ _lang('Create Marca') }}" class="ajax-modal-2 select2-add"><i class="ti-plus"></i>
                     {{ _lang('Add New') }}</a>
                 <label class="control-label">{{ _lang('Marca') }}</label>
@@ -156,6 +156,10 @@
 
         <div class="col-md-3">
             <div class="form-group">
+			<a href="#" id="btn-add-modelo" data-reload="false" style="pointer-events: none; opacity: 0.5;"
+										data-select="modelo" data-title="{{ _lang('Create Modelo') }}" class="ajax-modal-2 select2-add">
+										<i class="ti-plus"></i> {{ _lang('Add New') }}
+									</a>
                 <label class="control-label">{{ _lang('Modelo') }}</label>
                 <select class="form-control select2" id="modelo">
                     <option value="">{{ _lang('Select One') }}</option>
@@ -575,7 +579,20 @@
 
 
         marca.change(function() {
+			var idMarca = $(this).val();
+			var $btnModelo = $('#btn-add-modelo');
             modelo.html(`<option value="">{{ _lang('Select One') }}</option>`);
+			
+			if (marca.val()) {
+					  $btnModelo.css({ 'pointer-events': 'auto', 'opacity': '1' });
+				      var urlBase = "{{ route('marcas.createMarcaModeloLinea') }}"; // Ajusta a tu nombre de ruta real
+					  $btnModelo.attr('href', urlBase + '?idMarca=' + idMarca);
+					  
+					} else {
+						// Deshabilitar el acceso si no hay marca
+						$btnModelo.css({ 'pointer-events': 'none', 'opacity': '0.5' }).attr('href', '#');
+					} 
+			
             $.ajax({
                 url: "{{ route('modelosByMarca') . '/' }}" + marca.val(),
                 dataType: 'json',
@@ -628,5 +645,191 @@
         //     $(this).parent('div').remove(); //Eliminamos el div
         //     x--; // Reducimos el contador a 1
         // });
+		
+  // Crear marca
+	$(document).on("submit", ".ajax-submitz", function(e) {	
+    e.preventDefault();
+    var elem = $(this);
+    var link = $(this).attr("action");
+    var current_modal = $(this).closest('.modal');
+    
+    $(elem).find("button[type=submit]").prop("disabled", true);
+     
+    $.ajax({
+        method: "POST",
+        url: link,
+        data: new FormData(this),
+        mimeType: "multipart/form-data",
+        dataType: 'json',
+        contentType: false,
+        cache: false,
+        processData: false,
+        beforeSend: function() {
+            $("#preloader").css("display", "block");  
+        },
+        success: function(response) {
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $("#preloader").css("display", "none"); 
+
+            if (response['result'] == "success") {
+                $(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
+                $(current_modal).find(".alert-danger").addClass('d-none');
+
+                var nuevaOpcion = new Option(response['marca'], response['id'], true, true);
+                $('#marca').append(nuevaOpcion).trigger('change');
+                
+                elem[0].reset(); 
+                $(current_modal).modal('hide');
+            } else {
+                $("#main_modal .alert-danger").html("");
+                $(current_modal).find(".alert-danger").html("");
+
+                if (Array.isArray(response['message'])) {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        jQuery.each(response['message'], function(i, val) {
+                           $("#main_modal .alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        jQuery.each(response['message'], function(i, val) {
+                           $(current_modal).find(".alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                } else {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        $("#main_modal .alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");	
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        $(current_modal).find(".alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");						
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                }
+            }
+        },
+        error: function(xhr) {
+            $("#preloader").css("display", "none"); 
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $(current_modal).find(".alert-secondary").addClass('d-none');
+            
+            var response = xhr.responseJSON;
+            var $dangerAlert = $(current_modal).find(".alert-danger");
+            $dangerAlert.html('').removeClass('d-none');
+
+            if (response && response.result === "error" && response.message) {
+                var mensajes = response.message; 
+
+                if (Array.isArray(mensajes)) {
+                    $.each(mensajes, function(index, msg) {
+                        $dangerAlert.append("<p class='m-0'>" + msg + "</p>");
+                    });
+                } else {
+                    $dangerAlert.html("<p class='m-0'>" + mensajes + "</p>");
+                }
+            } else {
+                $dangerAlert.html("<p class='m-0'>Ocurrió un error inesperado en el servidor.</p>");
+            }
+        }
+    });
+    return false;
+});
+
+
+// Modelo
+	$(document).on("submit", "#marca_modelo", function(e) {	
+    e.preventDefault();
+    var elem = $(this);
+    var link = $(this).attr("action");
+    var current_modal = $(this).closest('.modal');
+    
+    $(elem).find("button[type=submit]").prop("disabled", true);
+     
+    $.ajax({
+        method: "POST",
+        url: link,
+        data: new FormData(this),
+        mimeType: "multipart/form-data",
+        dataType: 'json',
+        contentType: false,
+        cache: false,
+        processData: false,
+        beforeSend: function() {
+            $("#preloader").css("display", "block");  
+        },
+        success: function(response) {
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $("#preloader").css("display", "none"); 
+
+            if (response['result'] == "success") {
+                $(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
+                $(current_modal).find(".alert-danger").addClass('d-none');
+                
+                 marca.trigger('change'); 
+                elem[0].reset(); 
+                $(current_modal).modal('hide');
+            } else {
+                $("#main_modal .alert-danger").html("");
+                $(current_modal).find(".alert-danger").html("");
+
+                if (Array.isArray(response['message'])) {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        jQuery.each(response['message'], function(i, val) {
+                           $("#main_modal .alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        jQuery.each(response['message'], function(i, val) {
+                           $(current_modal).find(".alert-danger").append("<p class='m-0'>" + val + "</p>");
+                        });
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                } else {
+                    if (typeof reload !== 'undefined' && reload != false) {
+                        $("#main_modal .alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");	
+                        $("#main_modal .alert-secondary").addClass('d-none');
+                        $("#main_modal .alert-danger").removeClass('d-none');
+                    } else {
+                        $(current_modal).find(".alert-danger").html("<p class='m-0'>" + response['message'] + "</p>");						
+                        $(current_modal).find(".alert-secondary").addClass('d-none');
+                        $(current_modal).find(".alert-danger").removeClass('d-none');
+                    }
+                }
+            }
+        },
+        error: function(xhr) {
+            $("#preloader").css("display", "none"); 
+            $(elem).find("button[type=submit]").prop("disabled", false);	
+            $(current_modal).find(".alert-secondary").addClass('d-none');
+            
+            var response = xhr.responseJSON;
+            var $dangerAlert = $(current_modal).find(".alert-danger");
+            $dangerAlert.html('').removeClass('d-none');
+
+            if (response && response.result === "error" && response.message) {
+                var mensajes = response.message; 
+
+                if (Array.isArray(mensajes)) {
+                    $.each(mensajes, function(index, msg) {
+                        $dangerAlert.append("<p class='m-0'>" + msg + "</p>");
+                    });
+                } else {
+                    $dangerAlert.html("<p class='m-0'>" + mensajes + "</p>");
+                }
+            } else {
+                $dangerAlert.html("<p class='m-0'>Ocurrió un error inesperado en el servidor.</p>");
+            }
+        }
+    });
+
+    return false;
+});
+		
+		
     })
 </script>
