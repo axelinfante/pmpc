@@ -255,6 +255,48 @@ class ProductsReturnController extends Controller
 		}
 	}
 
+	public function repair(Request $request)
+{
+    DB::beginTransaction();
+    try {
+        $id = $request->id;
+
+        $product_return = ProductReturn::where('id', $id)->first();
+
+        if (!$product_return) {
+            return response()->json([
+                'result' => 'error', 
+                'action' => 'products returns repair', 
+                'message' => _lang('Un error ha ocurrido'), 
+                'data' => ['Devolución no encontrada']
+            ], 404);
+        }
+
+        $product_return->note = trim($product_return->note) . " " . ($request->observacion ?? '');
+        
+        $product_return->status = 'reparar';
+        $product_return->save();
+    
+        DB::commit();
+
+        return response()->json([
+            'result' => 'success', 
+            'action' => 'products returns repair', 
+            'message' => _lang('La devolución ha sido enviada a reparación correctamente.'), 
+            'data' => []
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollback();
+        return response()->json([
+            'result' => 'error', 
+            'action' => 'products returns repair', 
+            'message' => _lang('Un error ha ocurrido'), 
+            'data' => [$e->getMessage()]
+        ], 500);
+    }
+}
+
 
 	
 	public function cancel(Request $request)
@@ -380,8 +422,11 @@ class ProductsReturnController extends Controller
                                 <a class="dropdown-item procesar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
                                     <i class="far fa-check-circle"></i> ' . _lang('Devolver a stock') . '
                                 </a>
-                                <a class="dropdown-item anular-devolucion" href="#" data-id="' . $ProductReturn->id . '">
-                                    <i class="fas fa-trash-alt"></i> ' . _lang('Producto defectuoso') . '
+								<a class="dropdown-item reparar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
+                                    <i class="fas fa-tools"></i> ' . _lang('Defectuoso a reparar') . '
+                                </a>
+								<a class="dropdown-item anular-devolucion" href="#" data-id="' . $ProductReturn->id . '">
+                                    <i class="fas fa-trash-alt"></i> ' . _lang('Defectuoso a destruir') . '
                                 </a>
                             </div>
                         </div>';

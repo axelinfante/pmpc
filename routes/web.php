@@ -1018,6 +1018,8 @@ Route::group(["middleware" => ["install"]], function () {
                 "products-returns-cancel",
                 "ProductsReturnController@cancel",
             )->name("products_returns.cancel");
+            
+            Route::post('products-returns-repair', 'ProductsReturnController@repair')->name('products_returns.repair');
 
             //Tramitadores
 
@@ -1457,6 +1459,8 @@ Route::get("/consulta-getventas", "InvoiceController@getConsultaVentas")->name(
 );
 
 Route::get("products/productos-lote/{ids}", "ProductController@productosLote");
+Route::get('piezas-destruir', 'PiezasDestruirController@index')->name('piezas_destruir.index');
+Route::get('piezas-destruir-data', 'PiezasDestruirController@get_data')->name('piezas_destruir.data');
 //Route::post('productos-lote', [App\Http\Controllers\ProductController::class, 'productosLote']);
 
 Route::post(
@@ -1466,6 +1470,7 @@ Route::post(
 Route::resource("item", "ItemController");
 
 Route::resource("puestos", "PuestosController");
+
 //Route::resource('products', ProductController::class);
 
 			Route::post('contacts/movimiento_saldo', 'ContactController@movimiento_saldo')->name('contacts.movimiento_saldo');
