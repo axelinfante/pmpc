@@ -5,7 +5,7 @@ var products_returns_table;
 	$('#products_returns_table thead tr').clone(true).appendTo('#products_returns_table thead');
 	$('#products_returns_table thead tr:eq(1) th').each(function (i) {
 		var title = $(this).text(); //es el nombre de la columna
-		 if(i != 7) {
+		 if(i < 6 ) {
 		$(this).html('<input type="text" value="" class="form-control filtros" placeholder="Search...' + title + '" />');
 
 		$('.filtros', this).on('change', function () {
