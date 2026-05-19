@@ -1179,9 +1179,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
                 //if (true == true ) {
 					$fecha = isset($orden->f_ingreso_puesto) ? date('Y-m-d\TH:i', strtotime($orden->f_ingreso_puesto)) : date('Y-m-d\TH:i');
-					if (isset($orden->f_ingreso_puesto)){
+					/* if (isset($orden->f_ingreso_puesto)){
 						return '<span>' . $orden->f_ingreso_puesto . '</span>';
-					}
+					}*/
 						return '<input type="datetime-local" name="f_ingreso_puesto" value="' . $fecha . '" class="f-ingreso-puesto-input form-control">';	
                 } else {
                     return '<span>' . $orden->f_ingreso_puesto . '</span>';
@@ -1234,9 +1234,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                     //$operarios = ['operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operarioconstituyentes@pmpc.com.ar', 'operarioventanita@pmpc.com.ar', 'operarioventanita@pmpc.com.ar', 'operariogeneral@pmpc.com.ar'];
 					
 					
-					if (isset($orden->puesto)){
+					/*if (isset($orden->puesto)){
 						 return '<span>' . $orden->puesto . '</span>';
-					}
+					}*/
 					
 					
 					$filteredCompany = $opciones->filter(function ($opcion) use ($orden) {
