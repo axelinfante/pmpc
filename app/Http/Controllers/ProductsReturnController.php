@@ -376,8 +376,16 @@ class ProductsReturnController extends Controller
             return $ProductReturn->invoice->client->contact_name ?? '';
         })
 		->editColumn('status', function ($ProductReturn) {
-            return $ProductReturn->status ?? '';
-        })
+    $statuses = [
+        'pendiente'    => '<span class="badge badge-warning">Pendientes</span>',
+        'procesada'    => '<span class="badge badge-success">Procesadas</span>',
+        'reparar'      => '<span class="badge badge-info">Defectuoso a reparar</span>',
+        'descompuesto' => '<span class="badge badge-danger">Defectuoso a destruir</span>',
+    ];
+
+    // Busca el estado en el arreglo; si no existe, muestra el valor original seguro
+    return $statuses[$ProductReturn->status] ?? '<span class="badge badge-secondary">' . e($ProductReturn->status) . '</span>';
+})
 		->editColumn('note', function ($ProductReturn) {
 			//trim($product_return->note)." ".($request->observacion ?? '');
 			 $valor=str_replace('undefined', '', $ProductReturn->note);
@@ -433,7 +441,7 @@ class ProductsReturnController extends Controller
             }
             return '';
         })
-		 ->rawColumns(['action','product_name'])
+		 ->rawColumns(['action','product_name','status'])
         ->make(true);
 }
 
