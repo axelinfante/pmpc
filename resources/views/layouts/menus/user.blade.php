@@ -230,6 +230,9 @@
 			@can('pi_consulta_venta')
 				<li class="nav-item"><a class="nav-link" href="{{ route('invoice.consulta_ventas') }}">{{ _lang('Consulta Venta') }}</a></li>
 		   @endcan
+		   <li class="nav-item">
+                    <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
+                </li>
 		</li>
     </ul>
 </li>
