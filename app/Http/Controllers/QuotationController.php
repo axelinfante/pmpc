@@ -203,7 +203,7 @@ class QuotationController extends Controller
                         . '<div class="dropdown-menu">'
                         . '<a class="dropdown-item" href="' . action('QuotationController@edit', $quotation->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a></li>'
                         . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
-
+                        . '<a href="' . route('auditoriaQuoHistorial', $quotation->id) . '" data-title="' . _lang('Historial de Quotations') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a></li>'
                         . '<a href="' . url('reservas/create_payment/' . $quotation->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>'
                         // . '<a href="' . url('reservas/view_payment/' . $quotation->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>'
     
@@ -222,6 +222,8 @@ class QuotationController extends Controller
                         . '<div class="dropdown-menu">'
                         . '<a class="dropdown-item" href="' . action('QuotationController@edit', $quotation->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a></li>'
                         . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
+
+                        . '<a href="' . route('auditoriaQuoHistorial', $quotation->id) . '" data-title="' . _lang('Historial de Quotations') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a></li>'
                         
                         . '<form action="' . action('QuotationController@destroy', $quotation['id']) . '" method="post">'
                         . csrf_field()
