@@ -19,12 +19,11 @@
                                 name="status" multiple="true">
                                 <option selected value="pendiente">Pendientes</option>
                                 <option value="procesada">Procesadas</option>
-                                <option value="anulada">Anuladas</option>
-                                <option selected  value="descompuesto">Descompuesto</option>
+                                <option selected value="reparar">Defectuoso a reparar</option>
+                                <option value="descompuesto">Defectuoso a destruir</option>
                             </select>
                         </div>
                     </div>
-
                     <hr>
 
 			<div class="table-responsive dt-responsive"> 

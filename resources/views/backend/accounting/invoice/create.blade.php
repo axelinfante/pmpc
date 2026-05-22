@@ -245,7 +245,7 @@
 						{{--class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>--}}
 
 						<label class="control-label">{{ _lang('Vehiculo') }}(Estados: BD / APTO / No Apto Autorizado / Compactado -> Debe colocar observacion)</label>
-						<select class="form-control select2-ajax" data-value="cars.id" data-display="IF(cars.company_id = 1, CONCAT('PM',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 7, '0')), CONCAT('PC',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 7, '0') ))"
+						<select class="form-control select2-ajax" data-value="cars.id" data-display="IF(cars.company_id = 1, CONCAT('PM',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 10, '0')), CONCAT('PC',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 10, '0') ))"
 								data-display2="IF(cars.idMarca_modelo > 0, marcas.marca , 'Sin marca')" data-display3="IF(cars.idMarca_modelo > 0,modelos.modelo, 'Sin modelo')"
 								data-table="cars"
 								data-where="11" name="car_id" id="car_id">
