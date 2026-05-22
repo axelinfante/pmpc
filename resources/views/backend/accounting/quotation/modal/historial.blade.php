@@ -14,6 +14,7 @@
               <th scope="col">Fecha</th>
               <th scope="col">Valores Anteriores</th>
               <th scope="col">Nuevos Valores</th>
+              <th scope="col">Historial de Ítems</th>
             </tr>
           </thead>
           <tbody >
@@ -71,6 +72,7 @@
                    { data: 'created_at', name: 'created_at' },
                     { data: 'valores_ant', name: 'valores_ant' },
                     { data: 'valores_nue', name: 'valores_nue' },
+                    { data: 'historial_items', name: 'historial_items' },
                 ],
                 lengthMenu: [25, 50, 100]
         });
