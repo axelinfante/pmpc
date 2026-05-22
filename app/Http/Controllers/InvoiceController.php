@@ -5511,48 +5511,99 @@ return $tabla_html;
 
 
 public function auditoriaInvoice(Request $request)
-    {
-		   $id = $request->id;
-		   
-		  if (request()->ajax()) {
-            $datosAudit = Audit::where('auditable_type', Invoice::class)
-                ->where('auditable_id', $id)
-                ->with('user')
-                ->with('auditable');
-            return DataTables::eloquent($datosAudit)
-			->addIndexColumn()
-				->addColumn('model', function ($data) {
-					return "$data->auditable_type (id: $data->auditable_id )";
-				})
-				->addColumn('usuario', function ($data) {
-					return $data->user->name ?? '';
-				})
-				->addColumn('valores_ant', function ($data) {
-					$datos='<table>';
-                    foreach($data->old_values as $attribute => $value){
-                      $datos.='<tr>
-                        <td><b>'.$attribute .'</b></td>
-                        <td>'. $value .'</td>
-                      </tr>';
+{
+    $id = $request->id;
+    
+    if (request()->ajax()) {
+        $itemIds = \App\InvoiceItem::where('invoice_id', $id)->pluck('id')->toArray();
+
+        $datosAudit = Audit::where('auditable_type', Invoice::class)
+            ->where('auditable_id', $id)
+            ->with(['user', 'auditable']);
+
+        return DataTables::eloquent($datosAudit)
+            ->addIndexColumn()
+            ->addColumn('model', function ($data) {
+                return "{$data->auditable_type} (id: {$data->auditable_id})";
+            })
+            ->addColumn('usuario', function ($data) {
+                return $data->user->name ?? 'Sistema';
+            })
+            ->addColumn('valores_ant', function ($data) {
+                $datos = '<table class="table table-condensed table-bordered" style="font-size:11px; margin-bottom:0;">';
+                foreach (($data->old_values ?? []) as $attribute => $value) {
+                    $datos .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
+                }
+                $datos .= '</table>';
+                return $datos;
+            })
+            ->addColumn('valores_nue', function ($data) {
+                $datos = '<table class="table table-condensed table-bordered" style="font-size:11px; margin-bottom:0;">';
+                foreach (($data->new_values ?? []) as $attribute => $value) {
+                    $datos .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
+                }
+                $datos .= '</table>';
+                return $datos;
+            })
+            ->addColumn('historial_items', function ($data) use ($itemIds) {
+                if (empty($itemIds)) {
+                    return '<span class="text-muted" style="font-size:11px;">Sin ítems</span>';
+                }
+
+                $itemsAudit = Audit::where('auditable_type', \App\InvoiceItem::class)
+                    ->whereIn('auditable_id', $itemIds)
+                    ->where('user_id', $data->user_id)
+                    ->whereBetween('created_at', [
+                        $data->created_at->copy()->subMinute(), 
+                        $data->created_at->copy()->addMinute()
+                    ])
+                    ->with('auditable')
+                    ->get();
+
+                if ($itemsAudit->isEmpty()) {
+                    return '<span class="text-muted" style="font-size:11px;">No se modificaron ítems</span>';
+                }
+
+                $datos = '<div style="max-height: 200px; overflow-y: auto;">';
+                
+                foreach ($itemsAudit as $audit) {
+                    $itemDescription = $audit->auditable->description ?? "Ítem ID: {$audit->auditable_id}";
+                    $evento = strtoupper($audit->event); 
+
+                    $datos .= '<table class="table table-condensed table-bordered mb-2" style="font-size:11px; width:100%;">';
+                    
+                    $datos .= '<tr class="bg-light"><td colspan="2" style="padding:4px 2px;"><b> ' . e($itemDescription) . '</b> <span class="badge badge-dark float-right" style="font-size:9px;">' . $evento . '</span></td></tr>';
+                    
+                    if (!empty($audit->new_values)) {
+                        foreach ($audit->new_values as $key => $newValue) {
+                            $oldValue = $audit->old_values[$key] ?? 'N/A';
+                            
+                            $oldValueStr = is_array($oldValue) ? json_encode($oldValue) : e($oldValue);
+                            $newValueStr = is_array($newValue) ? json_encode($newValue) : e($newValue);
+
+                            $datos .= '<tr>';
+                            $datos .= '<td style="padding:2px; width:40%;"><b>' . e($key) . ' (antes)</b></td>';
+                            $datos .= '<td style="padding:2px;" class="text-danger style="text-decoration:line-through;">' . $oldValueStr . '</td>';
+                            $datos .= '</tr>';
+
+                            $datos .= '<tr>';
+                            $datos .= '<td style="padding:2px; width:40%;"><b>' . e($key) . ' (new)</b></td>';
+                            $datos .= '<td style="padding:2px;" class="text-success font-weight-bold">' . $newValueStr . '</td>';
+                            $datos .= '</tr>';
+                        }
+                    } else {
+                        $datos .= '<tr><td colspan="2" style="padding:2px;" class="text-muted"><i>Sin detalles de cambios</i></td></tr>';
                     }
-                  $datos.= '</table>';
-					return $datos;
-				})
-				->addColumn('valores_nue', function ($data) {
-					$datos='<table>';
-                    foreach($data->new_values as $attribute => $value){
-                      $datos.='<tr>
-                        <td><b>'.$attribute .'</b></td>
-                        <td>'. $value .'</td>
-                      </tr>';
-                    }
-                  $datos.= '</table>';
-					return $datos;
-				})
-				->rawColumns(['valores_ant','valores_nue'])
-                ->make(true);
-        }
+                    
+                    $datos .= '</table>';
+                }
+                
+                $datos .= '</div>';
+
+                return $datos;
+            })
+            ->rawColumns(['valores_ant', 'valores_nue', 'historial_items'])
+            ->make(true);
     }
-	
-	
+}
 }
