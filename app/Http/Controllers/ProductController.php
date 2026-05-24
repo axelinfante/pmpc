@@ -1997,46 +1997,68 @@ class ProductController extends Controller
 		
         if ($request->ajax()) {
 			
-			$predefinidos = Item::where('activo', "Si")->where('item_type', 'product')->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name','id')->toArray();
-			//$predefinidosfiltros = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name')->toArray();
-			$predefinidosfiltros = Item::where('activo', "Si")->where('item_type', 'product')->where('allCar', 1)->pluck('id')->toArray();
-			$predefinidostable = Item::where('activo', "Si")->where('item_type', 'product')->where('allCar', 1)->orderBy('item_name', 'ASC')->get();
-			//dd($predefinidosfiltros);
-			$products = Product::select('products.id','products.item_id', 'products.stock', 'products.nro_oblea','items.item_name','items.allCar','items.activo','products.estado')
-						->join('items', 'items.id', '=', 'products.item_id') 
-						->where('products.nro_interno',$request->nro_interno)
-						->whereIn('items.id', $predefinidosfiltros)
-						//->whereIn('items.item_name', $predefinidosfiltros)
-						->get();	
-			//$results = array();
-			foreach ($products as $row) {
-				///$results[] = $row->toArray();
-				if (in_array($row->item_name, $predefinidos)) {
-					$clave = array_search($row->item_name, $predefinidos);
-					$predefinidos[$clave] = $row->toArray();
-				}
-				
-			}
-            return DataTables::of($predefinidostable)
-                ->addIndexColumn()
-                ->addColumn('selection', function ($row)  use ($predefinidos) {
-					
-					 $resultado="";
-					if (!is_array($predefinidos[$row->id])){
-						$resultado= '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="'.$row->id.'">';
+			$products = Item::select(
+        'products.id as product_id', // Alias claro para detectar si existe el producto
+        'items.id as item_id',       // Alias claro para conservar SIEMPRE el ID del ítem
+        'products.stock', 
+        'products.nro_oblea',
+        'items.item_name',
+        'items.allCar',
+        'items.activo',
+        'products.estado'
+    )
+    ->leftJoin('products', function($join) use ($request) {
+        $join->on('products.item_id', '=', 'items.id')
+             ->where('products.nro_interno', $request->nro_interno); 
+    })
+    ->where(function($query) use ($request) {
+        // Filtro de tipo base obligatorio
+        $query->where('items.item_type', 'product');
+
+        // Filtros dinámicos según el Request
+        if ($request->has('filtrado')) {
+            switch ($request->get('filtrado')) {
+                case 'predefinido':
+                    $query->where('items.activo', 'Si')
+                          ->where('items.allCar', 1);
+                    break;
+                case 'activos':
+                    $query->where('items.activo', 'Si')
+                          ->where(function($q) {
+                              $q->where('items.allCar', 0)
+                                ->orWhereNull('items.allCar');
+                          });
+                    break;
+                case 'inactivos':
+                    $query->where('items.activo', 'No');
+                    break;
+            }
+        } else {
+            // Comportamiento por defecto (si no viene parámetro 'filtrado')
+            $query->where('items.activo', 'Si');
+        }
+    })
+    ->get(); // ¡Importante! Ejecutamos la consulta antes de pasarla a DataTables
+
+return DataTables::of($products)
+    ->addIndexColumn()
+    ->addColumn('selection', function ($row) {
+        $resultado = "";
+					if (!$row->product_id){
+						$resultado= '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="'.$row->item_id.'">';
 					}
-                    return $resultado;
-                })
-				->editColumn('nro_oblea', function ($row) use ($request,$predefinidos) {
-					if (is_array($predefinidos[$row->id])){
-						if (!isset($request->exportar)){
-							//return view('backend.accounting.product.include.product-oblea', ['data' => $row]);
-							$data_id=$predefinidos[$row->id]['id'];
-							$data_oblea=$predefinidos[$row->id]['nro_oblea'];
+         return $resultado;
+    })
+	->editColumn('nro_oblea', function ($row) {
+					if (!$row->product_id){
+						return "";
+					}	
+		
+					if (!isset($request->exportar)){
 							return '<div class="input-group d-flex justify-content-center">
-								<input id="prod_id-'. $data_id .'" style="min-width: 10px;max-width: 200px;" type="text" class="form-control" value="'.$data_oblea.'">
+								<input id="prod_id-'. $row->product_id .'" style="min-width: 10px;max-width: 200px;" type="text" class="form-control" value="'.$row->nro_oblea.'">
 								<div class="input-group-append">
-									<button type="button"  onClick="ActualizarOblea('.$data_id.')" class="btn btn-warning">
+									<button type="button"  onClick="ActualizarOblea('.$row->product_id.')" class="btn btn-warning">
 									   <i class="ti-check"></i>
 									</button>
 								</div>
@@ -2044,42 +2066,32 @@ class ProductController extends Controller
 							
 							
 						}
-						 return $predefinidos[$row->id]['nro_oblea'] ?? '';
-					}	
-                     return '';
+						 return $row->nro_oblea ?? '';
                 })
-				->addColumn('id_producto', function ($row) use ($predefinidos) {
-					$resultado="";
-					if (is_array($predefinidos[$row->id])){
-						$resultado= $predefinidos[$row->id]['id'];
+				->addColumn('id_producto', function ($row) {
+                    return $row->product_id ?? '';
+                })
+				->addColumn('estado', function ($row)  {
+                    return $row->estado ?? '';
+                })
+				->addColumn('stock', function ($row)  {
+                    return $row->stock ?? '';
+                })
+				->addColumn('action', function ($row) {
+					if (!$row->product_id){
+						return "";
 					}
-                    return $resultado;
-                })
-				->addColumn('estado', function ($row) use ($predefinidos) {
-                    return $predefinidos[$row->id]['estado'] ?? '';
-                })
-				->addColumn('stock', function ($row)  use ($predefinidos) {
-                    $resultado="";
-					if (is_array($predefinidos[$row->id])){
-						$resultado= $predefinidos[$row->id]['stock'];
-					}
-                    return $resultado;
-                })
-				->addColumn('action', function ($row)  use ($predefinidos) {
                      $resultado="";
-					if (is_array($predefinidos[$row->id])){
-						
-						$resultado .= "<a href='" . action('ProductController@printQR', $predefinidos[$row->id]['id']) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+						$resultado .= "<a href='" . action('ProductController@printQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
 
-						$resultado .= "<a href='" . action('ProductController@printsinQR', $predefinidos[$row->id]['id']) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
-						
-					//	$resultado= $predefinidos[$row->id]['nro_oblea'];
-					}
+						$resultado .= "<a href='" . action('ProductController@printsinQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
                     return $resultado;
                 })
-                ->rawColumns(['selection','action','nro_oblea'])
-                ->make(true);
-        }
+				
+    ->rawColumns(['selection','action','nro_oblea']) // Obligatorio para que DataTables dibuje el HTML del input
+    ->make(true);
+
+		}		
     }
 	
 	  public function table_detalle_post(Request $request)
