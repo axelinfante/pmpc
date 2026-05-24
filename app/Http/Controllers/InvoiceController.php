@@ -367,7 +367,7 @@ class InvoiceController extends Controller
 						})->where('company_id', $product->company_id)->first();
 						$orden_desarme->idCadete_operario =  $operario->id;*/
                         $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
-						$orden_desarme->idCadete_operario =  $operario->user_id;
+						$orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
 						$orden_desarme->save();
 						// enviar notificacion al operario de creada una orden
 					//	Notification::send($operario, new OrdenCreated($orden_desarme));
@@ -3427,6 +3427,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
             ->leftJoin('items', 'items.id', '=', 'products.item_id')
             ->where('stock', '>=', 1)->where('car_id', null)
+			->whereNotIn('estado', ['desarme','masivo'])
             //->where('stock', 1)->where('car_id', null)
             ->whereIn('products.company_id', $company_id)
             ->when($request, function ($query) use ($request) {
@@ -5531,7 +5532,19 @@ public function auditoriaInvoice(Request $request)
 
         $allAudits = $invoiceAudits->union($detailAudits)->get();
 
-        $allAudits->load(['auditable', 'user']);
+         $users = \App\User::whereIn('id', $allAudits->pluck('user_id'))->get()->keyBy('id');
+   
+    $allAudits->each(function($audit) use ($users) {
+        $audit->setRelation('user', $users->get($audit->user_id));
+    });
+
+    $allAudits->load(['auditable' => function ($morphTo) {
+    $morphTo->morphWith([
+        InvoiceItem::class => ['item'] 
+    ]);
+    }]);
+
+        //$allAudits->load(['auditable', 'user']);
 
         return DataTables::of($allAudits)
             ->addIndexColumn()
@@ -5552,7 +5565,7 @@ public function auditoriaInvoice(Request $request)
             })
 
             ->addColumn('usuario', function ($data) {
-                return $data->user->name ?? 'Sistema';
+                return $data->user->name ?? '';
             })
 
             ->addColumn('created_at', function ($data) {
@@ -5585,8 +5598,7 @@ public function auditoriaInvoice(Request $request)
 
                 if ($data->auditable_type == \App\InvoiceItem::class) {
                     $itemModel = $data->auditable; 
-                    $itemName = $itemModel ? $itemModel->description : null;
-
+                    $itemName = $itemModel && $itemModel->item ? $itemModel->item->item_name : null;
                     if ($itemName) {
                         $tituloEntidad = '<span class="text-dark font-weight-bold">' . e($itemName) . '</span>';
                     } else {

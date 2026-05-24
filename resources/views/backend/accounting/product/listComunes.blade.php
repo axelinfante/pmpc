@@ -6,7 +6,7 @@
 	<div class="col-12">
 	    <a class="btn btn-primary btn-xs ajax-modal" data-reload="true" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
 	    }}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
-	    <a class="btn btn-dark btn-xs" aria-disabled="true" href="{{ route('products.create') }}?predefinido=1""> {{ _lang('Actualizar productos y autos') }}</a>
+	    <a class="btn btn-dark btn-xs" aria-disabled="true" href="{{ route('products.create') }}?predefinido=1"> {{ _lang('Actualizar productos y autos') }}</a>
 
 		<div class="card mt-2">
 			<span class="panel-title d-none">{{ _lang('List Product') }}</span>
@@ -18,7 +18,7 @@
 							<th>{{ _lang('Product') }}</th>
 							<th>{{ _lang('Predefinido') }}</th>
 							<th>{{ _lang('Activo') }}</th>
-							<th class="text-center">{{ _lang('Action') }}</th>
+							<th class="text-center notexport">{{ _lang('Action') }}</th>
 					  </tr>
 					</thead>
 					<tbody>
@@ -35,11 +35,49 @@
 
 @section('js-script')
 <script>
-		var table
         $(function() {
+			
+		var table = $("#data-table").appTable({
+		title:"Lista Productos",
+        ajax: {
+            url : "{{ route('productos_comunes') }}",
+            method: "GET",
+				data: function (d) {
+						d._token =   "{{ csrf_token() }}";	
+					if($('select[name=filtrado]').val() != ''){
+						d.filtrado = $('select[name=filtrado]').val();
+					}
+			}
+        },
+		customButtons: [{
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
+                      '<option value="predefinido">Predefinidos</option>' +
+                      '<option value="activos">Activos</option>' +
+                      '<option value="inactivos">Inactivos</option>' +
+                      '</select>',
+                className: 'botones-custom',
+                action: function ( e, dt, node, config ) {
+						}
+					}
+				],
+		columnFilters: ['input', { 
+            type: 'select', 
+            data: ['Si','No'] // Array simple
+        },{ 
+            type: 'select', 
+            data: ['Si','No'] // Array simple
+        }], 
+        columns: [
+            {data: 'item_name', name: 'item_name'},
+            {data: 'allCar', name: 'allCar'},
+            {data: 'activo', name: 'activo'},
+            {data: 'action', name: 'action', orderable: false, searchable: false},
+        ],
+    });	
 	
     // Configurar jQuery para enviar token CSRF en todas las solicitudes AJAX
-	    table = $('#data-table').DataTable({
+	   /* table = $('#data-table').DataTable({
                 processing:true,
                 serverSide:true,
 				//scrollX: true,
@@ -88,12 +126,12 @@
                     { data: 'action', name: 'action' },
                 ],
 			drawCallback : function(settings) {
-           /* $('.select2').select2({
+          // $('.select2').select2({
                 // Opciones de select2 aquí
-                width: '100%'
-            });*/
+              //  width: '100%'
+            //});
 			}
-        });
+        });*/
 		
 		
 		$('#data-table tbody').on('click', '.button-delete', function() {
@@ -112,7 +150,10 @@
 					},
 				success: function(response) {
                 // Reload the table data
-                table.ajax.reload(null, false); // false keeps current paging
+                //table.ajax.reload(null, false); // false keeps current paging
+				if (table) {
+					table.ajax.reload(null, false);
+				}
             }
         });
 
@@ -127,7 +168,7 @@
 			});
 		
 		
-		$('.dataTables_filter input')
+/*		$('.dataTables_filter input')
 			.unbind('keypress keyup input')
 			.bind('keyup input', function (e) {
 				//console.log($(this).val());
@@ -136,7 +177,7 @@
 					table.search(this.value).draw();
 				}
 				
-			});
+			});*/
 		
 		
 	});	

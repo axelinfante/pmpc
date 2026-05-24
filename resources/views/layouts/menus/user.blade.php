@@ -61,6 +61,9 @@
 <li>
 	<a href="javascript: void(0);"><i class="ti-shopping-cart"></i><span>{{ _lang('Products') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 	<ul class="nav-second-level" aria-expanded="false">
+			<li class="nav-item"><a class="nav-link"
+                            href="{{ route('products.create') }}?predefinido=1">{{ _lang('Precarga masiva') }}</a>
+                    </li>
 		<li class="nav-item"><a class="nav-link" href="{{ url('products/create') }}">{{ _lang('Add New') }}</a></li>
 		<li class="nav-item"><a class="nav-link" href="{{ url('products') }}">{{ _lang('Product List') }}</a></li>
 		<li class="nav-item"><a class="nav-link" href="{{ url('products/historial') }}">{{ _lang('Historial') }}</a></li>
@@ -220,7 +223,7 @@
 		<li class="nav-item"><a class="nav-link" href="{{ url('tipocomprobante') }}">Tipos de comprobantes</a></li>
 	</ul>
 </li>
-@canany(['pi_consulta_venta'])
+@canany(['pi_consulta_venta','piezas_destruir.index'])
 <li> {{-- PROCESOS INTERNOS --}}
     <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('PROCESOS INTERNOS') }}</span><span
             class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
@@ -230,9 +233,11 @@
 			@can('pi_consulta_venta')
 				<li class="nav-item"><a class="nav-link" href="{{ route('invoice.consulta_ventas') }}">{{ _lang('Consulta Venta') }}</a></li>
 		   @endcan
-		   <li class="nav-item">
+		   @can('piezas_destruir.index') 
+				<li class="nav-item">
                     <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
-                </li>
+				</li>
+			@endcan		
 		</li>
     </ul>
 </li>

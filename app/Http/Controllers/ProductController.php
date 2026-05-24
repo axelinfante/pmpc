@@ -610,15 +610,28 @@ class ProductController extends Controller
             return Datatables::eloquent($data)
                 ->addIndexColumn()
 				->addColumn('action', function ($data) {
-								$edit ="<a href='" . action('ProductController@edit_item', $data->id) . "' data-title='" . _lang
+								$edit ="<a data-reload='false' href='" . action('ProductController@edit_item', $data->id) . "' data-title='" . _lang
 								('Update Product') . "' class='btn btn-warning btn-xs ajax-modal'><i class='ti-pencil'></i></a>";
 								$delete='<button class="btn btn-danger btn-xs button-delete" type="button"><i class="ti-eraser"></i></button>';
 							return $edit.$delete;
 				})
 				->editColumn('allCar', function ($car) {
-				 return	($car->allCar == 1) ? 'Si':'No';
+				
+					if (!isset($request->exportar)){
+                        return view('backend.accounting.item.include.predefinido', ['data' => $car]);
+                    }
+
+					return	($car->allCar == 1) ? 'Si':'No';
+				})				
+				->editColumn('activo', function ($row) use ($request) {
+					
+					if (!isset($request->exportar)){
+                        return view('backend.accounting.item.include.activo', ['data' => $row]);
+                    }
+                    return $row->activo ?? "";
 				})
-				->rawColumns(['action'])
+				
+				->rawColumns(['action','allCar','activo'])
                 ->make(true);
 		}	
 		
@@ -1002,7 +1015,12 @@ class ProductController extends Controller
         //Create pieza 
         if ($allCar != 1) {
 
-            $car_id = $request->input('car_id', null);
+			//$car_id=$request->input('nro_interno') ?? 0;
+			$nro_interno= $request->input('nro_interno',null);
+            $car_id = $request->input('car_id', $nro_interno);
+			
+			//$car = Cars::find($nro_interno);
+
 
             $product = new Product();
             $product->item_id = $item->id;
@@ -1020,7 +1038,7 @@ class ProductController extends Controller
             $product->stock = 1;
             $product->anio = $request->input('anio');
 
-            $product->estado = $request->input('estado_prod') ?? null;
+            $product->estado = $request->input('estado_prod') ?? "desarme";
 
 			//$car_id=$request->input('nro_interno') ?? 0;
             $car = Cars::find($car_id);
@@ -1979,14 +1997,16 @@ class ProductController extends Controller
 		
         if ($request->ajax()) {
 			
-			$predefinidos = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name','id')->toArray();
-			$predefinidosfiltros = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name')->toArray();
-			$predefinidostable = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->get();
-			
-			$products = Product::select('products.id','products.item_id', 'products.stock', 'products.nro_oblea','items.item_name','items.allCar','items.activo')
+			$predefinidos = Item::where('activo', "Si")->where('item_type', 'product')->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name','id')->toArray();
+			//$predefinidosfiltros = Item::where('activo', "Si")->where('allCar', 1)->orderBy('item_name', 'ASC')->pluck('item_name')->toArray();
+			$predefinidosfiltros = Item::where('activo', "Si")->where('item_type', 'product')->where('allCar', 1)->pluck('id')->toArray();
+			$predefinidostable = Item::where('activo', "Si")->where('item_type', 'product')->where('allCar', 1)->orderBy('item_name', 'ASC')->get();
+			//dd($predefinidosfiltros);
+			$products = Product::select('products.id','products.item_id', 'products.stock', 'products.nro_oblea','items.item_name','items.allCar','items.activo','products.estado')
 						->join('items', 'items.id', '=', 'products.item_id') 
-						->where('products.nro_interno',$request->nro_interno ?? 0)
-						->whereIn('items.item_name', $predefinidosfiltros)
+						->where('products.nro_interno',$request->nro_interno)
+						->whereIn('items.id', $predefinidosfiltros)
+						//->whereIn('items.item_name', $predefinidosfiltros)
 						->get();	
 			//$results = array();
 			foreach ($products as $row) {
@@ -2007,12 +2027,36 @@ class ProductController extends Controller
 					}
                     return $resultado;
                 })
+				->editColumn('nro_oblea', function ($row) use ($request,$predefinidos) {
+					if (is_array($predefinidos[$row->id])){
+						if (!isset($request->exportar)){
+							//return view('backend.accounting.product.include.product-oblea', ['data' => $row]);
+							$data_id=$predefinidos[$row->id]['id'];
+							$data_oblea=$predefinidos[$row->id]['nro_oblea'];
+							return '<div class="input-group d-flex justify-content-center">
+								<input id="prod_id-'. $data_id .'" style="min-width: 10px;max-width: 200px;" type="text" class="form-control" value="'.$data_oblea.'">
+								<div class="input-group-append">
+									<button type="button"  onClick="ActualizarOblea('.$data_id.')" class="btn btn-warning">
+									   <i class="ti-check"></i>
+									</button>
+								</div>
+							</div>';
+							
+							
+						}
+						 return $predefinidos[$row->id]['nro_oblea'] ?? '';
+					}	
+                     return '';
+                })
 				->addColumn('id_producto', function ($row) use ($predefinidos) {
 					$resultado="";
 					if (is_array($predefinidos[$row->id])){
 						$resultado= $predefinidos[$row->id]['id'];
 					}
                     return $resultado;
+                })
+				->addColumn('estado', function ($row) use ($predefinidos) {
+                    return $predefinidos[$row->id]['estado'] ?? '';
                 })
 				->addColumn('stock', function ($row)  use ($predefinidos) {
                     $resultado="";
@@ -2033,7 +2077,7 @@ class ProductController extends Controller
 					}
                     return $resultado;
                 })
-                ->rawColumns(['selection','action'])
+                ->rawColumns(['selection','action','nro_oblea'])
                 ->make(true);
         }
     }
@@ -2066,13 +2110,21 @@ class ProductController extends Controller
 			 //dd($ids);
 			 //$idsArray = is_array($ids) ? $ids : explode(',', $ids);
 			 $nro_interno= $request->input('nro_interno',0);
-			 $sql="INSERT INTO products (item_id,nro_interno,stock,description,product_price,tax_method,estado,company_id,idDeposito,ubicacion,carga_rapida,user_id,mercado_libre,created_at,marca_modelo)
-		SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','optimo',".company_id()."
-	,".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), (SELECT idMarca_modelo from cars WHERE id = {$nro_interno} LIMIT 1) as marcamodelo FROM items
-    WHERE id IN($ids)";
 			 
+			 $car = Cars::find($nro_interno);
+
+            if (isset($car)) {
+			$sql="INSERT INTO products (item_id,nro_interno,stock,description,product_price,tax_method,estado,company_id,idDeposito,ubicacion,carga_rapida,user_id,mercado_libre,created_at,marca_modelo)
+			SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','masivo',".$car->company_id.",".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), $car->idMarca_modelo as marcamodelo FROM items
+				WHERE id IN($ids)";
+						 
 			   DB::statement($sql);
 			  DB::commit();
+			
+			}
+			 
+			 
+			 
 			return response()->json(['result' => 'success', 'message' => _lang('Updated sucessfully')]);
         } catch (Throwable $e) {
             DB::rollBack();
@@ -2122,6 +2174,5 @@ public function buscar(Request $request): JsonResponse
 					'more' => $itemsPaginados->hasMorePages()
 				]);
 }
-
 
 }
