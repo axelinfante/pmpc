@@ -46,23 +46,6 @@
 
                 }),
             iDisplayLength: "25",
-            dom: "<'row'<'col-md-3'l><'col-md-5 mb-2'B><'col-md-4 justify-content-end'f>>tr<'row'<'col-md-5'i><'col-md-7 mt-2'p>>",
-            "buttons": [
-                {extend: 'excel',text: '<i class="bi bi-file-earmark-excel-fill"></i> Excel',
-				exportOptions: {columns: ':visible:not(.notexport)'}},
-                {extend: 'csv',text: '<i class="bi bi-file-earmark-excel-fill"></i> CSV', exportOptions: {columns: ':visible:not(.notexport)'}},
-                {extend: 'print',
-                    text: '<i class="bi bi-printer-fill"></i> Print',
-                    title: "Bancos",
-					exportOptions: {columns: ':visible:not(.notexport)'},
-                    customize: function (win) {
-                        $(win.document.body).find('h1').css('font-size', '15pt');
-                        $(win.document.body).find('h1').css('text-align', 'center');
-                        $(win.document.body).find('h1').css('margin-bottom', '20px');
-                        $(win.document.body).css('margin', '35px 25px');
-                    }
-                },
-            ],
             ordering: false,
 			columns: [
                     { data: 'model', name: 'model' },
@@ -70,7 +53,7 @@
 					{ data: 'usuario', name: 'usuario' },
                    { data: 'created_at', name: 'created_at' },
                     { data: 'valores_ant', name: 'valores_ant' },
-                    { data: 'valores_nue', name: 'valores_nue' },
+                    { data: 'historial_items', name: 'historial_items', orderable: false, searchable: false },
                 ],
                 lengthMenu: [25, 50, 100]
         });

@@ -140,6 +140,9 @@
                 @endif
 
                 @if (in_array('products.index', $permissions))
+					<li class="nav-item"><a class="nav-link"
+                            href="{{ route('products.create') }}?predefinido=1">{{ _lang('Precarga masiva') }}</a>
+                    </li>
                     <li class="nav-item"><a class="nav-link"
                             href="{{ url('products') }}">{{ _lang('Product List') }}</a>
                     </li>
@@ -429,8 +432,11 @@
                     href="{{ route('vehiculo.historial_estados') }}">{{ _lang('Historial de Cambios de Estado') }}</a>
             </li>
         @endif
-
-
+		@can('piezas_destruir.index') 
+		   <li class="nav-item">
+                    <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
+                </li>
+		@endcan	
 		<li> {{-- REPORTES --}}
 			<a href="javascript: void(0);"><i class="ti-bar-chart"></i><span>{{ _lang('Reportes') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 			<ul class="nav-second-level" aria-expanded="false">

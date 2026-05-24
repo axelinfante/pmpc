@@ -184,6 +184,54 @@ class ItemController extends Controller
 		}
 		
     }
+	
+	 public function actualizaActivo(Request $request)
+    {
+        $id = $request->id;
+
+		$item = Item::where("id",$id)->first();
+//        $marca = Marca::find($id);
+		 if (!$item) {
+            return back()->with('error', _lang('Sorry, Car not found !'));
+        }
+		
+		if (isset($request->activo)) {
+			$item->activo = $request->activo;
+		}
+		
+        $item->save();
+		
+       return response()->json([
+				'result' => 'success',
+				'action' => 'update', // Mantener 'delete' para que tu JS detecte la acción
+				'message' => "Registro actualizado correctamente...",
+				'data' => $item->id
+			]);
+    }
+	
+	public function actualizaPredefinido(Request $request)
+    {
+        $id = $request->id;
+
+		$item = Item::where("id",$id)->first();
+//        $marca = Marca::find($id);
+		 if (!$item) {
+            return back()->with('error', _lang('Sorry, Car not found !'));
+        }
+		
+		if (isset($request->activo)) {
+			$item->allCar = $request->activo;
+		}
+		
+        $item->save();
+		
+       return response()->json([
+				'result' => 'success',
+				'action' => 'update', // Mantener 'delete' para que tu JS detecte la acción
+				'message' => "Registro actualizado correctamente...",
+				'data' => $item->id
+			]);
+    }
 
    
 }

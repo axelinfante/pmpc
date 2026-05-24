@@ -169,43 +169,51 @@ public function show()
 				return ($producto_completo) ? "($producto_id) $producto_completo":"";
             })
             ->addColumn('cliente', function ($orden) {
-				//<h5 class="modal-title mt-0 text-white"></h5>
-				$resultado = $orden->cotizacion->client->contact_name ?? '';
-				$botonurl = '<a class="view-details" href="javascript:void(0)" data-title="Datos Cliente" data-body=\'<table class="table table-striped">
-  <thead>
-     <th colspan="2">
-		<h5>General Information</h5>
-      </th>
-  </thead>
-  <tbody>
-    <tr>
-      <tr>
-                                     <td>Nombre</td>
-                                      <td><b>'.($orden->cotizacion->client->contact_name ?? '').'</b></td>
-                            </tr>
- <tr>
-                                     <td>Email</td>
-                                      <td><b>'.($orden->cotizacion->client->contact_email ?? '').'</b></td>
-                            </tr>	
-<tr>
-                                     <td>Teléfono</td>
-                                      <td><b>'.($orden->cotizacion->client->contact_phone ?? '').'</b></td>
-                            </tr>	
-<tr>
-                                     <td>Dirección</td>
-                                      <td><b>'.($orden->cotizacion->client->address ?? '').'</b></td>
-                            </tr>	
-<tr>
-                                     <td>CUIT - DNI</td>
-                                      <td><b>'.($orden->cotizacion->client->dni_cuit ?? '').'</b></td>
-                            </tr>	
-    </tr>
-  </tbody>
-</table>\' data-toggle="modal" data-target="#detailsModal"><i class="fa fa-info-circle text-success" aria-hidden="true"></i></a>';
+                $nombre = $orden->cotizacion->client->contact_name ?? '';
 
+                if ($nombre == '') {
+                    return '<span class="text-muted">Sin datos de cliente</span>';
+                }
 
-				$resultado .= ($resultado != "") ? $botonurl : '';
-                return $resultado;
+                $email     = $orden->cotizacion->client->contact_email ?? '';
+                $telefono  = $orden->cotizacion->client->contact_phone ?? '';
+                $direccion = $orden->cotizacion->client->address ?? '';
+                $cuit_dni  = $orden->cotizacion->client->dni_cuit ?? '';
+
+               
+                $tabla_cliente = '<table class="table table-striped" style="min-width: 320px; margin: 0;">
+                  <thead>
+                     <tr>
+                       <th colspan="2">
+                            <h5>General Information</h5>
+                       </th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Nombre</td>
+                      <td><b>'.$nombre.'</b></td>
+                    </tr>
+                    <tr>
+                      <td>Email</td>
+                      <td><b>'.$email.'</b></td>
+                    </tr>   
+                    <tr>
+                      <td>Teléfono</td>
+                      <td><b>'.$telefono.'</b></td>
+                    </tr>   
+                    <tr>
+                      <td>Dirección</td>
+                      <td><b>'.$direccion.'</b></td>
+                    </tr>   
+                    <tr>
+                      <td>CUIT - DNI</td>
+                      <td><b>'.$cuit_dni.'</b></td>
+                    </tr>   
+                  </tbody>
+                </table>';
+
+                return $tabla_cliente;
             })
 			
 			 ->addColumn('vendedor', function ($orden) {

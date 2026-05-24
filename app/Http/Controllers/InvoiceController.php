@@ -367,7 +367,7 @@ class InvoiceController extends Controller
 						})->where('company_id', $product->company_id)->first();
 						$orden_desarme->idCadete_operario =  $operario->id;*/
                         $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
-						$orden_desarme->idCadete_operario =  $operario->user_id;
+						$orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
 						$orden_desarme->save();
 						// enviar notificacion al operario de creada una orden
 					//	Notification::send($operario, new OrdenCreated($orden_desarme));
@@ -3427,6 +3427,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
             ->leftJoin('items', 'items.id', '=', 'products.item_id')
             ->where('stock', '>=', 1)->where('car_id', null)
+			->whereNotIn('estado', ['desarme','masivo'])
             //->where('stock', 1)->where('car_id', null)
             ->whereIn('products.company_id', $company_id)
             ->when($request, function ($query) use ($request) {
@@ -5511,48 +5512,121 @@ return $tabla_html;
 
 
 public function auditoriaInvoice(Request $request)
-    {
-		   $id = $request->id;
-		   
-		  if (request()->ajax()) {
-            $datosAudit = Audit::where('auditable_type', Invoice::class)
-                ->where('auditable_id', $id)
-                ->with('user')
-                ->with('auditable');
-            return DataTables::eloquent($datosAudit)
-			->addIndexColumn()
-				->addColumn('model', function ($data) {
-					return "$data->auditable_type (id: $data->auditable_id )";
-				})
-				->addColumn('usuario', function ($data) {
-					return $data->user->name ?? '';
-				})
-				->addColumn('valores_ant', function ($data) {
-					$datos='<table>';
-                    foreach($data->old_values as $attribute => $value){
-                      $datos.='<tr>
-                        <td><b>'.$attribute .'</b></td>
-                        <td>'. $value .'</td>
-                      </tr>';
+{
+    $id = $request->id;
+    
+    if (request()->ajax()) {
+        
+        $invoiceAudits = Audit::where('auditable_type', \App\Invoice::class) 
+            ->where('auditable_id', $id)
+            ->select(['id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent', 'tags', 'created_at']);
+
+        $detailAudits = Audit::where('auditable_type', \App\InvoiceItem::class)
+            ->whereIn('auditable_id', function ($query) use ($id) {
+                $query->select('id')
+                      ->from('invoice_items') 
+                      ->where('invoice_id', $id);
+            })
+            ->select(['id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent', 'tags', 'created_at']);
+
+
+        $allAudits = $invoiceAudits->union($detailAudits)->get();
+
+         $users = \App\User::whereIn('id', $allAudits->pluck('user_id'))->get()->keyBy('id');
+   
+    $allAudits->each(function($audit) use ($users) {
+        $audit->setRelation('user', $users->get($audit->user_id));
+    });
+
+    $allAudits->load(['auditable' => function ($morphTo) {
+    $morphTo->morphWith([
+        InvoiceItem::class => ['item'] 
+    ]);
+    }]);
+
+        //$allAudits->load(['auditable', 'user']);
+
+        return DataTables::of($allAudits)
+            ->addIndexColumn()
+            
+            ->addColumn('model', function ($data) {
+                return class_basename($data->auditable_type) === 'Invoice' 
+                    ? 'Factura' 
+                    : 'Ítem de Factura';
+            })
+
+            ->addColumn('event', function ($data) {
+                switch ($data->event) {
+                    case 'created': return '<span class="badge badge-success">Creado</span>';
+                    case 'updated': return '<span class="badge badge-warning">Actualizado</span>';
+                    case 'deleted': return '<span class="badge badge-danger">Eliminado</span>';
+                    default: return '<span class="badge badge-secondary">' . ucfirst($data->event) . '</span>';
+                }
+            })
+
+            ->addColumn('usuario', function ($data) {
+                return $data->user->name ?? '';
+            })
+
+            ->addColumn('created_at', function ($data) {
+                return $data->created_at ? $data->created_at->format('d/m/Y H:i:s') : '';
+            })
+
+            ->addColumn('valores_ant', function ($data) {
+                if (empty($data->old_values)) return '-';
+                $html = '<table class="table table-sm table-borderless mb-0" style="font-size:11px;">';
+                foreach ($data->old_values as $attribute => $value) {
+                    $html .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
+                }
+                $html .= '</table>';
+                return $html;
+            })
+
+            ->addColumn('historial_items', function ($data) {
+                $accion = '';
+                $badgeClass = '';
+
+                if (empty($data->old_values) && !empty($data->new_values)) {
+                    $accion = 'Añadió'; $badgeClass = 'success';
+                } elseif (!empty($data->old_values) && empty($data->new_values)) {
+                    $accion = 'Eliminó'; $badgeClass = 'danger';
+                } else {
+                    $accion = 'Modificó'; $badgeClass = 'warning';
+                }
+
+                $htmlBadge = '<span class="badge badge-' . $badgeClass . '">' . $accion . '</span>';
+
+                if ($data->auditable_type == \App\InvoiceItem::class) {
+                    $itemModel = $data->auditable; 
+                    $itemName = $itemModel && $itemModel->item ? $itemModel->item->item_name : null;
+                    if ($itemName) {
+                        $tituloEntidad = '<span class="text-dark font-weight-bold">' . e($itemName) . '</span>';
+                    } else {
+                        $tituloEntidad = '<span class="text-dark font-weight-bold">Ítem ID ' . $data->auditable_id . '</span>';
                     }
-                  $datos.= '</table>';
-					return $datos;
-				})
-				->addColumn('valores_nue', function ($data) {
-					$datos='<table>';
-                    foreach($data->new_values as $attribute => $value){
-                      $datos.='<tr>
-                        <td><b>'.$attribute .'</b></td>
-                        <td>'. $value .'</td>
-                      </tr>';
+                } else {
+                    $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Cotización</span>';
+                }
+
+                $valoresAmostrar = empty($data->new_values) ? $data->old_values : $data->new_values;
+                $htmlDatos = '<table class="table table-sm table-borderless mb-0" style="font-size:11px;">';
+                
+                if ($valoresAmostrar) {
+                    foreach ($valoresAmostrar as $attribute => $value) {
+                        if (in_array($attribute, ['created_at', 'updated_at', 'invoice_id', 'company_id'])) {
+                            continue;
+                        }
+                        $print_value = is_array($value) ? json_encode($value) : e($value);
+                        $htmlDatos .= '<tr><td style="padding:1px;"><b>' . e($attribute) . '</b></td><td style="padding:1px;">' . $print_value . '</td></tr>';
                     }
-                  $datos.= '</table>';
-					return $datos;
-				})
-				->rawColumns(['valores_ant','valores_nue'])
-                ->make(true);
-        }
+                }
+                $htmlDatos .= '</table>';
+
+                return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $htmlDatos;
+            })
+
+            ->rawColumns(['event', 'valores_ant', 'historial_items'])
+            ->make(true);
     }
-	
-	
+}
 }

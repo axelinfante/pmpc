@@ -79,6 +79,10 @@ class MarcasController extends Controller
                         $query->where('activo', "No")->orwherenull('activo');
                     }
                 })
+				->filterColumn('modelo', function ($query, $keyword) {
+                    return;
+                })	
+				
             ->rawColumns(['modelo', 'action'])
             ->make(true);
     }
