@@ -5569,16 +5569,6 @@ public function auditoriaInvoice(Request $request)
                 return $html;
             })
 
-            ->addColumn('valores_nue', function ($data) {
-                if (empty($data->new_values)) return '-';
-                $html = '<table class="table table-sm table-borderless mb-0" style="font-size:11px;">';
-                foreach ($data->new_values as $attribute => $value) {
-                    $html .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
-                }
-                $html .= '</table>';
-                return $html;
-            })
-
             ->addColumn('historial_items', function ($data) {
                 $accion = '';
                 $badgeClass = '';
@@ -5623,7 +5613,7 @@ public function auditoriaInvoice(Request $request)
                 return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $htmlDatos;
             })
 
-            ->rawColumns(['event', 'valores_ant', 'valores_nue', 'historial_items'])
+            ->rawColumns(['event', 'valores_ant', 'historial_items'])
             ->make(true);
     }
 }

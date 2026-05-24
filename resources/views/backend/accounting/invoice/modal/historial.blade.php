@@ -13,7 +13,6 @@
               <th scope="col">Usuario</th>
               <th scope="col">Fecha</th>
               <th scope="col">Valores Anteriores</th>
-              <th scope="col">Nuevos Valores</th>
               <th>{{ _lang('Historial de ítems') }}</th>
             </tr>
           </thead>
@@ -71,7 +70,6 @@
 					{ data: 'usuario', name: 'usuario' },
                    { data: 'created_at', name: 'created_at' },
                     { data: 'valores_ant', name: 'valores_ant' },
-                    { data: 'valores_nue', name: 'valores_nue' },
                     { data: 'historial_items', name: 'historial_items', orderable: false, searchable: false },
                 ],
                 lengthMenu: [25, 50, 100]
