@@ -287,7 +287,7 @@ $(document).ready(function() {
 				   var ids = [];
 				  $(_table.$('input[name="bank_check"]:checked').each(function () {
 						var row = _table.row($(this).closest('tr')).data();
-						ids.push(row.id);
+						ids.push(row.item_id);
 					}));	
 				  
 							if (ids.length==0)
@@ -295,7 +295,6 @@ $(document).ready(function() {
 									alert('Debe seleccionar un valor');
 								 return;
 								}
-				  
 					 var formData = new FormData(this);
 					 formData.append('idsSeleccionados', ids);
 					$.ajax({
