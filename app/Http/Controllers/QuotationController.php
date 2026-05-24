@@ -203,7 +203,7 @@ class QuotationController extends Controller
                         . '<div class="dropdown-menu">'
                         . '<a class="dropdown-item" href="' . action('QuotationController@edit', $quotation->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a></li>'
                         . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
-
+                        . '<a href="' . route('auditoriaQuoHistorial', $quotation->id) . '" data-title="' . _lang('Historial de Quotations') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a></li>'
                         . '<a href="' . url('reservas/create_payment/' . $quotation->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>'
                         // . '<a href="' . url('reservas/view_payment/' . $quotation->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>'
     
@@ -222,6 +222,8 @@ class QuotationController extends Controller
                         . '<div class="dropdown-menu">'
                         . '<a class="dropdown-item" href="' . action('QuotationController@edit', $quotation->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a></li>'
                         . '<a class="dropdown-item" href="' . action('QuotationController@show', $quotation->id) . '"><i class="fas fa-eye"></i> ' . _lang('View') . '</a></li>'
+
+                        . '<a href="' . route('auditoriaQuoHistorial', $quotation->id) . '" data-title="' . _lang('Historial de Quotations') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a></li>'
                         
                         . '<form action="' . action('QuotationController@destroy', $quotation['id']) . '" method="post">'
                         . csrf_field()
@@ -1391,47 +1393,109 @@ $hasPiezaSavedForUser = Product::query()
 
 
 public function auditoriaQuotation(Request $request)
-    {
-		   $id = $request->id;
-		   
-		  if (request()->ajax()) {
-            $datosAudit = Audit::where('auditable_type', Quotation::class)
-                ->where('auditable_id', $id)
-                ->with('user')
-                ->with('auditable');
-            return DataTables::eloquent($datosAudit)
-			->addIndexColumn()
-				->addColumn('model', function ($data) {
-					return "$data->auditable_type (id: $data->auditable_id )";
-				})
-				->addColumn('usuario', function ($data) {
-					return $data->user->name ?? '';
-				})
-				->addColumn('valores_ant', function ($data) {
-					$datos='<table>';
-                    foreach($data->old_values as $attribute => $value){
-                      $datos.='<tr>
-                        <td><b>'.$attribute .'</b></td>
-                        <td>'. $value .'</td>
-                      </tr>';
-                    }
-                  $datos.= '</table>';
-					return $datos;
-				})
-				->addColumn('valores_nue', function ($data) {
-					$datos='<table>';
-                    foreach($data->new_values as $attribute => $value){
-                      $datos.='<tr>
-                        <td><b>'.$attribute .'</b></td>
-                        <td>'. $value .'</td>
-                      </tr>';
-                    }
-                  $datos.= '</table>';
-					return $datos;
-				})
-				->rawColumns(['valores_ant','valores_nue'])
-                ->make(true);
-        }
-    }
+{
+    $id = $request->id;
+       
+    if (request()->ajax()) {
+        $itemIdsFromAudit = Audit::where('auditable_type', \App\QuotationItem::class)
+            ->where(function($query) use ($id) {
+                $query->where('new_values->quotation_id', $id)
+                      ->orWhere('old_values->quotation_id', $id);
+            })
+            ->pluck('auditable_id')
+            ->unique()
+            ->toArray();
 
+        $datosAudit = Audit::where(function($query) use ($id) {
+                $query->where('auditable_type', Quotation::class)
+                      ->where('auditable_id', $id);
+            })
+            ->orWhere(function($query) use ($itemIdsFromAudit) {
+                $query->where('auditable_type', \App\QuotationItem::class)
+                      ->whereIn('auditable_id', $itemIdsFromAudit);
+            })
+            ->with(['user']) 
+            ->orderBy('created_at', 'desc'); 
+
+        return DataTables::eloquent($datosAudit)
+            ->addIndexColumn()
+            ->addColumn('model', function ($data) {
+                return "$data->auditable_type (id: $data->auditable_id )";
+            })
+            ->addColumn('event', function ($data) {
+                switch ($data->event) {
+                    case 'created': return '<span class="badge badge-success">Creado</span>';
+                    case 'updated': return '<span class="badge badge-warning">Actualizado</span>';
+                    case 'deleted': return '<span class="badge badge-danger">Eliminado</span>';
+                    default: return $data->event;
+                }
+            })
+            ->addColumn('usuario', function ($data) {
+                return $data->user->name ?? '';
+            })
+            ->addColumn('created_at', function ($data) {
+                return $data->created_at ? $data->created_at->format('d/m/Y H:i:s') : '-';
+            })
+            ->addColumn('valores_ant', function ($data) {
+                $datos='<table>';
+                foreach($data->old_values as $attribute => $value){
+                  $datos.='<tr>
+                    <td><b>'.$attribute .'</b></td>
+                    <td>'. $value .'</td>
+                  </tr>';
+                }
+                $datos.= '</table>';
+                return $datos;
+            })
+            ->addColumn('valores_nue', function ($data) {
+                $datos='<table>';
+                foreach($data->new_values as $attribute => $value){
+                  $datos.='<tr>
+                    <td><b>'.$attribute .'</b></td>
+                    <td>'. $value .'</td>
+                  </tr>';
+                }
+                $datos.= '</table>';
+                return $datos;
+            })
+            ->addColumn('historial_items', function ($data) {
+                $accion = 'Modificó';
+                $badgeClass = 'warning';
+                if (empty($data->old_values)) { $accion = 'Añadió'; $badgeClass = 'success'; }
+                if (empty($data->new_values)) { $accion = 'Eliminó'; $badgeClass = 'danger'; }
+
+                $htmlBadge = '<span class="badge badge-'.$badgeClass.'">'.$accion.'</span>';
+
+                if ($data->auditable_type === \App\QuotationItem::class) {
+                    $itemModel = \App\QuotationItem::find($data->auditable_id);
+                    $itemName = $itemModel && $itemModel->item ? $itemModel->item->item_name : null;
+
+                    if (!$itemName) {
+                        $itemName = $data->old_values['description'] ?? ($data->new_values['description'] ?? 'Producto ID: ' . $data->auditable_id);
+                    }
+                    $tituloEntidad = '<span class="text-dark font-weight-bold">' . e($itemName) . '</span>';
+                } else {
+                    $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Cotización</span>';
+                }
+
+                $valoresAmostrar = !empty($data->new_values) ? $data->new_values : ($data->old_values ?? []);
+                
+                $datos = '<table>';
+                foreach ($valoresAmostrar as $attribute => $value) {
+                    if (in_array($attribute, ['id', 'created_at', 'updated_at', 'quotation_id', 'company_id'])) continue;
+                    
+                    $print_value = is_array($value) ? json_encode($value) : $value;
+                    $datos .= '<tr>
+                        <td><b>' . e($attribute) . '</b></td>
+                        <td>' . e($print_value) . '</td>
+                    </tr>';
+                }
+                $datos .= '</table>';
+
+                return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $datos;
+            })
+            ->rawColumns(['model', 'event', 'valores_ant', 'valores_nue', 'historial_items'])
+            ->make(true);
+    }
+}
 }
