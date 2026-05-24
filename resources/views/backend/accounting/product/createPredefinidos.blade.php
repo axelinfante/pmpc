@@ -134,6 +134,7 @@ $(document).ready(function() {
             let modelo = $('#modelo');
             let marca_modelo = $('#marca_modelo');
 			let nro_interno = $('#nro_interno');
+					
 	
 	var _table = $("#tabla_detalle_busqueda").appTable({
         title: "Items predefinidos",
@@ -145,11 +146,30 @@ $(document).ready(function() {
                 if($('select[name=nro_interno]').val() != ''){
                     d.nro_interno = $('select[name=nro_interno]').val();
                 }
+				if($('select[name=filtrado]').val() != ''){
+					d.filtrado = $('select[name=filtrado]').val();
+				}
             },
             error: function (request, status, error) {
                 // console.log(error);
             }
         }),
+		visibleButtons: {
+        reset: true,
+        excel: false,
+        print: false
+		},
+		customButtons: [{
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
+                      '<option value="predefinido">Predefinidos</option>' +
+                      '<option value="activos">Activos</option>' +
+                      '</select>',
+                className: 'botones-custom',
+                action: function ( e, dt, node, config ) {
+						}
+					}
+				],
 		columnFilters: [
         'none', 
         'input',
@@ -337,6 +357,13 @@ $(document).ready(function() {
 
                 })
 			}
+			
+				$('#filtrado').on('change', function(e) {
+					e.preventDefault();
+					_table.draw();
+           			return false; //for old browsers 
+			});
+			
         }
 				
 				
