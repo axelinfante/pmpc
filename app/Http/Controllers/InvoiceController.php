@@ -5515,94 +5515,105 @@ public function auditoriaInvoice(Request $request)
     $id = $request->id;
     
     if (request()->ajax()) {
-        $itemIds = \App\InvoiceItem::where('invoice_id', $id)->pluck('id')->toArray();
-
-        $datosAudit = Audit::where('auditable_type', Invoice::class)
+        
+        $invoiceAudits = Audit::where('auditable_type', \App\Invoice::class) 
             ->where('auditable_id', $id)
-            ->with(['user', 'auditable']);
+            ->select(['id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent', 'tags', 'created_at']);
 
-        return DataTables::eloquent($datosAudit)
-            ->addIndexColumn()
-            ->addColumn('model', function ($data) {
-                return "{$data->auditable_type} (id: {$data->auditable_id})";
+        $detailAudits = Audit::where('auditable_type', \App\InvoiceItem::class)
+            ->whereIn('auditable_id', function ($query) use ($id) {
+                $query->select('id')
+                      ->from('invoice_items') 
+                      ->where('invoice_id', $id);
             })
+            ->select(['id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent', 'tags', 'created_at']);
+
+
+        $allAudits = $invoiceAudits->union($detailAudits)->get();
+
+        $allAudits->load(['auditable', 'user']);
+
+        return DataTables::of($allAudits)
+            ->addIndexColumn()
+            
+            ->addColumn('model', function ($data) {
+                return class_basename($data->auditable_type) === 'Invoice' 
+                    ? 'Factura' 
+                    : 'Ítem de Factura';
+            })
+
+            ->addColumn('event', function ($data) {
+                switch ($data->event) {
+                    case 'created': return '<span class="badge badge-success">Creado</span>';
+                    case 'updated': return '<span class="badge badge-warning">Actualizado</span>';
+                    case 'deleted': return '<span class="badge badge-danger">Eliminado</span>';
+                    default: return '<span class="badge badge-secondary">' . ucfirst($data->event) . '</span>';
+                }
+            })
+
             ->addColumn('usuario', function ($data) {
                 return $data->user->name ?? 'Sistema';
             })
+
+            ->addColumn('created_at', function ($data) {
+                return $data->created_at ? $data->created_at->format('d/m/Y H:i:s') : '';
+            })
+
             ->addColumn('valores_ant', function ($data) {
-                $datos = '<table class="table table-condensed table-bordered" style="font-size:11px; margin-bottom:0;">';
-                foreach (($data->old_values ?? []) as $attribute => $value) {
-                    $datos .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
+                if (empty($data->old_values)) return '-';
+                $html = '<table class="table table-sm table-borderless mb-0" style="font-size:11px;">';
+                foreach ($data->old_values as $attribute => $value) {
+                    $html .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
                 }
-                $datos .= '</table>';
-                return $datos;
+                $html .= '</table>';
+                return $html;
             })
-            ->addColumn('valores_nue', function ($data) {
-                $datos = '<table class="table table-condensed table-bordered" style="font-size:11px; margin-bottom:0;">';
-                foreach (($data->new_values ?? []) as $attribute => $value) {
-                    $datos .= '<tr><td style="padding:2px; width:40%;"><b>' . e($attribute) . '</b></td><td style="padding:2px;">' . (is_array($value) ? json_encode($value) : e($value)) . '</td></tr>';
-                }
-                $datos .= '</table>';
-                return $datos;
-            })
-            ->addColumn('historial_items', function ($data) use ($itemIds) {
-                if (empty($itemIds)) {
-                    return '<span class="text-muted" style="font-size:11px;">Sin ítems</span>';
-                }
 
-                $itemsAudit = Audit::where('auditable_type', \App\InvoiceItem::class)
-                    ->whereIn('auditable_id', $itemIds)
-                    ->where('user_id', $data->user_id)
-                    ->whereBetween('created_at', [
-                        $data->created_at->copy()->subMinute(), 
-                        $data->created_at->copy()->addMinute()
-                    ])
-                    ->with('auditable')
-                    ->get();
+            ->addColumn('historial_items', function ($data) {
+                $accion = '';
+                $badgeClass = '';
 
-                if ($itemsAudit->isEmpty()) {
-                    return '<span class="text-muted" style="font-size:11px;">No se modificaron ítems</span>';
+                if (empty($data->old_values) && !empty($data->new_values)) {
+                    $accion = 'Añadió'; $badgeClass = 'success';
+                } elseif (!empty($data->old_values) && empty($data->new_values)) {
+                    $accion = 'Eliminó'; $badgeClass = 'danger';
+                } else {
+                    $accion = 'Modificó'; $badgeClass = 'warning';
                 }
 
-                $datos = '<div style="max-height: 200px; overflow-y: auto;">';
-                
-                foreach ($itemsAudit as $audit) {
-                    $itemDescription = $audit->auditable->description ?? "Ítem ID: {$audit->auditable_id}";
-                    $evento = strtoupper($audit->event); 
+                $htmlBadge = '<span class="badge badge-' . $badgeClass . '">' . $accion . '</span>';
 
-                    $datos .= '<table class="table table-condensed table-bordered mb-2" style="font-size:11px; width:100%;">';
-                    
-                    $datos .= '<tr class="bg-light"><td colspan="2" style="padding:4px 2px;"><b> ' . e($itemDescription) . '</b> <span class="badge badge-dark float-right" style="font-size:9px;">' . $evento . '</span></td></tr>';
-                    
-                    if (!empty($audit->new_values)) {
-                        foreach ($audit->new_values as $key => $newValue) {
-                            $oldValue = $audit->old_values[$key] ?? 'N/A';
-                            
-                            $oldValueStr = is_array($oldValue) ? json_encode($oldValue) : e($oldValue);
-                            $newValueStr = is_array($newValue) ? json_encode($newValue) : e($newValue);
+                if ($data->auditable_type == \App\InvoiceItem::class) {
+                    $itemModel = $data->auditable; 
+                    $itemName = $itemModel ? $itemModel->description : null;
 
-                            $datos .= '<tr>';
-                            $datos .= '<td style="padding:2px; width:40%;"><b>' . e($key) . ' (antes)</b></td>';
-                            $datos .= '<td style="padding:2px;" class="text-danger style="text-decoration:line-through;">' . $oldValueStr . '</td>';
-                            $datos .= '</tr>';
-
-                            $datos .= '<tr>';
-                            $datos .= '<td style="padding:2px; width:40%;"><b>' . e($key) . ' (new)</b></td>';
-                            $datos .= '<td style="padding:2px;" class="text-success font-weight-bold">' . $newValueStr . '</td>';
-                            $datos .= '</tr>';
-                        }
+                    if ($itemName) {
+                        $tituloEntidad = '<span class="text-dark font-weight-bold">' . e($itemName) . '</span>';
                     } else {
-                        $datos .= '<tr><td colspan="2" style="padding:2px;" class="text-muted"><i>Sin detalles de cambios</i></td></tr>';
+                        $tituloEntidad = '<span class="text-dark font-weight-bold">Ítem ID ' . $data->auditable_id . '</span>';
                     }
-                    
-                    $datos .= '</table>';
+                } else {
+                    $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Cotización</span>';
                 }
-                
-                $datos .= '</div>';
 
-                return $datos;
+                $valoresAmostrar = empty($data->new_values) ? $data->old_values : $data->new_values;
+                $htmlDatos = '<table class="table table-sm table-borderless mb-0" style="font-size:11px;">';
+                
+                if ($valoresAmostrar) {
+                    foreach ($valoresAmostrar as $attribute => $value) {
+                        if (in_array($attribute, ['created_at', 'updated_at', 'invoice_id', 'company_id'])) {
+                            continue;
+                        }
+                        $print_value = is_array($value) ? json_encode($value) : e($value);
+                        $htmlDatos .= '<tr><td style="padding:1px;"><b>' . e($attribute) . '</b></td><td style="padding:1px;">' . $print_value . '</td></tr>';
+                    }
+                }
+                $htmlDatos .= '</table>';
+
+                return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $htmlDatos;
             })
-            ->rawColumns(['valores_ant', 'valores_nue', 'historial_items'])
+
+            ->rawColumns(['event', 'valores_ant', 'historial_items'])
             ->make(true);
     }
 }

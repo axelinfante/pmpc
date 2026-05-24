@@ -1394,108 +1394,111 @@ $hasPiezaSavedForUser = Product::query()
 
 public function auditoriaQuotation(Request $request)
 {
-    $id = $request->id;
-       
-    if (request()->ajax()) {
-        $itemIdsFromAudit = Audit::where('auditable_type', \App\QuotationItem::class)
-            ->where(function($query) use ($id) {
-                $query->where('new_values->quotation_id', $id)
-                      ->orWhere('old_values->quotation_id', $id);
-            })
-            ->pluck('auditable_id')
-            ->unique()
-            ->toArray();
+	 $id = $request->id;
+    $quotationAudits = Audit::where('auditable_type', Quotation::class)
+        ->where('auditable_id', $id)
+        ->select(['id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent', 'tags', 'created_at']);
 
-        $datosAudit = Audit::where(function($query) use ($id) {
-                $query->where('auditable_type', Quotation::class)
-                      ->where('auditable_id', $id);
-            })
-            ->orWhere(function($query) use ($itemIdsFromAudit) {
-                $query->where('auditable_type', \App\QuotationItem::class)
-                      ->whereIn('auditable_id', $itemIdsFromAudit);
-            })
-            ->with(['user']) 
-            ->orderBy('created_at', 'desc'); 
+    $detailAudits = Audit::where('auditable_type', QuotationItem::class)
+        ->whereIn('auditable_id', function ($query) use ($id) {
+            $query->select('id')
+                  ->from('quotation_items')
+                  ->where('quotation_id', $id);
+        })
+        ->select(['id', 'user_id', 'event', 'auditable_type', 'auditable_id', 'old_values', 'new_values', 'url', 'ip_address', 'user_agent', 'tags', 'created_at']);
 
-        return DataTables::eloquent($datosAudit)
-            ->addIndexColumn()
-            ->addColumn('model', function ($data) {
-                return "$data->auditable_type (id: $data->auditable_id )";
-            })
-            ->addColumn('event', function ($data) {
-                switch ($data->event) {
-                    case 'created': return '<span class="badge badge-success">Creado</span>';
-                    case 'updated': return '<span class="badge badge-warning">Actualizado</span>';
-                    case 'deleted': return '<span class="badge badge-danger">Eliminado</span>';
-                    default: return $data->event;
-                }
-            })
-            ->addColumn('usuario', function ($data) {
-                return $data->user->name ?? '';
-            })
-            ->addColumn('created_at', function ($data) {
-                return $data->created_at ? $data->created_at->format('d/m/Y H:i:s') : '-';
-            })
-            ->addColumn('valores_ant', function ($data) {
-                $datos='<table>';
-                foreach($data->old_values as $attribute => $value){
-                  $datos.='<tr>
-                    <td><b>'.$attribute .'</b></td>
-                    <td>'. $value .'</td>
-                  </tr>';
-                }
-                $datos.= '</table>';
-                return $datos;
-            })
-            ->addColumn('valores_nue', function ($data) {
-                $datos='<table>';
-                foreach($data->new_values as $attribute => $value){
-                  $datos.='<tr>
-                    <td><b>'.$attribute .'</b></td>
-                    <td>'. $value .'</td>
-                  </tr>';
-                }
-                $datos.= '</table>';
-                return $datos;
-            })
-            ->addColumn('historial_items', function ($data) {
-                $accion = 'Modificó';
-                $badgeClass = 'warning';
-                if (empty($data->old_values)) { $accion = 'Añadió'; $badgeClass = 'success'; }
-                if (empty($data->new_values)) { $accion = 'Eliminó'; $badgeClass = 'danger'; }
+    
+    $allAudits = $quotationAudits->union($detailAudits)->get();
 
-                $htmlBadge = '<span class="badge badge-'.$badgeClass.'">'.$accion.'</span>';
+    
+    $allAudits->load(['auditable' => function ($morphTo) {
+        $morphTo->morphWith([
+            QuotationItem::class => ['item'] 
+        ]);
+    }, 'user']);
 
-                if ($data->auditable_type === \App\QuotationItem::class) {
-                    $itemModel = \App\QuotationItem::find($data->auditable_id);
-                    $itemName = $itemModel && $itemModel->item ? $itemModel->item->item_name : null;
+    return DataTables::of($allAudits)
+        ->addIndexColumn()
+        
+        ->addColumn('model', function ($data) {
+            return class_basename($data->auditable_type) === 'Quotation' 
+                ? 'Cotización' 
+                : 'Ítem de Cotización';
+        })
 
-                    if (!$itemName) {
-                        $itemName = $data->old_values['description'] ?? ($data->new_values['description'] ?? 'Producto ID: ' . $data->auditable_id);
-                    }
-                    $tituloEntidad = '<span class="text-dark font-weight-bold">' . e($itemName) . '</span>';
+        ->addColumn('event', function ($data) {
+            switch ($data->event) {
+                case 'created': return '<span class="badge badge-success">Creado</span>';
+                case 'updated': return '<span class="badge badge-warning">Actualizado</span>';
+                case 'deleted': return '<span class="badge badge-danger">Eliminado</span>';
+                default: return '<span class="badge badge-secondary">' . ucfirst($data->event) . '</span>';
+            }
+        })
+
+        
+        ->addColumn('usuario', function ($data) {
+            return $data->user->name ?? 'Sistema';
+        })
+
+        
+        ->addColumn('created_at', function ($data) {
+            return $data->created_at ? $data->created_at->format('d/m/Y H:i:s') : '';
+        })
+
+        ->addColumn('valores_ant', function ($data) {
+            if (empty($data->old_values)) return '-';
+            $html = '<table class="table table-sm table-borderless mb-0">';
+            foreach ($data->old_values as $attribute => $value) {
+                $html .= '<tr><td><b>' . $attribute . '</b></td><td>' . (is_array($value) ? json_encode($value) : $value) . '</td></tr>';
+            }
+            $html .= '</table>';
+            return $html;
+        })
+
+        ->addColumn('historial_items', function ($data) {
+            $accion = '';
+            $badgeClass = '';
+
+            if (empty($data->old_values) && !empty($data->new_values)) {
+                $accion = 'Añadió'; $badgeClass = 'success';
+            } elseif (!empty($data->old_values) && empty($data->new_values)) {
+                $accion = 'Eliminó'; $badgeClass = 'danger';
+            } else {
+                $accion = 'Modificó'; $badgeClass = 'warning';
+            }
+
+            $htmlBadge = '<span class="badge badge-' . $badgeClass . '">' . $accion . '</span>';
+
+            if ($data->auditable_type == QuotationItem::class) {
+                $itemModel = $data->auditable; 
+                $itemName = $itemModel && $itemModel->item ? $itemModel->item->item_name : null;
+
+                if ($itemName) {
+                    $tituloEntidad = '<span class="text-dark font-weight-bold">' . $itemName . '</span>';
                 } else {
-                    $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Cotización</span>';
+                    $tituloEntidad = '<span class="text-dark font-weight-bold">Producto ID ' . $data->auditable_id . '</span>';
                 }
+            } else {
+                $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Quotation</span>';
+            }
 
-                $valoresAmostrar = !empty($data->new_values) ? $data->new_values : ($data->old_values ?? []);
-                
-                $datos = '<table>';
+            $valoresAmostrar = empty($data->new_values) ? $data->old_values : $data->new_values;
+            $htmlDatos = '<table class="table table-sm table-borderless mb-0">';
+            if ($valoresAmostrar) {
                 foreach ($valoresAmostrar as $attribute => $value) {
-                    if (in_array($attribute, ['id', 'created_at', 'updated_at', 'quotation_id', 'company_id'])) continue;
-                    
+                    if (in_array($attribute, ['created_at', 'updated_at', 'quotation_id', 'company_id'])) {
+                        continue;
+                    }
                     $print_value = is_array($value) ? json_encode($value) : $value;
-                    $datos .= '<tr>
-                        <td><b>' . e($attribute) . '</b></td>
-                        <td>' . e($print_value) . '</td>
-                    </tr>';
+                    $htmlDatos .= '<tr><td><b>' . $attribute . '</b></td><td>' . $print_value . '</td></tr>';
                 }
-                $datos .= '</table>';
+            }
+            $htmlDatos .= '</table>';
 
-                return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $datos;
-            })
-            ->rawColumns(['model', 'event', 'valores_ant', 'valores_nue', 'historial_items'])
-            ->make(true);
-    }
+            return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $htmlDatos;
+        })
+
+        ->rawColumns(['event', 'valores_ant', 'historial_items'])
+        ->make(true);
 }
 }
