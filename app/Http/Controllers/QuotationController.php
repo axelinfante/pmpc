@@ -1410,13 +1410,18 @@ public function auditoriaQuotation(Request $request)
     
     $allAudits = $quotationAudits->union($detailAudits)->get();
 
-    
-    $allAudits->load(['auditable' => function ($morphTo) {
-        $morphTo->morphWith([
-            QuotationItem::class => ['item'] 
-        ]);
-    }, 'user']);
+    $users = \App\User::whereIn('id', $allAudits->pluck('user_id'))->get()->keyBy('id');
+   
+    $allAudits->each(function($audit) use ($users) {
+        $audit->setRelation('user', $users->get($audit->user_id));
+    });
 
+    $allAudits->load(['auditable' => function ($morphTo) {
+    $morphTo->morphWith([
+        QuotationItem::class => ['item'] 
+    ]);
+    }]);
+    
     return DataTables::of($allAudits)
         ->addIndexColumn()
         
@@ -1437,7 +1442,7 @@ public function auditoriaQuotation(Request $request)
 
         
         ->addColumn('usuario', function ($data) {
-            return $data->user->name ?? 'Sistema';
+            return $data->user->name ?? '';
         })
 
         
@@ -1479,7 +1484,7 @@ public function auditoriaQuotation(Request $request)
                     $tituloEntidad = '<span class="text-dark font-weight-bold">Producto ID ' . $data->auditable_id . '</span>';
                 }
             } else {
-                $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Quotation</span>';
+                $tituloEntidad = '<span class="text-muted font-weight-bold">Datos de la Reserva</span>';
             }
 
             $valoresAmostrar = empty($data->new_values) ? $data->old_values : $data->new_values;
