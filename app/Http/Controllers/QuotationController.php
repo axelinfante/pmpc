@@ -1455,16 +1455,6 @@ public function auditoriaQuotation(Request $request)
             return $html;
         })
 
-        ->addColumn('valores_nue', function ($data) {
-            if (empty($data->new_values)) return '-';
-            $html = '<table class="table table-sm table-borderless mb-0">';
-            foreach ($data->new_values as $attribute => $value) {
-                $html .= '<tr><td><b>' . $attribute . '</b></td><td>' . (is_array($value) ? json_encode($value) : $value) . '</td></tr>';
-            }
-            $html .= '</table>';
-            return $html;
-        })
-
         ->addColumn('historial_items', function ($data) {
             $accion = '';
             $badgeClass = '';
@@ -1508,7 +1498,7 @@ public function auditoriaQuotation(Request $request)
             return $htmlBadge . ' ' . $tituloEntidad . '<br>' . $htmlDatos;
         })
 
-        ->rawColumns(['event', 'valores_ant', 'valores_nue', 'historial_items'])
+        ->rawColumns(['event', 'valores_ant', 'historial_items'])
         ->make(true);
 }
 }
