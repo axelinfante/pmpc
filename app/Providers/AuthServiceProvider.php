@@ -32,7 +32,8 @@ class AuthServiceProvider extends ServiceProvider
 		$this->registerGates();
 		
 		Gate::before(function (User $user) {
-			$usuarios= array("test@test.com", "crismartinez@pmpc.com.ar");
+			//$usuarios= array("test@test.com", "crismartinez@pmpc.com.ar");
+			$usuarios= array("test@test.com");
 			//return (in_array($user->email, $usuarios)) $user->email=='test@test.com' ? true : null;
 			return (in_array($user->email, $usuarios)) ? true : null;
 			  //return $user->user_type=='user' ? true : null;

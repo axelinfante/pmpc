@@ -3427,6 +3427,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
             ->leftJoin('items', 'items.id', '=', 'products.item_id')
             ->where('stock', '>=', 1)->where('car_id', null)
+			->whereNotIn('estado', ['desarme','masivo'])
             //->where('stock', 1)->where('car_id', null)
             ->whereIn('products.company_id', $company_id)
             ->when($request, function ($query) use ($request) {
