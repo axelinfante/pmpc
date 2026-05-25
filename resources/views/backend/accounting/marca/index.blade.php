@@ -91,6 +91,15 @@ $(document).ready(function() {
         ],
     });
 
+/*$('.dataTables_filter input')
+    .unbind('keypress keyup input')
+    .bind('keyup input', function (e) {
+		 var code = e.keyCode || e.which;
+		 if ($(this).val().length >= 3 && code === 13) {
+			_table.search(this.value).draw();
+		}
+		
+    });*/
 
 	$( '#filtro_modelo' ).select2({
     width: '100%', 
