@@ -29,7 +29,8 @@ use Yajra\DataTables\Facades\DataTables;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
-
+use App\Orden_desarme;
+use App\Puesto;
 
 
 use ZipArchive;
@@ -54,6 +55,7 @@ class ProductController extends Controller
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
                 ->where('car_id', null)
                 ->where('stock', '>=', 1)
+				->whereNotIn('estado', ['desarme','desarme-stock'])
                 ->whereIn('products.company_id', $company_id)
                 ->with('category')
                 ->whereHas('item', function ($query) {
@@ -2099,6 +2101,7 @@ return DataTables::of($products)
 		$validator = Validator::make($request->all(), [
 		'nro_interno' => 'required',
             'idDeposito' => 'required',
+            'estado' => 'required',
             'ubicacion' => 'nullable',
             'description' => 'nullable',
             'idsSeleccionados' => 'required'
@@ -2124,13 +2127,53 @@ return DataTables::of($products)
 			 $nro_interno= $request->input('nro_interno',0);
 			 
 			 $car = Cars::find($nro_interno);
-
+			 	
             if (isset($car)) {
-			$sql="INSERT INTO products (item_id,nro_interno,stock,description,product_price,tax_method,estado,company_id,idDeposito,ubicacion,carga_rapida,user_id,mercado_libre,created_at,marca_modelo)
-			SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','masivo',".$car->company_id.",".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), $car->idMarca_modelo as marcamodelo FROM items
-				WHERE id IN($ids)";
+				$estado=$request->input('estado','despacho');
+				$marca_modelo=$car->idMarca_modelo;
+				$operario = Puesto::where('predeterminada', '1')->where('company_id', ($car->company_id ?? company_id()))->first();
 						 
-			   DB::statement($sql);
+
+			if ($estado=='despacho'){
+				$sql="INSERT INTO products (item_id,nro_interno,stock,description,product_price,tax_method,estado,company_id,idDeposito,ubicacion,carga_rapida,user_id,mercado_libre,created_at,marca_modelo)
+				SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','".$estado."',".$car->company_id.",".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), $car->idMarca_modelo as marcamodelo FROM items
+				WHERE id IN($ids)";
+				 DB::statement($sql);
+			}else{
+				$ids =  explode(",", $ids);
+				$items = Item::whereIn('id', $ids)->get();
+				foreach ($items as $item) {
+					
+						 $product = new Product();
+						 $product->item_id = $item->id;
+						 $product->car_id =  null;
+						 $product->marca_modelo = $marca_modelo;
+						 $product->product_price = 0;
+						 $product->nro_interno = $nro_interno;
+						 $product->tax_method = 'exclusive';
+						 $product->description = $request->input('description','');
+						 $product->stock = 1;
+						 $product->estado = $request->input('estado') ?? "desarme-stock";
+						 $product->company_id = $car->company_id ?? company_id();
+						 $product->mercado_libre = 0;
+ 						 $product->idDeposito = $request->input('idDeposito') ?? null;
+ 						 $product->ubicacion = $request->input('ubicacion') ?? '';
+						 $product->user_id = auth()->user()->id;
+						 $product->save();
+						 
+						 $orden_desarme = new Orden_desarme();
+						 $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+						 $orden_desarme->prioridad = "normal";
+						 $orden_desarme->interno = ($product->idCar ?? $product->nro_interno);
+						 $orden_desarme->marca_modelo = $product->marca_modelo;
+						 $orden_desarme->pieza = $item->id; //$product->id;
+						 $orden_desarme->product_id = $product->id;
+						 $orden_desarme->procesar = 1;
+						 $orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
+ 						 $orden_desarme->save();
+				}
+				
+			}	
 			  DB::commit();
 			
 			}

@@ -711,15 +711,17 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         if ($orden_desarme->fecha_desarmado_anulado !== null)
          {       
             $item_invoice = InvoiceItem::where('invoice_id',$orden_desarme->id_venta )->where('item_id',$orden_desarme->pieza)->first();
+			$stock = Product::where("id", $orden_desarme->product_id)->first();
 			if($item_invoice)
 			{
 				$item_invoice->product_id=$orden_desarme->product_id;
 				$item_invoice->save();
 				
 				//$vend = Product::where('nro_interno', "$car->id")->where('stock', 0)->get();
-				 $stock = Product::where("id", $orden_desarme->product_id)->first();
+				 //$stock = Product::where("id", $orden_desarme->product_id)->first();
 				 
-				 if ($stock->estado=="desarme"){
+				 //if ($stock->estado=="desarme"){
+				 if (in_array($stock->estado, array("desarme","desarme-stock"))) {
 					$stock->estado = "optimo";
 				  }
 				 
@@ -752,10 +754,12 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 
 			}		
-			
+			/// proceso para desarme-stock
+				 if (in_array($stock->estado, array("desarme-stock"))) {
+					$stock->estado = "despacho";
+					$stock->save();
+				  }
 			//dd($orden_desarme->pieza);
-         
-
         }
 
 
