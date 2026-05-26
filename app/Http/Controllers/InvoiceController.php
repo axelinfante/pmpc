@@ -371,7 +371,7 @@ class InvoiceController extends Controller
 						$orden_desarme->save();
 						// enviar notificacion al operario de creada una orden
 					//	Notification::send($operario, new OrdenCreated($orden_desarme));
-		}else{
+		}elseif($desarmarValue == 'despacho'){
 			
 			    $orden_despacho = new OrdenDespacho();
                 $orden_despacho->invoice_id = $invoice->id;
@@ -381,6 +381,9 @@ class InvoiceController extends Controller
                 $orden_despacho->company_id = $product->company_id;
                 $orden_despacho->estatus = 'pendiente';
                 $orden_despacho->save();
+			
+		}else{
+			// retiro directo
 			
 		}
 		//*****************************//
@@ -3427,7 +3430,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
             ->leftJoin('items', 'items.id', '=', 'products.item_id')
             ->where('stock', '>=', 1)->where('car_id', null)
-			->whereNotIn('estado', ['desarme','masivo'])
+			->whereNotIn('estado', ['desarme','desarme-stock'])
             //->where('stock', 1)->where('car_id', null)
             ->whereIn('products.company_id', $company_id)
             ->when($request, function ($query) use ($request) {

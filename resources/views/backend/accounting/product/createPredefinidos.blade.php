@@ -21,6 +21,15 @@
                                     </select>
               </div>
 			  </div>
+			    <div class="col-md-12">
+                                <div class="form-group">
+                                  <label class="control-label">Tipo Movimiento</label>
+                                    <select required class="form-control" name="estado" id="estado">
+                                        <option selected value="despacho">Enviar a stock</option>
+                                        <option value="desarme-stock">Enviar Desarme -> Stock</option>
+                                    </select>
+                                </div>
+                            </div>
 			  
 			  			  <div class="col-md-12">
                                 <div class="form-group">
@@ -76,6 +85,8 @@
 					<textarea class="form-control" name="description">{{ old('description') }}</textarea>
 				  </div>
 				</div>
+				
+				 
 			
 			
 			 <div class="col-12">
