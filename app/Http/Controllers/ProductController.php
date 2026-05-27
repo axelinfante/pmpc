@@ -55,7 +55,11 @@ class ProductController extends Controller
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
                 ->where('car_id', null)
                 ->where('stock', '>=', 1)
-				->whereNotIn('estado', ['desarme','desarme-stock'])
+                >where(function ($query) {
+                    $query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
+                          ->orWhereNull('products.estado');
+                })
+				//->whereNotIn('estado', ['desarme','desarme-stock'])
                 ->whereIn('products.company_id', $company_id)
                 ->with('category')
                 ->whereHas('item', function ($query) {

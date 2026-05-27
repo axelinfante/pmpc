@@ -6,7 +6,7 @@ $usuariosAutorizados = [26,169];
     <div class=" my-3">
         <div class="col">
             <label class="text-white" for="companySelect">Empresa</label>
-            <select id="companySelect" {{ !in_array(Auth::user()->id, $usuariosAutorizados ?? []) ? 'disabled' : '' }} class="form-control">
+            <select id="companySelect" {{ !in_array(Auth::user()->id, $usuariosAutorizados ?? []) ? '' : '' }} class="form-control">
                 {{ list_company() }}
             </select>
         </div>
