@@ -371,7 +371,7 @@ class InvoiceController extends Controller
 						$orden_desarme->save();
 						// enviar notificacion al operario de creada una orden
 					//	Notification::send($operario, new OrdenCreated($orden_desarme));
-		}elseif($desarmarValue == 'despacho'){
+		/*}elseif($desarmarValue == 'despacho'){
 			
 			    $orden_despacho = new OrdenDespacho();
                 $orden_despacho->invoice_id = $invoice->id;
@@ -381,10 +381,23 @@ class InvoiceController extends Controller
                 $orden_despacho->company_id = $product->company_id;
                 $orden_despacho->estatus = 'pendiente';
                 $orden_despacho->save();
-			
-		}else{
+		*/	
+		}elseif($desarmarValue == 'directo'){
 			// retiro directo
 			
+		}else{
+				$orden_despacho = new OrdenDespacho();
+                $orden_despacho->invoice_id = $invoice->id;
+                $orden_despacho->invoiceitem_id = $invoiceItem->id;
+                $orden_despacho->description = $product->description;
+                $orden_despacho->quantity = 1;
+                $orden_despacho->company_id = $product->company_id;
+                $orden_despacho->estatus = 'pendiente';
+                /*$orden_despacho->lugar_embalado = '';
+                $orden_despacho->forma_entrega = '';
+                $orden_despacho->despachado_por = '';
+                $orden_despacho->foto_guia = '';*/
+                $orden_despacho->save();
 		}
 		//*****************************//
 
