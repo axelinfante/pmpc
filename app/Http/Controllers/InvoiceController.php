@@ -492,14 +492,14 @@ class InvoiceController extends Controller
         DB::commit();
 
         // Pagar desde saldo a favor automáticamente (si hay saldo disponible)
-        try {
+        /*try {
             \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id);
         } catch (\Throwable $e) {
             \Log::warning('Error en pago automático desde saldo a favor: ' . $e->getMessage(), [
                 'invoice_id' => $invoice->id,
                 'client_id' => $invoice->client_id
             ]);
-        }
+        }*/
 
         if (!$request->ajax()) {
             return redirect('invoices/' . $invoice->id)->with('success', _lang('Invoice Created Sucessfully'));
@@ -3430,7 +3430,11 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
             ->leftJoin('items', 'items.id', '=', 'products.item_id')
             ->where('stock', '>=', 1)->where('car_id', null)
-			->whereNotIn('estado', ['desarme','desarme-stock'])
+            //->whereNotIn('estado', ['desarme','desarme-stock'])
+            >where(function ($query) {
+                    $query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
+                          ->orWhereNull('products.estado');
+                })
             //->where('stock', 1)->where('car_id', null)
             ->whereIn('products.company_id', $company_id)
             ->when($request, function ($query) use ($request) {
