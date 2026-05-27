@@ -204,6 +204,29 @@
 			  </div>
 			</div>
 
+			<!--<div class="col-md-4 d-none" id="projects">
+			  <div class="form-group">
+				<label class="control-label">{{ _lang('Select Project') }}</label>
+				<select class="form-control select2" id="project_id" name="project_id">
+				   <option value="">{{ _lang('Select One') }}</option>
+				   {{ create_option('projects','id','name',isset($_GET['project_id']) ? $_GET['project_id'] : '' ,array('company_id=' => company_id())) }}
+				</select>
+			  </div>
+			</div>
+			-->
+
+
+			<!--<div class="col-md-4">
+			  <div class="form-group">
+				<label class="control-label">{{ _lang('Invoice Template') }}</label>
+				<select class="form-control select2" name="template">
+                   @foreach(get_invoice_templates() as $key => $value)
+				   		<option value="{{ $key }}">{{ $value }}</option>
+				   @endforeach
+				</select>
+			  </div>
+			</div>-->
+
 		<div class="col-md-12">
 					<div class="form-group">
 <br>
@@ -214,6 +237,7 @@
 
 
 			{{-- @if($idCar || !$idProduct) --}}
+				
 <div class="col-md-6">
 					<div class="form-group">
 						{{--<a href="{{ route('vehiculo.create') }}" data-reload="false" data-title="{{ _lang('Add Supplier') --}}
@@ -226,7 +250,7 @@
 								data-table="cars"
 								data-where="11" name="car_id" id="car_id">
 							<option value="">{{ _lang('- Select Car -') }}</option>
-							{{-- @forelse($vehiculos as $v)
+							@forelse($vehiculos as $v)
 							@if($v->idEstado !=1)
 								<option {{old('car_id',$idCar ?? '') == $v->id? 'selected' :''}} value="{{
 										$v->id}}">{{ $v->id.' '.
@@ -237,7 +261,7 @@
 							
 							@endif
 							@empty
-							@endforelse --}}
+							@endforelse
 						</select>
 					</div>
 				</div>

@@ -492,14 +492,14 @@ class InvoiceController extends Controller
         DB::commit();
 
         // Pagar desde saldo a favor automáticamente (si hay saldo disponible)
-        try {
+        /*try {
             \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id);
         } catch (\Throwable $e) {
             \Log::warning('Error en pago automático desde saldo a favor: ' . $e->getMessage(), [
                 'invoice_id' => $invoice->id,
                 'client_id' => $invoice->client_id
             ]);
-        }
+        }*/
 
         if (!$request->ajax()) {
             return redirect('invoices/' . $invoice->id)->with('success', _lang('Invoice Created Sucessfully'));
