@@ -1,10 +1,12 @@
-@php $permissions = permission_list(); @endphp
-
+@php 
+$permissions = permission_list(); 
+$usuariosAutorizados = [26,169]; 
+@endphp
 <li>
     <div class=" my-3">
         <div class="col">
             <label class="text-white" for="companySelect">Empresa</label>
-            <select id="companySelect" class="form-control">
+            <select id="companySelect" {{ !in_array(Auth::user()->id, $usuariosAutorizados ?? []) ? '' : '' }} class="form-control">
                 {{ list_company() }}
             </select>
         </div>

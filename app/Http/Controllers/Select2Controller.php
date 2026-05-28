@@ -227,8 +227,9 @@ class Select2Controller extends Controller
                         'marca_modelos.idModelo',
                         '=',
                         'modelos.id'
-                    )->where(function ($q) {
+                    )->where(function ($q) use ($companias_global) {
                         $q->whereIn('cars.idEstado', [1,5,6,8,12]);
+						$q->whereIn("cars.company_id",$companias_global);
                         //$q->where('cars.idEstado', 5)->orwhere('cars.idEstado', 6)->orwhere('cars.idEstado', 8);
                         //$q->where('cars.idEstado', 5)->orwhere('cars.idEstado', 1)->orwhere('cars.idEstado', 6)->orwhere('cars.idEstado', 8);
                     })->where(function ($c) use ($display2, $display3, $q) {
