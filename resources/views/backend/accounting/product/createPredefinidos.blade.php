@@ -10,7 +10,9 @@
 	  <form name="formulario_create" id="formulario_create" method="post" class="validate" autocomplete="off" action="{{ route('table.detalle.post') }}">
 		{{ csrf_field() }}
 		    <div class="row">
-			
+			<div class="alert alert-danger print-error-msg col-md-12" style="display:none">
+					<ul></ul>
+				</div>
 			<div class="col-md-12">
 			 <div class="form-group">
                                     <label class="control-label">{{ _lang('Nº interno') }}</label>
@@ -55,10 +57,10 @@
                                     <!--<a href="{{ route('marcas.createLinea') }}" data-reload="false"
                                         data-select="vendedor_id" data-title="{{ _lang('Create Marca') }}" class="ajax-modal-2 select2-add"><i
                                             class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
-                                    <label class="control-label">{{ _lang('Marca') }}</label>
-                                    <select class="form-control select2" data-value="id" data-display="marca"
+                                   <label class="control-label">{{ _lang('Marca') }}</label>
+                                    <select disabled class="form-control select2" data-value="id" data-display="marca"
                                         data-table="marca" data-where="" id="marca" name="marca">
-                                        <option value="">{{ _lang('Select One') }}</option>
+                                        <option value=""></option>
                                         {{ create_option('marcas', 'id', 'marca', old('marca'),array('activo=' => 'Si')) }}
                                     </select>
                                 </div>
@@ -70,9 +72,9 @@
 										data-select="modelo" data-title="{{ _lang('Create Modelo') }}" class="ajax-modal-2 select2-add">
 										<i class="ti-plus"></i> {{ _lang('Add New') }}
 									</a>-->
-                                    <label class="control-label">{{ _lang('Modelo') }}</label>
-                                    <select class="form-control select2" id="modelo">
-                                        <option value="">{{ _lang('Select One') }}</option>
+                                    <label  class="control-label">{{ _lang('Modelo') }}</label>
+                                    <select disabled class="form-control select2" id="modelo">
+                                        <option value=""></option>
 
                                     </select>
                                     <input type="hidden" name="marca_modelo" id="marca_modelo">
@@ -241,24 +243,17 @@ $(document).ready(function() {
 			});
 
 			$('#nro_interno').on('change', function() {
-				
-					if ($('#nro_interno').val() > 0){
-						marca.prop("disabled", true);
-						modelo.prop("disabled", true);
-					}else{
-						marca.prop("disabled", false);
-						modelo.prop("disabled", false)
-						marca.val('');
-						marca_modelo.val('');
-						//marca.select2();
-						marca.trigger('change'); 
-
-					}
-				
-				
+				$('#formulario_create').find(".print-error-msg").hide().find("ul").html('');
+					marca.val('');
+					marca_modelo.val('');
+					modelo.html(`<option value=""></option>`);
+					//modelo.val('');
+					marca.trigger('change');
+					modelo.trigger('change');
 				    MostrarModelo();
 					_table.draw();
 			});	
+			
 			nro_interno.trigger('change');
 			$('.dataTables_filter input').unbind();
 
@@ -293,7 +288,7 @@ $(document).ready(function() {
 		
 				 $('#formulario_create').on('submit', function(e) {
 					e.preventDefault();
-						 
+					$('#formulario_create').find(".print-error-msg").hide().find("ul").html('');
 				  var selectedIds = [];
 				   var ids = [];
 				  $(_table.$('input[name="bank_check"]:checked').each(function () {
@@ -315,11 +310,22 @@ $(document).ready(function() {
 						processData: false, 
 						contentType: false, 
 						success: function(response) {
-							_table.draw();
-							
+						if(response.result == "success"){
+									_table.draw();
+							}else{
+								//$('#formulario_create').find(".print-error-msg").find("ul").html('');
+								$('#formulario_create').find(".print-error-msg").css('display','block');
+								$.each( response.message, function( key, value ) {
+									$('#formulario_create').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+								});
+							}
 						},
-						error: function(error) {
-							//console.error('Error:', error);
+						error: function(response){
+							//$('#formulario_create').find(".print-error-msg").find("ul").html('');
+							$('#formulario_create').find(".print-error-msg").css('display','block');
+							$.each( response.responseJSON.errors, function( key, value ) {
+								$('#formulario_create').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+							});
 						}
 					});
 				});
@@ -332,6 +338,12 @@ $(document).ready(function() {
                     url: "{{ url('vehiculo/getMarcaModeloByCar/') }}/" + nro_interno.val(),
                     dataType: 'json',
                     success: function(resMM) {
+						
+						let marcaId = resMM.marca_modelo?.idMarca ?? "0";
+                        if (marcaId=="0"){
+							return;
+						}
+						
                         marca.val(resMM.marca_modelo.idMarca);
 
                         $('#marca_modelo').val(resMM.marca_modelo.id);
