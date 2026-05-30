@@ -51,9 +51,9 @@ class ProductController extends Controller
         if (request()->ajax()) {
             $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
             // Iniciamos la consulta base
-            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio')
+            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio','cars.motor_nro')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-                ->where('car_id', null)
+                ->whereNull('car_id')
                 ->where('stock', '>=', 1)
                 ->where(function ($query) {
                     $query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
@@ -136,7 +136,7 @@ class ProductController extends Controller
                         });
                     });
                 })
-                ->filterColumn('motor', function ($query, $keyword) {
+                ->filterColumn('motor_nro', function ($query, $keyword) {
                     //$query->where('products.motor', 'like', "%{$keyword}");
                     if ($keyword == "todos") {
                         $query->where('cars.motor_nro', '=', "")
@@ -300,6 +300,9 @@ class ProductController extends Controller
                 })
                 ->addColumn('dominio', function ($data) {
                     return $data->dominio ?? '';
+                })
+				->addColumn('motor_nro', function ($data) {
+                    return $data->motor_nro ?? '';
                 })
                 ->editColumn('mercado_libre', function ($data) use ($request) {
 					
