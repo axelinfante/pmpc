@@ -1373,23 +1373,23 @@ class InvoiceController extends Controller
     public function create_payment(Request $request, $id)
     {
         $invoice = Invoice::where("id", $id)->first(); //->where("company_id", company_id())
-
+		//dd($invoice);
 
         $invoices = Invoice::where('client_id', $invoice->client_id)->get();
         //buscar el saldo y la cotizacion cancelada con saldo a favor
         $result = [];
-        foreach ($invoices as $invoice) :
+        foreach ($invoices as $invoice_) :
 
 
             $paid = 0;
-            foreach ($invoice->transaction as $pagos) {
+            foreach ($invoice_->transaction as $pagos) {
                 if ($pagos->type == 'income') {
                     $paid = $paid + $pagos->base_amount;
                 }
             }
             $html = "";
             $paid_dev = 0;
-            $product_return_ = DB::select("select invoices.id,invoices.invoice_number,invoice_items.product_id,products_returns.product_id as productoid, invoice_items.sub_total from `invoices` inner join `invoice_items` on `invoice_items`.`invoice_id` = `invoices`.`id` left join `products_returns` on products_returns.invoice_id=invoices.id and  products_returns.product_id=invoice_items.product_id AND products_returns.status='procesada' WHERE `invoices`.`related_to` = 'contacts' AND invoices.id IN ($invoice->id)
+            $product_return_ = DB::select("select invoices.id,invoices.invoice_number,invoice_items.product_id,products_returns.product_id as productoid, invoice_items.sub_total from `invoices` inner join `invoice_items` on `invoice_items`.`invoice_id` = `invoices`.`id` left join `products_returns` on products_returns.invoice_id=invoices.id and  products_returns.product_id=invoice_items.product_id AND products_returns.status='procesada' WHERE `invoices`.`related_to` = 'contacts' AND invoices.id IN ($invoice_->id)
             GROUP BY invoices.id,invoices.invoice_number,invoice_items.product_id");
 
             if (isset($product_return_)) {
@@ -1400,10 +1400,10 @@ class InvoiceController extends Controller
                     }
                 }
 
-                $paid_to = $invoice->grand_total - ($paid + $paid_dev);
+                $paid_to = $invoice_->grand_total - ($paid + $paid_dev);
                 if ($paid_to < 0) {
                     $result[] = [
-                        'idCotizacion' => $invoice->id,
+                        'idCotizacion' => $invoice_->id,
                         'paid_dev' => $paid_to
                     ];
                 }
@@ -1412,7 +1412,7 @@ class InvoiceController extends Controller
         endforeach;
 		
 
-        //    dd($result);
+           // dd($result,$invoice);
         if ($request->ajax()) {
             return view('backend.accounting.invoice.modal.create_payment', compact('invoice', 'id', 'result'))->with(['paid' => $paid]);
         }
