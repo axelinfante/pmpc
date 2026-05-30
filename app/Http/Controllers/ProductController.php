@@ -51,9 +51,9 @@ class ProductController extends Controller
         if (request()->ajax()) {
             $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
             // Iniciamos la consulta base
-            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio')
+            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio','cars.motor_nro')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-                ->where('car_id', null)
+                ->whereNull('car_id')
                 ->where('stock', '>=', 1)
                 ->where(function ($query) {
                     $query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
@@ -136,7 +136,7 @@ class ProductController extends Controller
                         });
                     });
                 })
-                ->filterColumn('motor', function ($query, $keyword) {
+                ->filterColumn('motor_nro', function ($query, $keyword) {
                     //$query->where('products.motor', 'like', "%{$keyword}");
                     if ($keyword == "todos") {
                         $query->where('cars.motor_nro', '=', "")
@@ -300,6 +300,9 @@ class ProductController extends Controller
                 })
                 ->addColumn('dominio', function ($data) {
                     return $data->dominio ?? '';
+                })
+				->addColumn('motor_nro', function ($data) {
+                    return $data->motor_nro ?? '';
                 })
                 ->editColumn('mercado_libre', function ($data) use ($request) {
 					
@@ -2103,7 +2106,21 @@ return DataTables::of($products)
 	  public function table_detalle_post(Request $request)
     {
 		$validator = Validator::make($request->all(), [
-		'nro_interno' => 'required',
+			//'nro_interno' => 'required',
+			'nro_interno' =>	 [
+				'required',
+				'exists:cars,id',
+				function ($attribute, $value, $fail) use ($request) {
+					$car = \DB::table('cars')->where('id', $value)->first();
+						// Verificamos el auto en la BD y el valor que viene desde el formulario
+						if ($car && $car->idEstado == 1 && $request->input('estado') == 'desarme-stock') {
+							$fail('El vehículo seleccionado no está apto (compactado) (estado no permitido).');
+						}
+					/* if ($car && $car->idEstado == 1) {
+						$fail('El vehículo seleccionado no está disponible (estado no permitido).');
+					} */
+				},
+			],
             'idDeposito' => 'required',
             'estado' => 'required',
             'ubicacion' => 'nullable',
@@ -2137,10 +2154,10 @@ return DataTables::of($products)
 				$marca_modelo=$car->idMarca_modelo;
 				$operario = Puesto::where('predeterminada', '1')->where('company_id', ($car->company_id ?? company_id()))->first();
 						 
-
 			if ($estado=='despacho'){
+				$marca_modelo_valor = !empty($car->idMarca_modelo) ? $car->idMarca_modelo : 'NULL';
 				$sql="INSERT INTO products (item_id,nro_interno,stock,description,product_price,tax_method,estado,company_id,idDeposito,ubicacion,carga_rapida,user_id,mercado_libre,created_at,marca_modelo)
-				SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','".$estado."',".$car->company_id.",".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), $car->idMarca_modelo as marcamodelo FROM items
+				SELECT items.id,{$nro_interno},1,'".$request->input('description','')."',0,'exclusive','".$estado."',".$car->company_id.",".$request->input('idDeposito',null).",'".$request->input('ubicacion','')."',".$request->input('carga_rapida',0).",". auth()->user()->id .",0,NOW(), {$marca_modelo_valor} as marcamodelo FROM items
 				WHERE id IN($ids)";
 				 DB::statement($sql);
 			}else{
