@@ -90,7 +90,7 @@
                     { data: 'productItem', name: 'productItem' },
                     { data: 'marca', name: 'marca' },
                     { data: 'modelo', name: 'modelo' },
-                    { data: 'nro_motor', name: 'nro_motor' },
+                    { data: 'motor_nro', name: 'motor_nro' },
                     { data: 'nro_oblea', name: 'nro_oblea' },
                     { data: 'deposito', name: 'deposito' },
                     { data: 'ubicacion', name: 'ubicacion' },
