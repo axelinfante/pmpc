@@ -52,7 +52,6 @@
             }
         }
 
-        /* Oculta elementos marcados al imprimir o generar PDF */
         @media print {
             .no-print, .no-print * {
                 display: none !important;
@@ -207,7 +206,7 @@
                                             <td class="text-right">{{ decimalPlace($item->sub_total, $currency) }}</td>
                                         </tr>
 
-                                        {{-- Fila de la Nota modificada con .no-print --}}
+
                                         @if ($invoice->note != '')
                                         <tr class="no-print">
                                             <td colspan="2">
