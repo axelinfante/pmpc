@@ -80,31 +80,29 @@
 			</div>-->
 
 			<div class="col-md-4">
-    <div class="form-group">
-        <label class="control-label">{{ _lang('Acciones') }}</label>
-        <select class="form-control select2" multiple name="acciones[]" id="acciones" data-placeholder="{{ _lang('Seleccionar acciones') }}">
-            <option value=""></option> 
-            
-            <option value="flete">{{ _lang('Flete') }}</option>
-            <option value="despacho_guia">{{ _lang('Despacho con guía') }}</option>
-            
-            <option value="retira_penta">{{ _lang('Retira en Penta') }}</option>
-            <option value="retira_octubre">{{ _lang('Retira en Octubre') }}</option>
-            <option value="retira_tucson">{{ _lang('Retira en Tucson') }}</option>
-            <option value="retira_constituyentes">{{ _lang('Retira en Constituyentes') }}</option>
-            <option value="retira_ventanita">{{ _lang('Retira Ventanita') }}</option>
-            
-            <option value="enviar_penta_jumper">{{ _lang('Enviar a Penta por Jumper') }}</option>
-            <option value="enviar_rosario">{{ _lang('Enviar a Rosario') }}</option>
-            <option value="mercado_envio_jumper">{{ _lang('Mercado envío (c/Etiq) Jumper a correo') }}</option>
-            <option value="ml_via_cargo_jumper">{{ _lang('ML vía cargo (Jumper)') }}</option>
-            <option value="moto_flex_ml">{{ _lang('Moto flex. ML') }}</option>
-            <option value="colecta_ziping">{{ _lang('Colecta ziping') }}</option>
-            
-            <!--<option value="facturar">{{ _lang('Facturar') }}</option> --> 
-        </select>
-    </div>
-</div>
+				<div class="form-group">
+					<label class="control-label">{{ _lang('Acciones') }}</label>
+					<select class="form-control select2" multiple name="acciones[]" id="acciones" data-placeholder="{{ _lang('Seleccionar acciones') }}">
+						<option value=""></option> 
+						
+						<option value="flete">{{ _lang('Flete') }}</option>
+						<option value="Despacho con guía">{{ _lang('Despacho con guía') }}</option>
+						
+						<option value="Retira en Penta">{{ _lang('Retira en Penta') }}</option>
+						<option value="Retira en Octubre">{{ _lang('Retira en Octubre') }}</option>
+						<option value="Retira en Tucson">{{ _lang('Retira en Tucson') }}</option>
+						<option value="Retira en Constituyentes">{{ _lang('Retira en Constituyentes') }}</option>
+						<option value="Retira Ventanita">{{ _lang('Retira Ventanita') }}</option>
+						
+						<option value="Enviar a Penta por Jumper">{{ _lang('Enviar a Penta por Jumper') }}</option>
+						<option value="Enviar a Rosario">{{ _lang('Enviar a Rosario') }}</option>
+						<option value="Mercado envío (c/Etiq) Jumper a correo">{{ _lang('Mercado envío (c/Etiq) Jumper a correo') }}</option>
+						<option value="ML vía cargo (Jumper)">{{ _lang('ML vía cargo (Jumper)') }}</option>
+						<option value="Moto flex. ML">{{ _lang('Moto flex. ML') }}</option>
+						<option value="Colecta ziping">{{ _lang('Colecta ziping') }}</option>
+					</select>
+				</div>
+			</div>
 
 			@if($rol != auth()->user()->role_id)
 			<div class="col-lg-3 mb-2">

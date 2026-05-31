@@ -156,224 +156,227 @@ class InvoiceController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-    {
-        @ini_set('max_execution_time', 0);
-        @set_time_limit(0);
+{
+    @ini_set('max_execution_time', 0);
+    @set_time_limit(0);
 
-        $validator = Validator::make($request->all(), [
-            'invoice_number' => 'required|max:191',
-            'client_id' => 'required',
-            'invoice_date' => 'required',
-            'due_date' => 'required',
-            'product_id' => 'required|array',		
-			/*'product_id' => ['required','array', function ($attribute, $value, $fail) use ($request): void {
-                $item = Product::selectRaw('GROUP_CONCAT(products.id) AS productos_observacion')
-					->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-                    ->where('cars.idEstado',1)
-                    ->where('products.estado',"desarme")
-					->whereIn('products.id', $request->product_id)
-                    ->first();
-                if ($item->productos_observacion) {
-                    $fail('Usted esta queriendo desarmar un vehiculo ya desarmado, debe agregar una observación. Productos =>'.$item->productos_observacion);
-                    return;
-                }
-            },
-            ],*/
-            'company_id' => 'required',
-            'product_total' => 'required|numeric|not_in:NaN',
-			//'product_id.*' =>  ['required', 'distinct', Rule::unique('invoice_items', 'product_id')],
-        ], [
-            'product_id.required' => _lang('You must select at least one product or service'),
-//			'product_id.unique' => _lang('Codigo de Producto ya existe en ventas'),
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->ajax()) {
-                return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
-            } else {
-                return redirect('invoices/create')
-                    ->withErrors($validator)
-                    ->withInput();
+    $validator = Validator::make($request->all(), [
+        'invoice_number' => 'required|max:191',
+        'client_id' => 'required',
+        'invoice_date' => 'required',
+        'due_date' => 'required',
+        'product_id' => 'required|array',       
+        /*'product_id' => ['required','array', function ($attribute, $value, $fail) use ($request): void {
+            $item = Product::selectRaw('GROUP_CONCAT(products.id) AS productos_observacion')
+                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+                ->where('cars.idEstado',1)
+                ->where('products.estado',"desarme")
+                ->whereIn('products.id', $request->product_id)
+                ->first();
+            if ($item->productos_observacion) {
+                $fail('Usted esta queriendo desarmar un vehiculo ya desarmado, debe agregar una observación. Productos =>'.$item->productos_observacion);
+                return;
             }
-        }
+        },
+        ],*/
+        'company_id' => 'required',
+        'product_total' => 'required|numeric|not_in:NaN',
+        //'product_id.*' =>  ['required', 'distinct', Rule::unique('invoice_items', 'product_id')],
+    ], [
+        'product_id.required' => _lang('You must select at least one product or service'),
+//      'product_id.unique' => _lang('Codigo de Producto ya existe en ventas'),
+    ]);
 
-        $vent = Invoice::where('invoice_number', $request->input('invoice_number'))->first();
-        $invoice_number = $request->input('invoice_number');
-        if ($vent) {
-            for ($i = $invoice_number; $i < 1000000; $i) {
-                $i = $i + 1;
-                $vent = Invoice::where('invoice_number', $i)->first();
-
-                if (!$vent) {
-                    $invoice_number = $i;
-                    break;
-                }
-            }
-        }
-
-
-
-        DB::beginTransaction();
-
-        $company_id = $request->input('company_id');
-
-        $facturarOptions = $request->input('acciones', []);
-        //dd($facturarOptions);
-
-        $invoice = new Invoice();
-        $invoice->invoice_number = $invoice_number;
-        $invoice->invoice_date = $request->input('invoice_date');
-        $invoice->due_date = $request->input('due_date');
-        $invoice->grand_total = $request->product_total + $request->tax_total;
-        $invoice->tax_total = $request->tax_total;
-        $invoice->paid = 0;
-        $invoice->status = 'Unpaid';
-        $invoice->template = 'classic';
-        $invoice->note = $request->input('note');
-        $invoice->revendedor = $request->input('revendedor');
-        //$invoice->related_to     = $request->input('related_to');
-        $invoice->related_to = 'contacts';
-        $vendedor = $request->input('vendedor', false);
-        if (!$vendedor) {
-            $vendedor = auth()->id();
-        }
-        $invoice->user_id = $vendedor;
-
-        if (in_array('no_desarmar', $facturarOptions)) {
-            $invoice->desarmar = 0;
+    if ($validator->fails()) {
+        if ($request->ajax()) {
+            return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
         } else {
-            $invoice->desarmar = 1;
+            return redirect('invoices/create')
+                ->withErrors($validator)
+                ->withInput();
         }
+    }
 
+    $vent = Invoice::where('invoice_number', $request->input('invoice_number'))->first();
+    $invoice_number = $request->input('invoice_number');
+    if ($vent) {
+        for ($i = $invoice_number; $i < 1000000; $i) {
+            $i = $i + 1;
+            $vent = Invoice::where('invoice_number', $i)->first();
 
+            if (!$vent) {
+                $invoice_number = $i;
+                break;
+            }
+        }
+    }
 
-        // $invoice->desarmar = $request->input('desarmar', 1);
+    DB::beginTransaction();
 
-        $invoice->is_usd = $request->input('is_usd', 0);
-        $invoice->tasa = $request->input('tasa', null);
+    $company_id = $request->input('company_id');
 
-        /*if ($invoice->related_to == 'contacts') {
-            $invoice->related_id      = $request->input('client_id');
-            $invoice->client_id       = $request->input('client_id');
-            $invoice->converted_total = convert_currency(base_currency(), $invoice->client->currency, $invoice->grand_total);
-        } else if ($invoice->related_to == 'projects') {
-            $invoice->related_id      = $request->input('project_id');
-            $invoice->client_id       = Project::find($invoice->related_id)->client_id;
-            $invoice->converted_total = convert_currency(base_currency(), $invoice->project->client->currency, $invoice->grand_total);
-        }*/
+    $facturarOptions = $request->input('acciones', []);
+    //dd($facturarOptions);
 
-        $invoice->related_id = $request->input('client_id');
-        $invoice->client_id = $request->input('client_id');
+    $invoice = new Invoice();
+    $invoice->invoice_number = $invoice_number;
+    $invoice->invoice_date = $request->input('invoice_date');
+    $invoice->due_date = $request->input('due_date');
+    $invoice->grand_total = $request->product_total + $request->tax_total;
+    $invoice->tax_total = $request->tax_total;
+    $invoice->paid = 0;
+    $invoice->status = 'Unpaid';
+    $invoice->template = 'classic';
+    $invoice->note = $request->input('note');
+    $invoice->revendedor = $request->input('revendedor');
+    //$invoice->related_to     = $request->input('related_to');
+    $invoice->related_to = 'contacts';
+    $vendedor = $request->input('vendedor', false);
+    if (!$vendedor) {
+        $vendedor = auth()->id();
+    }
+    $invoice->user_id = $vendedor;
+
+    // ⚡ ASIGNACIÓN AGREGADA AQUÍ (Separado por comas)
+    if (empty($facturarOptions)) {
+        $invoice->acciones = null;
+    } else {
+        $invoice->acciones = implode(',', $facturarOptions);
+    }
+
+    if (in_array('no_desarmar', $facturarOptions)) {
+        $invoice->desarmar = 0;
+    } else {
+        $invoice->desarmar = 1;
+    }
+
+    // $invoice->desarmar = $request->input('desarmar', 1);
+
+    $invoice->is_usd = $request->input('is_usd', 0);
+    $invoice->tasa = $request->input('tasa', null);
+
+    /*if ($invoice->related_to == 'contacts') {
+        $invoice->related_id      = $request->input('client_id');
+        $invoice->client_id       = $request->input('client_id');
         $invoice->converted_total = convert_currency(base_currency(), $invoice->client->currency, $invoice->grand_total);
+    } else if ($invoice->related_to == 'projects') {
+        $invoice->related_id      = $request->input('project_id');
+        $invoice->client_id       = Project::find($invoice->related_id)->client_id;
+        $invoice->converted_total = convert_currency(base_currency(), $invoice->project->client->currency, $invoice->grand_total);
+    }*/
 
-        $invoice->company_id = $company_id;
-        //$invoice->car_id = $request->input('car_id',null);
-        $invoice->fecha_entrega = $request->input('fecha_entrega', null);
+    $invoice->related_id = $request->input('client_id');
+    $invoice->client_id = $request->input('client_id');
+    $invoice->converted_total = convert_currency(base_currency(), $invoice->client->currency, $invoice->grand_total);
 
-        if (in_array('retirar', $facturarOptions)) {
-            $invoice->retiro = true;
-        } else {
-            $invoice->retiro = false;
-        }
-        // $invoice->retiro = $request->input('retiro', null);
+    $invoice->company_id = $company_id;
+    //$invoice->car_id = $request->input('car_id',null);
+    $invoice->fecha_entrega = $request->input('fecha_entrega', null);
 
-        $invoice->entregado_a = $request->input('entregado_a', null);
-        $invoice->entregado_por = $request->input('entregado_por', null);
-        $invoice->ubicacion = $request->input('ubicacion', null);
+    if (in_array('retirar', $facturarOptions)) {
+        $invoice->retiro = true;
+    } else {
+        $invoice->retiro = false;
+    }
+    // $invoice->retiro = $request->input('retiro', null);
 
-        if (in_array('facturar', $facturarOptions)) {
-            $invoice->facturar = true;
-        } else {
-            $invoice->facturar = false;
-        }
-        //        $invoice->facturar = $request->input('facturar', null);
+    $invoice->entregado_a = $request->input('entregado_a', null);
+    $invoice->entregado_por = $request->input('entregado_por', null);
+    $invoice->ubicacion = $request->input('ubicacion', null);
 
-        $invoice->save();
+    if (in_array('facturar', $facturarOptions)) {
+        $invoice->facturar = true;
+    } else {
+        $invoice->facturar = false;
+    }
+    //        $invoice->facturar = $request->input('facturar', null);
 
-        $taxes = Tax::where('company_id', $company_id)->get();
+    $invoice->save();
 
-        //Save Invoice Items
-        for ($i = 0; $i < count($request->product_id); $i++) {
-            //dd($request->product_id);
-            $product = Product::where('id', $request->product_id[$i])->first();
+    $taxes = Tax::where('company_id', $company_id)->get();
 
-            //si es del deposito octubre notificar
-            if ($product->idDeposito == 4 && !$product->allCar) {
-                //notificar venta de producto
-                //$user = User::find(58);
-                //Notification::send($user, new InvoiceProductOctubre($product));
+    //Save Invoice Items
+    for ($i = 0; $i < count($request->product_id); $i++) {
+        //dd($request->product_id);
+        $product = Product::where('id', $request->product_id[$i])->first();
 
-                $user_all = User::find(['47', '49', '58', '169']);
-                foreach ($user_all as $enviar_user) {
-                    Notification::send($enviar_user, new InvoiceProductOctubre($product));
-                    sleep(1);
-                }
+        //si es del deposito octubre notificar
+        if ($product->idDeposito == 4 && !$product->allCar) {
+            //notificar venta de producto
+            //$user = User::find(58);
+            //Notification::send($user, new InvoiceProductOctubre($product));
+
+            $user_all = User::find(['47', '49', '58', '169']);
+            foreach ($user_all as $enviar_user) {
+                Notification::send($enviar_user, new InvoiceProductOctubre($product));
+                sleep(1);
             }
+        }
 
-            //si es del deposito octubre notificar
-            if ($product->mercado_libre == 1 && !$product->allCar) {
-                //notificar venta de producto de mercado libre
-                /*   $user = User::find(58);
-                Notification::send($user, new InvoiceProductMercadoLibre($product));*/
+        //si es del deposito octubre notificar
+        if ($product->mercado_libre == 1 && !$product->allCar) {
+            //notificar venta de producto de mercado libre
+            /* $user = User::find(58);
+            Notification::send($user, new InvoiceProductMercadoLibre($product));*/
 
-                $user_all = User::find(['47', '49', '58', '169']);
-                foreach ($user_all as $enviar_user) {
-                    Notification::send($enviar_user, new InvoiceProductMercadoLibre($product));
-                    sleep(1);
-                }
+            $user_all = User::find(['47', '49', '58', '169']);
+            foreach ($user_all as $enviar_user) {
+                Notification::send($enviar_user, new InvoiceProductMercadoLibre($product));
+                sleep(1);
             }
+        }
 
-            $invoiceItem = new InvoiceItem();
-            $invoiceItem->invoice_id = $invoice->id;
-            $invoiceItem->item_id = $product->item->id;
-            $invoiceItem->description = $request->product_description[$i];
-            $invoiceItem->quantity = 1; //$request->quantity[$i];
-            $invoiceItem->unit_cost = $request->unit_cost[$i];
-            // $invoiceItem->discount = $request->discount[$i];
-            //$invoiceItem->tax_method = $request->tax_method[$i];
-            //$invoiceItem->tax_id = $request->tax_id[$i];
-            $invoiceItem->tax_amount = $request->product_tax[$i];
-            $invoiceItem->sub_total = $request->sub_total[$i];
-            $invoiceItem->idCar = $request->autos[$i] ?? null;
-            $invoiceItem->product_id = $product->id;
-            $invoiceItem->company_id = $company_id;
-            $invoiceItem->save();
-			
-			
-			$company = '';
-			if ($product->company_id  == 1) {
-							$company = 'PM-';
-			} else if ($product->company_id  == 2) {
-						$company = 'PC-';
-			}
-		//*************************
-		$desarmarValue = $product->estado ?? '';  //$request->desarmar_id[$i] ?? null;
-		$estado_old=$desarmarValue;
-		if ($desarmarValue == 'desarme' && $product->nro_interno > 0 ) {
-    					$orden_desarme = new Orden_desarme();
-						$orden_desarme->id_venta = $invoice->id;
-						$orden_desarme->fecha_venta = $invoice->invoice_date;
-						//$orden_desarme->idCar = $product->idCar ?? null;
-						$orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
-						$orden_desarme->prioridad = "normal";
-						$orden_desarme->interno = $company . ($product->idCar ?? $product->nro_interno);
-						$orden_desarme->marca_modelo = $product->marca_modelo;
-						$orden_desarme->pieza = $product->item->id; //$product->id;
-						$orden_desarme->product_id = $product->id ?? 0;
-						// Aqui colocae orden procesada y asignarla al operario segun la compañia
-						$orden_desarme->procesar = 1;
-						/*$operario = User::wherehas('role', function ($q) {
-							$q->where('name', 'Operario');
-						})->where('company_id', $product->company_id)->first();
-						$orden_desarme->idCadete_operario =  $operario->id;*/
+        $invoiceItem = new InvoiceItem();
+        $invoiceItem->invoice_id = $invoice->id;
+        $invoiceItem->item_id = $product->item->id;
+        $invoiceItem->description = $request->product_description[$i];
+        $invoiceItem->quantity = 1; //$request->quantity[$i];
+        $invoiceItem->unit_cost = $request->unit_cost[$i];
+        // $invoiceItem->discount = $request->discount[$i];
+        //$invoiceItem->tax_method = $request->tax_method[$i];
+        //$invoiceItem->tax_id = $request->tax_id[$i];
+        $invoiceItem->tax_amount = $request->product_tax[$i];
+        $invoiceItem->sub_total = $request->sub_total[$i];
+        $invoiceItem->idCar = $request->autos[$i] ?? null;
+        $invoiceItem->product_id = $product->id;
+        $invoiceItem->company_id = $company_id;
+        $invoiceItem->save();
+        
+        
+        $company = '';
+        if ($product->company_id  == 1) {
+                        $company = 'PM-';
+        } else if ($product->company_id  == 2) {
+                    $company = 'PC-';
+        }
+        //*************************
+        $desarmarValue = $product->estado ?? '';  //$request->desarmar_id[$i] ?? null;
+        $estado_old=$desarmarValue;
+        if ($desarmarValue == 'desarme' && $product->nro_interno > 0 ) {
+                        $orden_desarme = new Orden_desarme();
+                        $orden_desarme->id_venta = $invoice->id;
+                        $orden_desarme->fecha_venta = $invoice->invoice_date;
+                        //$orden_desarme->idCar = $product->idCar ?? null;
+                        $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+                        $orden_desarme->prioridad = "normal";
+                        $orden_desarme->interno = $company . ($product->idCar ?? $product->nro_interno);
+                        $orden_desarme->marca_modelo = $product->marca_modelo;
+                        $orden_desarme->pieza = $product->item->id; //$product->id;
+                        $orden_desarme->product_id = $product->id ?? 0;
+                        // Aqui colocae orden procesada y asignarla al operario segun la compañia
+                        $orden_desarme->procesar = 1;
+                        /*$operario = User::wherehas('role', function ($q) {
+                            $q->where('name', 'Operario');
+                        })->where('company_id', $product->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->id;*/
                         $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
-						$orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
-						$orden_desarme->save();
-						// enviar notificacion al operario de creada una orden
-					//	Notification::send($operario, new OrdenCreated($orden_desarme));
-		/*}elseif($desarmarValue == 'despacho'){
-			
-			    $orden_despacho = new OrdenDespacho();
+                        $orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
+                        $orden_desarme->save();
+                        // enviar notificacion al operario de creada una orden
+                    //  Notification::send($operario, new OrdenCreated($orden_desarme));
+        /*}elseif($desarmarValue == 'despacho'){
+            
+                $orden_despacho = new OrdenDespacho();
                 $orden_despacho->invoice_id = $invoice->id;
                 $orden_despacho->invoiceitem_id = $invoiceItem->id;
                 $orden_despacho->description = $product->description;
@@ -381,12 +384,12 @@ class InvoiceController extends Controller
                 $orden_despacho->company_id = $product->company_id;
                 $orden_despacho->estatus = 'pendiente';
                 $orden_despacho->save();
-		*/	
-		}elseif($desarmarValue == 'directo'){
-			// retiro directo
-			
-		}else{
-				$orden_despacho = new OrdenDespacho();
+        */  
+        }elseif($desarmarValue == 'directo'){
+            // retiro directo
+            
+        }else{
+                $orden_despacho = new OrdenDespacho();
                 $orden_despacho->invoice_id = $invoice->id;
                 $orden_despacho->invoiceitem_id = $invoiceItem->id;
                 $orden_despacho->description = $product->description;
@@ -398,8 +401,8 @@ class InvoiceController extends Controller
                 $orden_despacho->despachado_por = '';
                 $orden_despacho->foto_guia = '';*/
                 $orden_despacho->save();
-		}
-		//*****************************//
+        }
+        //*****************************//
 
             //Store Invoice Taxes
             if (isset($request->tax[$invoiceItem->item_id])) {
@@ -429,97 +432,97 @@ class InvoiceController extends Controller
             }
 
             $stock->stock = $stock->stock - $invoiceItem->quantity;
-			if ($estado_old=="desarme"){
-				 $stock->estado = "optimo";
-			}
-		          //$stock->company_id = $company_id;
+            if ($estado_old=="desarme"){
+                 $stock->estado = "optimo";
+            }
+                 //$stock->company_id = $company_id;
             $stock->save();
-			
-			
-		
+            
+            
+        
         }
-        //crear comision
-        $montoAgregadoComision = 0;
-        $percent = $this->comisiones[$request->comision];
-        //dd($percent);
-        if ($request->comision == 'Venta menos a 30000') {
-            // if ($invoice->grand_total < 30000) {
-            $percent = 7;
-            $montoAgregadoComision = 1000;
-            // } else {
-            //     $percent = 7;
-            // }
+    //crear comision
+    $montoAgregadoComision = 0;
+    $percent = $this->comisiones[$request->comision];
+    //dd($percent);
+    if ($request->comision == 'Venta menos a 30000') {
+        // if ($invoice->grand_total < 30000) {
+        $percent = 7;
+        $montoAgregadoComision = 1000;
+        // } else {
+        //     $percent = 7;
+        // }
 
-        }
-
-
-        //sacar porcentaje con el monto de la factura
-        $montoComi = ($percent * $invoice->grand_total) / 100;
-
-        //dd($invoice->comision->id);
-        if (isset($invoice->comision->id)) {
-            $comision = Comision::find($invoice->comision->id);
-        } else {
-            $comision = new Comision();
-        }
-
-        $total = $montoComi + $montoAgregadoComision;
-        if ($invoice->is_usd) {
-            $total = $total * $invoice->tasa;
-        }
-
-        $comision->porcentaje = $percent;
-        $comision->monto = $total;
-        $comision->id_venta = $invoice->id;
-        $comision->id_vendedor = $invoice->user_id;
-        $comision->isPaid = null;
-        $comision->tipo = $request->comision;
-
-        if ($montoAgregadoComision) {
-            $comision->isAdicional = 1;
-        } else {
-            $comision->isAdicional = null;
-        }
-
-        $comision->save();
-
-
-        //Increment Invoice Starting number
-        increment_invoice_number();
-
-        //Update Package limit
-        update_package_limit('invoice_limit');
-
-
-
-        if ($invoice->client->user->id != null) {
-            Notification::send($invoice->client->user, new InvoiceCreated($invoice));
-        }
-        $desarme = $invoice->desarmar;
-        // dd($desarme);
-        $desarme = $desarme == 1 ? false : true;
-        $prioridad = $request->input('prioridad_desarmar', 'normal');
-
-
-        //$this->orden_desarme($invoice, $desarme, $prioridad);
-        DB::commit();
-
-        // Pagar desde saldo a favor automáticamente (si hay saldo disponible)
-        /*try {
-            \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id);
-        } catch (\Throwable $e) {
-            \Log::warning('Error en pago automático desde saldo a favor: ' . $e->getMessage(), [
-                'invoice_id' => $invoice->id,
-                'client_id' => $invoice->client_id
-            ]);
-        }*/
-
-        if (!$request->ajax()) {
-            return redirect('invoices/' . $invoice->id)->with('success', _lang('Invoice Created Sucessfully'));
-        } else {
-            return response()->json(['result' => 'success', 'action' => 'store', 'message' => _lang('Invoice Created Sucessfully'), 'data' => $invoice]);
-        }
     }
+
+
+    //sacar porcentaje con el monto de la factura
+    $montoComi = ($percent * $invoice->grand_total) / 100;
+
+    //dd($invoice->comision->id);
+    if (isset($invoice->comision->id)) {
+        $comision = Comision::find($invoice->comision->id);
+    } else {
+        $comision = new Comision();
+    }
+
+    $total = $montoComi + $montoAgregadoComision;
+    if ($invoice->is_usd) {
+        $total = $total * $invoice->tasa;
+    }
+
+    $comision->porcentaje = $percent;
+    $comision->monto = $total;
+    $comision->id_venta = $invoice->id;
+    $comision->id_vendedor = $invoice->user_id;
+    $comision->isPaid = null;
+    $comision->tipo = $request->comision;
+
+    if ($montoAgregadoComision) {
+        $comision->isAdicional = 1;
+    } else {
+        $comision->isAdicional = null;
+    }
+
+    $comision->save();
+
+
+    //Increment Invoice Starting number
+    increment_invoice_number();
+
+    //Update Package limit
+    update_package_limit('invoice_limit');
+
+
+
+    if ($invoice->client->user->id != null) {
+        Notification::send($invoice->client->user, new InvoiceCreated($invoice));
+    }
+    $desarme = $invoice->desarmar;
+    // dd($desarme);
+    $desarme = $desarme == 1 ? false : true;
+    $prioridad = $request->input('prioridad_desarmar', 'normal');
+
+
+    //$this->orden_desarme($invoice, $desarme, $prioridad);
+    DB::commit();
+
+    // Pagar desde saldo a favor automáticamente (si hay saldo disponible)
+    /*try {
+        \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id);
+    } catch (\Throwable $e) {
+        \Log::warning('Error en pago automático desde saldo a favor: ' . $e->getMessage(), [
+            'invoice_id' => $invoice->id,
+            'client_id' => $invoice->client_id
+        ]);
+    }*/
+
+    if (!$request->ajax()) {
+        return redirect('invoices/' . $invoice->id)->with('success', _lang('Invoice Created Sucessfully'));
+    } else {
+        return response()->json(['result' => 'success', 'action' => 'store', 'message' => _lang('Invoice Created Sucessfully'), 'data' => $invoice]);
+    }
+}
 
     /**
      * Display the specified resource.

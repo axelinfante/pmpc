@@ -132,7 +132,6 @@ if ($pagos->type == 'income') {
 
 						</div>
 
-						<!--Company Address-->
 						<div class="invoice-col-6 pt-3">
 							<div class="d-inline-block float-md-right">
 								<h5><b>{{ _lang('Invoice Details') }}</b></h5>
@@ -149,9 +148,7 @@ if ($pagos->type == 'income') {
 			</tbody>
 		</table>
 	 </div>
-	 <!--End Invoice Information-->
 	 <div class="clearfix"></div>
-	 <!--Invoice Product-->
 	 <div>
 		<table class="table table-bordered mt-2" id="invoice-item-table">
 			 <thead class="base_color">
@@ -191,9 +188,8 @@ if ($pagos->type == 'income') {
 										<td class="text-center">
 												 @isset($item->product->vehiculo)
                                                      {{  nroInternoAlias($item->product->vehiculo->company_id,$item->product->vehiculo->tipo_vehiculo,$item->product->vehiculo->id) }}
-                                                    <!-- {{ $item->product->vehiculo->company_id == 1 ? 'PM-' : 'PC-' }}{{ $item->product->vehiculo->id }} -->
-                                                @else
-                                                {{  nroInternoAlias($item->product->company_id,null,$item->product->nro_interno) }}
+                                                    @else
+                                                    {{  nroInternoAlias($item->product->company_id,null,$item->product->nro_interno) }}
                                                 @endisset
 										</td>
 										<td class="text-center">{{ $item->quantity }}</td>
@@ -201,7 +197,9 @@ if ($pagos->type == 'income') {
 										
 										<td class="text-right">{{ decimalPlace($item->sub_total, $currency) }}</td>
 								</tr>
-								 @if ($invoice->note != '')
+								
+								{{--
+								@if ($invoice->note != '')
                                         <tr>
                                             <td colspan="2">
                                                 <small>{{ $invoice->note }}</small>
@@ -210,14 +208,12 @@ if ($pagos->type == 'income') {
                                              </td>   
                                             </tr>
                                            @endif 		
+								--}}
 
 				 @endforeach
 			 </tbody>
 		</table>
 	 </div>
-	 <!--End Invoice Product-->
-
-	 <!--Summary Table-->
 	 <div class="invoice-summary-right">
 		<table class="table table-bordered" id="invoice-summary-table">
 			<tbody>
@@ -264,14 +260,11 @@ if ($pagos->type == 'income') {
 						</td>
 					</tr>
 				@endif
-		    </tbody>
+            </tbody>
 		</table>
 	 </div>
-	 <!--End Summary Table-->
-
 	 <div class="clearfix"></div>
 
-	 <!--Related Transaction-->
 	 @if( ! $transactions->isEmpty() )
 		<div>
 			<table class="table table-bordered" id="invoice-payment-history-table">
@@ -303,23 +296,13 @@ if ($pagos->type == 'income') {
 			</table>
 		</div>
 	 @endif
-	 <!--END Related Transaction-->
-
-	 <!--Invoice Note-->
 	 {{-- @if($invoice->note  != '') --}}
-		<!--<div>
-			<div class="invoice-note">{{ $invoice->note }}</div>
-		</div>-->
-	 {{-- @endif --}}
-	 <!--End Invoice Note-->
-
-	 <!--Invoice Footer Text-->
+		{{-- @endif --}}
 	 @if(get_company_field($invoice->company_id,'invoice_footer') != '')
 		<div>
 			<div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id,'invoice_footer')) !!}</div>
 		</div>
 	 @endif
-	 <!--End Invoice Note-->
-</div>
+	 </div>
 </body>
 </html>
