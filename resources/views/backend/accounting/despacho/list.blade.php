@@ -26,6 +26,8 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Pieza') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cliente') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Vendedor') }}</th>
+                                <th style="width: 250px; min-width: 250px" class="text-right">{{ _lang('Acciones Solicitadas por el Vendedor') }}</th>
+
                                 <th style="width: 100px;min-width: 100px" class="text-right">
                                     {{ _lang('Estado Cotización') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('F.Desarme') }}</th>
@@ -182,6 +184,10 @@
                         data: 'vendedor',
                         name: 'vendedor'
                     }, // Vendedor
+                    {
+                        data: 'acciones_cotizacion',
+                        name: 'acciones_cotizacion',            
+                    },
                     {
                         data: 'estado_cotizacion',
                         name: 'estado_cotizacion'

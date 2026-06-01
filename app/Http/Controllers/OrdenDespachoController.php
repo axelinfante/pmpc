@@ -268,6 +268,9 @@ public function show()
             ->addColumn('observaciones', function ($orden) {
                 return $orden->observaciones ?? '';
             })
+            ->addColumn('acciones_cotizacion', function ($orden) {
+                return $orden->cotizacion->acciones ?? 'Sin información';
+            })
             ->addColumn('guia', function ($orden) {
                 if (!empty($orden->foto_guia) && file_exists(public_path('uploads/ordenes/' . $orden->foto_guia))) {
 					$url = buscarImagen('uploads/ordenes/' . $orden->foto_guia);
@@ -435,7 +438,7 @@ public function show()
                 $query->where('observaciones', 'like', "%{$keyword}%");
             })
 			
-		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente'])
+		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente', 'acciones_cotizacion'])
          ->make(true);
 		
     }
