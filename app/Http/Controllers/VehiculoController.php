@@ -312,11 +312,14 @@ class VehiculoController extends Controller
         $modelos = Modelo::all();
 
         //tramitadores (usuarios con ese rol de la empresa)
-        $tramitadores = User::whereIn('company_id', $company_id)
-            ->whereIn('role_id', [6, 18])
+/*        $tramitadores = User::whereIn('company_id', $company_id)
+            ->whereIn('role_id', [6, 18,21])
+            ->where('user_type', 'staff')
+            ->get();*/
+
+            $tramitadores = User::whereIn('role_id', [6, 18,21])
             ->where('user_type', 'staff')
             ->get();
-
 
 
         // $tramitadores = User::where('company_id', auth()->user()->company_id)->wherehas('role', function ($string) {

@@ -1436,7 +1436,7 @@ if (!function_exists('payment_method')) {
     }
 }
 
-if (!function_exists('increment_invoice_number')) {
+/*if (!function_exists('increment_invoice_number')) {
     function increment_invoice_number() {
         $company_id         = company_id();
         $data               = array();
@@ -1454,7 +1454,7 @@ if (!function_exists('increment_invoice_number')) {
             \App\CompanySetting::insert($data);
         }
     }
-}
+}*/
 
 if (!function_exists('file_icon')) {
     function file_icon($mime_type) {
@@ -2514,4 +2514,61 @@ function img_lazy($src = '')
 		$image ='<img class="card-img-top img-fluid lozad" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'" alt="">';
 		return $image;
 	}
+}
+
+if (!function_exists('increment_invoice_number')) {
+    function increment_invoice_number($requested_number = null) {
+        $company_id = company_id();
+        
+        // 1. Si nos pasaron un número, verificamos si ya existe en las facturas
+        if ($requested_number) {
+            $existe = DB::table('invoices')
+                ->where('invoice_number', $requested_number)
+                //->where('company_id', $company_id) // Es vital para multi-empresa
+                ->exists();
+
+            // Si NO existe, el número del usuario es válido. Lo usamos y actualizamos la config.
+            if (!$existe) {
+                actualizar_config_correlativo($requested_number, $company_id);
+                return $requested_number;
+            }
+        }
+
+        // 2. Si existía o no nos pasaron ninguno, traemos el valor actual de la configuración
+        // Usamos la función que compartiste antes. Si no existe, inicia en 1001.
+        $actual_config = (int) get_company_option('invoice_starting', 1001);
+        
+        // El número que toca emitir es el actual + 1
+        $siguiente_numero = $actual_config + 1;
+
+        // 3. Actualizamos la tabla de configuraciones con el nuevo número
+        actualizar_config_correlativo($siguiente_numero, $company_id);
+
+        return $siguiente_numero;
+    }
+}
+
+// Función auxiliar interna para no repetir código de guardado/actualizado
+if (!function_exists('actualizar_config_correlativo')) {
+    function actualizar_config_correlativo($nuevo_numero, $company_id) {
+        $data = [
+            'value'      => $nuevo_numero,
+            'company_id' => $company_id,
+            'updated_at' => now(), // Más limpio que date('Y-m-d H:i:s')
+        ];
+
+        $existe_setting = \App\CompanySetting::where('name', 'invoice_starting')
+            //->where('company_id', $company_id)
+            ->exists();
+
+        if ($existe_setting) {
+            \App\CompanySetting::where('name', 'invoice_starting')
+               // ->where('company_id', $company_id)
+                ->update($data);
+        } else {
+            $data['name']       = 'invoice_starting';
+            $data['created_at'] = now();
+            \App\CompanySetting::insert($data);
+        }
+    }
 }
