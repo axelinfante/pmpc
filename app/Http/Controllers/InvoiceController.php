@@ -210,8 +210,10 @@ class InvoiceController extends Controller
             }
         }
     }
-
+	
     DB::beginTransaction();
+	
+	$numero_final = increment_invoice_number($invoice_number);
 
     $company_id = $request->input('company_id');
 
@@ -219,7 +221,7 @@ class InvoiceController extends Controller
     //dd($facturarOptions);
 
     $invoice = new Invoice();
-    $invoice->invoice_number = $invoice_number;
+    $invoice->invoice_number = $numero_final;
     $invoice->invoice_date = $request->input('invoice_date');
     $invoice->due_date = $request->input('due_date');
     $invoice->grand_total = $request->product_total + $request->tax_total;

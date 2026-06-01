@@ -95,7 +95,7 @@
                         data-value="users.id" data-display="users.name" data-table="users" data-where="7"
                         name="idTramitador" required>
                         <option value="">{{ _lang('Select One') }}</option>
-                        @forelse($tramitadoresAll as $tramit)
+                        @forelse($tramitadores as $tramit)
                             <option {{ $tramit->id == $car->idTramitador ? 'selected' : '' }}
                                 value="{{ $tramit->id }}">{{ $tramit->name }}</option>
                         @empty
