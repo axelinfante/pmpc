@@ -19,7 +19,7 @@
 
             #invoice-summary-table td {
                 border: 1px solid #000 !important;
-            }
+                }
 
             #invoice-payment-history-table {
                 margin-bottom: 50px;
@@ -50,9 +50,17 @@
             .base_color {
                 background-color: whitesmoke !important;
             }
+
+            /* Estilo para el bloque de acciones en el pie impreso */
+            .invoice-footer-actions {
+                margin-top: 20px;
+                margin-bottom: 20px;
+                padding: 10px;
+                border: 1px solid #000;
+                background-color: #fff;
+            }
         }
 
-        /* Oculta elementos marcados al imprimir o generar PDF */
         @media print {
             .no-print, .no-print * {
                 display: none !important;
@@ -207,7 +215,7 @@
                                             <td class="text-right">{{ decimalPlace($item->sub_total, $currency) }}</td>
                                         </tr>
 
-                                        {{-- Fila de la Nota modificada con .no-print --}}
+
                                         @if ($invoice->note != '')
                                         <tr class="no-print">
                                             <td colspan="2">
@@ -382,6 +390,14 @@
                                 </table>
                             </div>
                         @endif
+
+                        @if(!empty($invoice->acciones))
+                            <div class="invoice-footer-actions">
+                                <b>{{ _lang('Acciones') }}:</b>
+                                <p class="m-0 mt-1">{{ $invoice->acciones }}</p>
+                            </div>
+                        @endif
+                        
                         @if (get_company_option('invoice_footer') != '')
                             <div class="invoice-note">{!! xss_clean(get_company_option('invoice_footer')) !!}</div>
                         @endif
