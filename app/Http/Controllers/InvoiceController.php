@@ -237,7 +237,6 @@ class InvoiceController extends Controller
     }
     $invoice->user_id = $vendedor;
 
-    // ⚡ ASIGNACIÓN AGREGADA AQUÍ (Separado por comas)
     if (empty($facturarOptions)) {
         $invoice->acciones = null;
     } else {
@@ -837,7 +836,6 @@ class InvoiceController extends Controller
 		
 		//Invoiceitem_id
 
-//************************	hasta aqui	***//
 
         //crear comision
         $montoAgregadoComision = 0;
@@ -2243,7 +2241,6 @@ class InvoiceController extends Controller
 						$orden_desarme->marca_modelo = $prodMarca->marca_modelo;
 						$orden_desarme->pieza = $product->product_id;
 
-						// Aqui colocae orden procesada y asignarla al operario segun la compañia
 						$orden_desarme->procesar = 1;
 
 						$operario = User::wherehas('role', function ($q) {
