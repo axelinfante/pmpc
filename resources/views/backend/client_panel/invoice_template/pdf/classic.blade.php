@@ -10,34 +10,34 @@
 @php include public_path('backend/assets/css/styles.css') @endphp
 
 body {
-   -webkit-print-color-adjust: exact; !important;
+   -webkit-print-color-adjust: exact !important;
    background: #FFF;
    font-size: 14px;
    font-family: DejaVu Sans, sans-serif;
 }
 
 .classic-table{
-	width:100%;
-	color: #000;
+    width:100%;
+    color: #000;
 }
 .classic-table td{
-	color: #000;
+    color: #000;
 }
 
 #invoice-item-table th, #invoice-item-table td{
-	border: 1px solid #000;
+    border: 1px solid #000;
 }
 
 #invoice-summary-table td{
-	border: 1px solid #000 !important;
+    border: 1px solid #000 !important;
 }
 
 #invoice-payment-history-table{
-	margin-bottom: 50px;
+    margin-bottom: 50px;
 }
 
 #invoice-payment-history-table th, #invoice-payment-history-table td{
-	border: 1px solid #000 !important;
+    border: 1px solid #000 !important;
 }
 
 #invoice-view{
@@ -45,7 +45,7 @@ body {
 }
 
 .invoice-note{
-	margin-bottom: 50px;
+    margin-bottom: 50px;
 }
 
 .table th {
@@ -68,6 +68,31 @@ body {
   padding-left: 0px;
 }
 
+.container-acciones {
+    margin-top: 20px;
+    margin-bottom: 25px;
+    padding: 12px 15px;
+    border: 1px solid #4a4a4a;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    page-break-inside: avoid; 
+}
+
+.title-acciones {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #000;
+    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+}
+
+.content-acciones {
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+}
+
 </style>
 </head>
 
@@ -78,11 +103,11 @@ body {
 @php $currency = $invoice->is_usd == 1 ? 'USD' : currency(); @endphp
 
 @if($invoice->related_to == 'contacts' && isset($invoice->client))
-	@php $client_currency = $invoice->client->currency; @endphp
-	@php $client = $invoice->client; @endphp
+    @php $client_currency = $invoice->client->currency; @endphp
+    @php $client = $invoice->client; @endphp
 @else
-	@php $client_currency = $invoice->project->client->currency; @endphp
-	@php $client = $invoice->project->client; @endphp
+    @php $client_currency = $invoice->project->client->currency; @endphp
+    @php $client = $invoice->project->client; @endphp
 @endif
 
 @php
@@ -95,111 +120,111 @@ if ($pagos->type == 'income') {
 @endphp
 
 <div id="invoice-view" class="pdf">
-	<div>
-		<table class="classic-table">
-			<tbody>
-				 <tr class="top">
-					<td colspan="2">
-						 <table class="classic-table">
-							<tbody>
-								 <tr>
-									<td>
-										<h3><b>{{ get_company_field($invoice->company_id,'company_name') }}</b></h3>
-										{{ get_company_field($invoice->company_id,'address') }}<br>
-										{{ get_company_field($invoice->company_id,'email') }}<br>
-										{!! get_company_field($invoice->company_id,'vat_id') != '' ? _lang('VAT ID').': '.clean(get_company_field($invoice->company_id,'vat_id')).'<br>' : '' !!}
-										{!! get_company_field($invoice->company_id,'reg_no')!= '' ? _lang('REG NO').': '.clean(get_company_field($invoice->company_id,'reg_no')).'<br>' : '' !!}
-									</td>
-									<td class="text-right">
-										<img src="{{ get_company_logo($invoice->company_id) }}" class="wp-100">
-									</td>
-								 </tr>
-							</tbody>
-					    </table>
-					</td>
-				</tr>
+    <div>
+        <table class="classic-table">
+            <tbody>
+                 <tr class="top">
+                    <td colspan="2">
+                         <table class="classic-table">
+                            <tbody>
+                                 <tr>
+                                    <td>
+                                        <h3><b>{{ get_company_field($invoice->company_id,'company_name') }}</b></h3>
+                                        {{ get_company_field($invoice->company_id,'address') }}<br>
+                                        {{ get_company_field($invoice->company_id,'email') }}<br>
+                                        {!! get_company_field($invoice->company_id,'vat_id') != '' ? _lang('VAT ID').': '.clean(get_company_field($invoice->company_id,'vat_id')).'<br>' : '' !!}
+                                        {!! get_company_field($invoice->company_id,'reg_no')!= '' ? _lang('REG NO').': '.clean(get_company_field($invoice->company_id,'reg_no')).'<br>' : '' !!}
+                                    </td>
+                                    <td class="text-right">
+                                        <img src="{{ get_company_logo($invoice->company_id) }}" class="wp-100">
+                                    </td>
+                                 </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
 
-				<tr class="information">
-					<td colspan="2" class="pt-5">
-						<div class="invoice-col-6 pt-3">
-							 <h5><b>{{ _lang('Invoice To') }}</b></h5>
-							 {{ $client->contact_name }}<br>
-							 {{ $client->contact_email }}<br>
-							 {!! $client->company_name != '' ? clean($client->company_name).'<br>' : '' !!}
-							 {!! $client->address != '' ? clean($client->address).'<br>' : '' !!}
-							 {!! $client->vat_id != '' ? _lang('VAT ID').': '.clean($client->vat_id).'<br>' : '' !!}
-							 {!! $client->reg_no != '' ? _lang('REG NO').': '.clean($client->reg_no).'<br>' : '' !!}
+                <tr class="information">
+                    <td colspan="2" class="pt-5">
+                        <div class="invoice-col-6 pt-3">
+                             <h5><b>{{ _lang('Invoice To') }}</b></h5>
+                             {{ $client->contact_name }}<br>
+                             {{ $client->contact_email }}<br>
+                             {!! $client->company_name != '' ? clean($client->company_name).'<br>' : '' !!}
+                             {!! $client->address != '' ? clean($client->address).'<br>' : '' !!}
+                             {!! $client->vat_id != '' ? _lang('VAT ID').': '.clean($client->vat_id).'<br>' : '' !!}
+                             {!! $client->reg_no != '' ? _lang('REG NO').': '.clean($client->reg_no).'<br>' : '' !!}
 
-						</div>
+                        </div>
 
-						<div class="invoice-col-6 pt-3">
-							<div class="d-inline-block float-md-right">
-								<h5><b>{{ _lang('Invoice Details') }}</b></h5>
-								<b>{{ _lang('Cotizacion') }} #:</b> {{ $invoice->invoice_number }}<br>
-								<b>{{ _lang('Invoice Date') }}:</b> {{ date($date_format, strtotime( $invoice->invoice_date)) }}<br>
-								<b>{{ _lang('Vendedor') }} :</b> {{ $invoice->vendedor->name ?? ''}}<br>
-								<b>{{ _lang('Payment Status') }}:</b> {{ _dlang(str_replace('_',' ',$invoice->status)) }}<br>
+                        <div class="invoice-col-6 pt-3">
+                            <div class="d-inline-block float-md-right">
+                                <h5><b>{{ _lang('Invoice Details') }}</b></h5>
+                                <b>{{ _lang('Cotizacion') }} #:</b> {{ $invoice->invoice_number }}<br>
+                                <b>{{ _lang('Invoice Date') }}:</b> {{ date($date_format, strtotime( $invoice->invoice_date)) }}<br>
+                                <b>{{ _lang('Vendedor') }} :</b> {{ $invoice->vendedor->name ?? ''}}<br>
+                                <b>{{ _lang('Payment Status') }}:</b> {{ _dlang(str_replace('_',' ',$invoice->status)) }}<br>
 
-								<b>NO INCLUYE IVA NI OTROS IMPUESTOS</b><br>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	 </div>
-	 <div class="clearfix"></div>
-	 <div>
-		<table class="table table-bordered mt-2" id="invoice-item-table">
-			 <thead class="base_color">
-				 <tr>
-					<th>{{ _lang('Name') }}</th>
-									 <th>{{ _lang('Marca y modelo') }}</th>
-									 <th>Nro interno Vehiculo</th>
-									 <th class="text-center wp-100">{{ _lang('Quantity') }}</th>
-									 <th class="text-right">{{ _lang('Unit Cost') }}</th>
+                                <b>NO INCLUYE IVA NI OTROS IMPUESTOS</b><br>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+     </div>
+     <div class="clearfix"></div>
+     <div>
+        <table class="table table-bordered mt-2" id="invoice-item-table">
+             <thead class="base_color">
+                 <tr>
+                    <th>{{ _lang('Name') }}</th>
+                    <th>{{ _lang('Marca y modelo') }}</th>
+                    <th>Nro interno Vehiculo</th>
+                    <th class="text-center wp-100">{{ _lang('Quantity') }}</th>
+                    <th class="text-right">{{ _lang('Unit Cost') }}</th>
 
-									 <th class="text-right">{{ _lang('Line Total') }}</th>
-				 </tr>
-			 </thead>
-			 <tbody id="invoice">
-				 @foreach($invoice->invoice_items as $item)
-					 <tr id="product-{{ $item->item_id }}">
-										
-										<td>
-											<b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
-										</td>
+                    <th class="text-right">{{ _lang('Line Total') }}</th>
+                 </tr>
+             </thead>
+             <tbody id="invoice">
+                 @foreach($invoice->invoice_items as $item)
+                     <tr id="product-{{ $item->item_id }}">
+                                        
+                                        <td>
+                                            <b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
+                                        </td>
 
-										<td>
-											
-											<b>
-												@isset($item->product->marcaModelo)
-													{{ $item->product->marcaModelo->marca->marca ?? ''}} {{ $item->product->marcaModelo->modelo->modelo ?? '' }}
+                                        <td>
+                                            
+                                            <b>
+                                                @isset($item->product->marcaModelo)
+                                                    {{ $item->product->marcaModelo->marca->marca ?? ''}} {{ $item->product->marcaModelo->modelo->modelo ?? '' }}
 
-													@elseif ( isset($item->product->vehiculo->marca_modelo))
-														{{ $item->product->vehiculo->marca_modelo->marca->marca ?? '' }} {{ $item->product->vehiculo->marca_modelo->modelo->modelo ?? '' }}
-														@else
-														Sin marca Sin modelo
+                                                    @elseif ( isset($item->product->vehiculo->marca_modelo))
+                                                        {{ $item->product->vehiculo->marca_modelo->marca->marca ?? '' }} {{ $item->product->vehiculo->marca_modelo->modelo->modelo ?? '' }}
+                                                        @else
+                                                        Sin marca Sin modelo
 
-													
-												@endisset
-											</b>
-										</td>
-										<td class="text-center">
-												 @isset($item->product->vehiculo)
+                                                    
+                                                @endisset
+                                            </b>
+                                        </td>
+                                        <td class="text-center">
+                                                 @isset($item->product->vehiculo)
                                                      {{  nroInternoAlias($item->product->vehiculo->company_id,$item->product->vehiculo->tipo_vehiculo,$item->product->vehiculo->id) }}
                                                     @else
-                                                    {{  nroInternoAlias($item->product->company_id,null,$item->product->nro_interno) }}
+                                                     {{  nroInternoAlias($item->product->company_id,null,$item->product->nro_interno) }}
                                                 @endisset
-										</td>
-										<td class="text-center">{{ $item->quantity }}</td>
-										<td class="text-right">{{ decimalPlace($item->unit_cost, $currency) }}</td>
-										
-										<td class="text-right">{{ decimalPlace($item->sub_total, $currency) }}</td>
-								</tr>
-								
-								{{--
-								@if ($invoice->note != '')
+                                        </td>
+                                        <td class="text-center">{{ $item->quantity }}</td>
+                                        <td class="text-right">{{ decimalPlace($item->unit_cost, $currency) }}</td>
+                                        
+                                        <td class="text-right">{{ decimalPlace($item->sub_total, $currency) }}</td>
+                                </tr>
+                                
+                                {{--
+                                @if ($invoice->note != '')
                                         <tr>
                                             <td colspan="2">
                                                 <small>{{ $invoice->note }}</small>
@@ -207,102 +232,111 @@ if ($pagos->type == 'income') {
                                             <td colspan="4">
                                              </td>   
                                             </tr>
-                                           @endif 		
-								--}}
+                                           @endif       
+                                --}}
 
-				 @endforeach
-			 </tbody>
-		</table>
-	 </div>
-	 <div class="invoice-summary-right">
-		<table class="table table-bordered" id="invoice-summary-table">
-			<tbody>
-				<tr>
-					<td><b>{{ _lang('Sub Total') }}</b></td>
-					<td class="text-right">
-						<b>{!! strip_tags(decimalPlace($invoice->grand_total - $invoice->tax_total, $currency)) !!}</b>
-					</td>
-				</tr>
-				@foreach($invoice_taxes as $tax)
-				<tr>
-					<td>{{ $tax->name }}</td>
-					<td class="text-right">
-						<span>{!! strip_tags(decimalPlace($tax->tax_amount, $currency)) !!}</span>
-					</td>
-				</tr>
-				@endforeach
-				<tr>
-					<td><b>{{ _lang('Grand Total') }}</b></td>
-					<td class="text-right">
-						<b>{!! strip_tags(decimalPlace($invoice->grand_total, $currency)) !!}</b>
-						@if($client_currency != $base_currency)
-							<br><b>{!! strip_tags(decimalPlace($invoice->converted_total, get_currency_symbol($client_currency))) !!}</b>
-						@endif
-					</td>
-				</tr>
-				<tr>
-					<td>{{ _lang('Total Paid') }}</td>
-					<td class="text-right">
-						<span>{!! strip_tags(decimalPlace($paid, $currency)) !!}</span>
-						@if($client_currency != $base_currency)
-							<br><span>{!! strip_tags(decimalPlace(convert_currency($base_currency, $client_currency, $paid), get_currency_symbol($client_currency))) !!}</span>
-						@endif
-					</td>
-				</tr>
-				@if($invoice->status != 'Paid')
-					<tr>
-						<td>{{ _lang('Amount Due') }}</td>
-						<td class="text-right">
-							<span>{!! strip_tags(decimalPlace(($invoice->grand_total - $paid), $currency)) !!}</span>
-							@if($client_currency != $base_currency)
-								<br><span>{!! strip_tags(decimalPlace(convert_currency($base_currency, $client_currency, ($invoice->grand_total - $paid)), get_currency_symbol($client_currency))) !!}</span>
-							@endif
-						</td>
-					</tr>
-				@endif
+                 @endforeach
+             </tbody>
+        </table>
+     </div>
+     <div class="invoice-summary-right">
+        <table class="table table-bordered" id="invoice-summary-table">
+            <tbody>
+                <tr>
+                    <td><b>{{ _lang('Sub Total') }}</b></td>
+                    <td class="text-right">
+                        <b>{!! strip_tags(decimalPlace($invoice->grand_total - $invoice->tax_total, $currency)) !!}</b>
+                    </td>
+                </tr>
+                @foreach($invoice_taxes as $tax)
+                <tr>
+                    <td>{{ $tax->name }}</td>
+                    <td class="text-right">
+                        <span>{!! strip_tags(decimalPlace($tax->tax_amount, $currency)) !!}</span>
+                    </td>
+                </tr>
+                @endforeach
+                <tr>
+                    <td><b>{{ _lang('Grand Total') }}</b></td>
+                    <td class="text-right">
+                        <b>{!! strip_tags(decimalPlace($invoice->grand_total, $currency)) !!}</b>
+                        @if($client_currency != $base_currency)
+                            <br><b>{!! strip_tags(decimalPlace($invoice->converted_total, get_currency_symbol($client_currency))) !!}</b>
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{ _lang('Total Paid') }}</td>
+                    <td class="text-right">
+                        <span>{!! strip_tags(decimalPlace($paid, $currency)) !!}</span>
+                        @if($client_currency != $base_currency)
+                            <br><span>{!! strip_tags(decimalPlace(convert_currency($base_currency, $client_currency, $paid), get_currency_symbol($client_currency))) !!}</span>
+                        @endif
+                    </td>
+                </tr>
+                @if($invoice->status != 'Paid')
+                    <tr>
+                        <td>{{ _lang('Amount Due') }}</td>
+                        <td class="text-right">
+                            <span>{!! strip_tags(decimalPlace(($invoice->grand_total - $paid), $currency)) !!}</span>
+                            @if($client_currency != $base_currency)
+                                <br><span>{!! strip_tags(decimalPlace(convert_currency($base_currency, $client_currency, ($invoice->grand_total - $paid)), get_currency_symbol($client_currency))) !!}</span>
+                            @endif
+                        </td>
+                    </tr>
+                @endif
             </tbody>
-		</table>
-	 </div>
-	 <div class="clearfix"></div>
+        </table>
+     </div>
+     <div class="clearfix"></div>
 
-	 @if( ! $transactions->isEmpty() )
-		<div>
-			<table class="table table-bordered" id="invoice-payment-history-table">
-				<thead class="base_color">
-					<tr>
-					   <td colspan="5" class="text-center"><b>{{ _lang('Payment History') }}</b></td>
-					</tr>
-					<tr>
-						<th>{{ _lang('Date') }}</th>
-						<th>{{ _lang('Account') }}</th>
-						<th class="text-right">{{ _lang('Amount') }}</th>
-						<th class="text-right">{{ _lang('Base Amount') }}</th>
-						<th>{{ _lang('Payment Method') }}</th>
-					</tr>
-				</thead>
-				<tbody>
-				    @foreach($transactions as $transaction)
-						<tr id="transaction-{{ $transaction->id }}">
-							<td>{{ date($date_format, strtotime($transaction->trans_date)) }}</td>
-							<td>{{ $transaction->account->account_title.' - '.$transaction->account->account_currency }}</td>
-							<td class="text-right">{!! strip_tags(decimalPlace($transaction->amount, get_currency_symbol($transaction->account->account_currency))) !!}</td>
-							<td class="text-right">{!! strip_tags(decimalPlace($transaction->base_amount, $currency)) !!}</td>
-							
-							<td>{{ $transaction->payment_method->name == 'Abono cc'? 'Saldo a Favor Cliente': $transaction->payment_method->name}}</td>
+     @if( ! $transactions->isEmpty() )
+        <div>
+            <table class="table table-bordered" id="invoice-payment-history-table">
+                <thead class="base_color">
+                    <tr>
+                       <td colspan="5" class="text-center"><b>{{ _lang('Payment History') }}</b></td>
+                    </tr>
+                    <tr>
+                        <th>{{ _lang('Date') }}</th>
+                        <th>{{ _lang('Account') }}</th>
+                        <th class="text-right">{{ _lang('Amount') }}</th>
+                        <th class="text-right">{{ _lang('Base Amount') }}</th>
+                        <th>{{ _lang('Payment Method') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($transactions as $transaction)
+                        <tr id="transaction-{{ $transaction->id }}">
+                            <td>{{ date($date_format, strtotime($transaction->trans_date)) }}</td>
+                            <td>{{ $transaction->account->account_title.' - '.$transaction->account->account_currency }}</td>
+                            <td class="text-right">{!! strip_tags(decimalPlace($transaction->amount, get_currency_symbol($transaction->account->account_currency))) !!}</td>
+                            <td class="text-right">{!! strip_tags(decimalPlace($transaction->base_amount, $currency)) !!}</td>
+                            
+                            <td>{{ $transaction->payment_method->name == 'Abono cc'? 'Saldo a Favor Cliente': $transaction->payment_method->name}}</td>
 
-						</tr>
-					@endforeach
-				</tbody>
-			</table>
-		</div>
-	 @endif
-	 {{-- @if($invoice->note  != '') --}}
-		{{-- @endif --}}
-	 @if(get_company_field($invoice->company_id,'invoice_footer') != '')
-		<div>
-			<div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id,'invoice_footer')) !!}</div>
-		</div>
-	 @endif
-	 </div>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+     @endif
+     {{-- @if($invoice->note  != '') --}}
+        {{-- @endif --}}
+
+     @if(isset($invoice->acciones) && $invoice->acciones != '')
+        <div class="container-acciones">
+            <div class="title-acciones">{{ _lang('Acciones;') }}:</div>
+            <div class="content-acciones">
+                {!! clean($invoice->acciones) !!}
+            </div>
+        </div>
+     @endif
+     @if(get_company_field($invoice->company_id,'invoice_footer') != '')
+        <div>
+            <div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id,'invoice_footer')) !!}</div>
+        </div>
+     @endif
+     </div>
 </body>
 </html>
