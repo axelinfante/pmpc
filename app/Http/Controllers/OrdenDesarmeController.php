@@ -949,7 +949,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
        //     $nro_interno_datos->whereIn('company_id', $company_id);
         //}
         $gerenciales_autorizado = Puesto::where("predeterminada", 1)->pluck('user_id')->toArray();
-        $ordenes = Orden_desarme::select('ordenes_desarme.*')
+        /*$ordenes = Orden_desarme::select('ordenes_desarme.*')
     ->with([
         'venta', 
         'cotizacion', 
@@ -967,6 +967,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
             if (!$isHistorial)
                 $row->where('idEstado', '!=', 1);
         });
+    })	
+	->whereHas('venta', function ($query) {
+        $query->where('status', '!=', 'Canceled');
     });
 
 		// $ordenes->whereIn('company_id', $company_id)
@@ -993,6 +996,59 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                         ->orWhere('estado', null);
                 });
         }
+		*/
+		
+		
+		   $ocultar = '';
+		$user = auth()->user();
+$role = strtolower($user->role->name);
+
+$ordenes = Orden_desarme::select('ordenes_desarme.*')
+    ->with([
+        'venta', 
+        'cotizacion', 
+        'car.estado_relacion' 
+    ]);
+
+$ordenes->whereHas('car', function ($query) use ($isHistorial, $company_id, $user, $role) {
+    if (in_array($role, ['operario', 'cadete', 'administrativo de desarme'])) {
+        if (!$isHistorial) {
+            $query->where('company_id', $user->company_id);
+        }
+    } else {
+        $query->whereIn('company_id', $company_id);
+    }
+    
+    if (!$isHistorial) {
+        $query->where('idEstado', '!=', 1);
+    }
+});
+
+
+$ordenes->whereHas('venta', function ($query) use ($role) {
+    $query->where('status', '!=', 'Canceled');
+    if ($role === 'vendedor') {
+        $query->where('user_id', '=', auth()->id());
+    }
+});
+
+
+if (in_array($role, ['operario', 'cadete']) && !$isHistorial) {
+    $ordenes->where('procesar', 1)
+            ->where('idCadete_operario', auth()->id());
+}
+
+
+$estEnv = $request->estado;
+
+if (!$estEnv && !$isHistorial) {
+    $ordenes->where(function ($query) {
+        $query->where('estado', '!=', 'completado')
+              ->orWhereNull('estado'); 
+    });
+}
+
+$ordenes->orderBy('created_at', 'desc');
 
         return DataTables::eloquent($ordenes)
             ->filter(function ($query) use ($request) {
