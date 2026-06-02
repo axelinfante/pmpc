@@ -269,7 +269,7 @@ public function show()
                 return $orden->observaciones ?? '';
             })
             ->addColumn('acciones_cotizacion', function ($orden) {
-                return $orden->cotizacion->acciones ?? 'Sin información';
+                return $orden->cotizacion->acciones ?? '';
             })
             ->addColumn('guia', function ($orden) {
                 if (!empty($orden->foto_guia) && file_exists(public_path('uploads/ordenes/' . $orden->foto_guia))) {
