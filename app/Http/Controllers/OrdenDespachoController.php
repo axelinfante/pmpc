@@ -49,7 +49,7 @@ public function show()
 		->whereRaw("(ordenes_desarme.`estado` != 'completado' OR ordenes_desarme.`estado` is NULL)")
 		->limit(1), 'items_pendientes');*/
 		
-		$ordenes = OrdenDespacho::select('*')
+		$ordenes = OrdenDespacho::select('ordenes_despacho.*') // Evitamos colisiones de ID
     ->whereIn('company_id', $company_id)
     ->orderBy('created_at', 'desc')
     ->selectSub(function ($query) {
@@ -57,20 +57,15 @@ public function show()
             ->from('ordenes_desarme')
             ->join('products', 'products.id', '=', 'ordenes_desarme.product_id')
             ->join('items', 'items.id', '=', 'products.item_id')
+            ->join('invoices', 'invoices.id', '=', 'ordenes_desarme.id_venta')
+            ->where('invoices.status', '!=', 'Canceled')
             ->whereColumn('ordenes_desarme.id_venta', 'ordenes_despacho.invoice_id')
-            
             ->where(function ($sub) {
                 $sub->where('ordenes_desarme.estado', '!=', 'completado')
                     ->orWhereNull('ordenes_desarme.estado');
-            })
-            
-            ->whereHas('cotizaciones', function ($subQuery) {
-                $subQuery->where('status', '!=', 'Canceled');
             });
     }, 'items_pendientes');
-		
-		
-		
+
 		 
 		return DataTables::eloquent($ordenes)
 		  ->addColumn('checkbox', function ($orden) {

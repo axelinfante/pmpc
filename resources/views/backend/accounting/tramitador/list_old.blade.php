@@ -42,7 +42,7 @@
                         <table id="vehiculos_table" class="table table-bordered" style="width:100%; min-height: 30px;">
                             <thead>
                                 <tr>
-                                    <th class="text-center notexport" style="width:30px;">{{ _lang('Action') }}</th>
+                                    <th class="text-center" style="width:30px;">{{ _lang('Action') }}</th>
                                     <th style="width: 50px;">{{ _lang('Dominio') }}</th>
                                     <th style="width: 80px;">{{ _lang('No.Interno') }}</th>
                                     <th style="width: 50px;">{{ _lang('F.Asignacion') }}</th>
@@ -101,127 +101,9 @@
             exportPDF: "{{ route('tramitadores.export.pdf') }}",
             csrfToken: "{{ csrf_token() }}"
         };
-		    $(function() {
-			
-		var table = $("#vehiculos_table").appTable({
-		title:"Lista Tramitadores",
-        ajax: {
-            url: _url + '/tramitador/get_table_data',
-            method: "POST",
-            data: function (d) {
-                d._token = $('meta[name="csrf-token"]').attr('content');
-                if ($('select[name=client_id]').val() != '') {
-                    d.client_id = $('select[name=client_id]').val();
-                }
-                if ($('select[name=status]').val() != null) {
-                    d.status = JSON.stringify($('select[name=status]').val());
-                }
-                if ($('select[name=estado_tramite]').val() != null) {
-                    d.estado_tramite = JSON.stringify($('select[name=estado_tramite]').val());
-                }
-
-                
-            },
-            error: function (request, status, error) {  
-                //console.log(request.responseText);
-            }
-        },
-		columnFilters: [null,'input'], 
-        columns: [
-			{ data: "action", name: "action", orderable: false, searchable: false },
-            { data: 'dominio', name: 'dominio', searchable: true },
-            { data: 'id', name: 'id', searchable: true },
-            { data: 'fecha_asignacion', name: 'fecha_asignacion', searchable: true },
-            { data: 'tramitador', name: 'tramitador', searchable: true },
-            { data: 'aseguradora', name: 'aseguradora', searchable: true },
-            { data: 'company', name: 'company', searchable: true },
-            { data: 'siniestro', name: 'siniestro', searchable: true },
-            { data: 'marca_modelo', name: 'marca_modelo', searchable: true },
-            { data: 'fecha_inicio', name: 'fecha_inicio', searchable: true },
-            { data: 'fecha_finalizacion', name: 'fecha_finalizacion', searchable: true },
-            { data: 'estado_tramite', name: 'estado_tramite', searchable: true, visible: false },
-        ],
-		 rowCallback: function(row, data) {
-            // Obtener el valor de estado_tramite
-            var estadoTramite = data.estado_tramite;
-            
-            // Aplicar color de fondo basado en estado_tramite
-            if (estadoTramite === 'En Proceso') {
-                $(row).css('background-color', '#33FFAC'); // Verde
-            } else if (estadoTramite === 'En Gestoria') {
-                $(row).css('background-color', '#33A8FF'); // Azul
-            } else if (estadoTramite === 'Finalizado') {
-                $(row).css('background-color', '#FFC433'); // Naranja
-            } else {
-                $(row).css('background-color', '#FFFFFF'); // Color por defecto
-            }
-        },
-        createdRow: function(row, data, dataIndex) {
-            $('td', row).eq(5).css('font-size', '12px'); 
-            $('td', row).eq(8).css('font-size', '10px'); 
-            $('td', row).eq(3).css('font-size', '12px'); 
-            $('td', row).eq(9).css('font-size', '12px'); 
-            $('td', row).eq(10).css('font-size', '12px'); 
-        }
-    }).on('init.dt', function () {
-        $('[data-toggle="tooltip"]').tooltip();
-    });
-	
-	  $('.page-container').addClass('sbar_collapsed');
-	
-	$('.select-filter').on('change', function (e) {
-        table.draw();
-    });
-
-    $(window).resize(function () {
-        table.columns.adjust().draw();
-    });
-	
-	
-	    /*			$('.filtros').val('');
-                    $('.select-filter').val(null).trigger('change');
-					//$('.select-filter').val('');
-					vehiculo_table.search('').columns().search('').draw();
-					*/
-	
-   	
-		/*$('#data-table tbody').on('click', '.button-delete', function() {
-			var row = $(this).closest('tr');
-			var data = table.row(row).data();
-			var recordId = data.id;
-			
-			if (confirm('¿Deseas eliminar esta fila?')) {
-				
-				$.ajax({
-				//url: "/item/" + recordId,
-				url: "{{ route('item.store') }}"+'/'+recordId,
-				type: 'DELETE',
-				data: {
-					_token: $('meta[name="csrf-token"]').attr('content')
-					},
-				success: function(response) {
-				if (table) {
-					table.ajax.reload(null, false);
-				}
-            }
-        });
-
-		}
-			
-	});*/
-		
-		/*$('#filtrado').on('change', function(e) {
-					e.preventDefault();
-					table.draw();
-           			return false; //for old browsers 
-			});*/
-	});	
-	
-	
-	
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdn.datatables.net/plug-ins/1.10.24/sorting/datetime-moment.js"></script>
-    <script src="{{-- asset('public/backend/assets/js/ajax-datatable/tramitador.js') --}}"></script>
+    <script src="{{ asset('public/backend/assets/js/ajax-datatable/tramitador.js') }}"></script>
 @endsection
