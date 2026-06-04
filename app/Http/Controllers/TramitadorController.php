@@ -292,7 +292,6 @@ class TramitadorController extends Controller
     }
     public function checkpointVehiculosGetTramite(Request $request, $vehiculo_id, $checkpoint_id)
     {
-
         // Se comenta para permitir edicion libre
         // if ($checkpoint_id > 1 && $checkpoint_id != 9) {
         //     $checkpoint_id_anterior = $checkpoint_id - 1;
@@ -448,7 +447,7 @@ class TramitadorController extends Controller
                 $buttons = '<div class="btn-group">';
                 $buttons .= '<button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Acciones</button>';
                 $buttons .= '<div class="dropdown-menu action">';
-                $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@show', $car['id']) . '" data-title="' . _lang('Multimedia') . '"><i class="ti-eye"></i> ' . _lang('Multimedia') . '</a>';
+                $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@show', $car['id']) . '" data-reload="false" data-title="' . _lang('Multimedia') . '"><i class="ti-eye"></i> ' . _lang('Multimedia') . '</a>';
                 $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@edit', $car['id']) . '" data-title="' . _lang('Update Vehicle') . '"><i class="ti-pencil"></i> ' . _lang('Update Vehicle') . '</a>';
                 $buttons .= '<a class="dropdown-item" target="_blank" href="' . action('VehiculoController@movimientos', $car['id']) . '" data-title="' . _lang('Ver movimientos') . '"><i class="ti-receipt"></i> ' . _lang('Ver movimientos') . '</a>';
                 $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@seguimiento', $car['id']) . '" data-title="' . _lang('Ver Estado') . '"><i class="fas fa-search"></i> ' . _lang('Ver Estado') . '</a>';
