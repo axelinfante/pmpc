@@ -186,86 +186,6 @@ class ProductController extends Controller
                     });
                 })
 
-
-
-
-                /*  ->filter(function ($q) use ($request) {
-
-                //busqueda individuales
-                $columns_ind=array_filter($request['columns'], function ($filtro) {
-                    return $filtro['search']['value'] != "";
-                });
-                // busqueda global
-                $keyword = (isset($request['search']) ? $request['search']['value'] : "" ); 
-
-                if ($keyword !=""  || count($columns_ind)>0){
-                    $q->where(function ($q) use ($request,$columns_ind,$keyword) {
-
-                      foreach ($request['columns'] as $column) {
-                        if ($column['searchable'] == 'true') {
-                            $valor_campo=$column['name'];
-                            $valor_columna= ($column['search']['value']!="" ? $column['search']['value'] : $keyword );
-                            if ($valor_columna!=""){
-                            
-                            switch ($valor_campo) {
-                                    case "id":
-                                    case "nro_interno":                                        
-                               $q->where( "products.$valor_campo", 'like', '%'. $valor_columna.'');
-                                    break;
-                                    case "productItem":
-                                         $q->orWhereHas('item', function ($subQuery) use ($valor_columna) {
-                                              $subQuery->where('item_name', 'like', "%{$valor_columna}%");
-                                        });
-                                    break;
-                                    case "marca":
-                                         $q->orWhereHas('marcamodelo', function ($str) use ($valor_columna) {
-                                                $str->whereHas('marca', function ($str) use ($valor_columna) {
-                                                 $str->where('marca', 'like', "%{$valor_columna}%");
-                                                 });
-                                        });
-                                    break; 
-                                    case "modelo":
-                                         $q->orWhereHas('marcamodelo', function ($str) use ($valor_columna) {
-                                                $str->whereHas('modelo', function ($str) use ($valor_columna) {
-                                                 $str->where('modelo', 'like', "%{$valor_columna}%");
-                                                 });
-                                        });
-                                    break;  
-                                    case "deposito":
-                                         $q->orWhereHas('deposito', function ($str) use ($valor_columna) {
-                                             if ($valor_columna=="todos") {
-                                                $str->where('nombre','=', "")
-                                                ->orWhereNull('nombre');
-                                            }elseif($valor_columna!=""){
-                                                $str->where('nombre', 'like', "%{$valor_columna}%");
-                                            }
-                                       });
-                                    break;     
-                                    case "created_at":
-                                        $date_range=($valor_columna!='') ? explode(" - ",$valor_columna) : array();
-                                        if (count($date_range)==2){
-                                            $q->whereBetween('products.created_at', [$date_range[0], $date_range[1]]);
-                                        }
-                                    break;  
-                                    case "fecha_ingreso_a_stock":
-                                          $q->whereRaw("DATE_FORMAT(fecha_ingreso_a_stock,'%d/%m/%Y') LIKE ?", ["%$valor_columna%"]);
-                                    break;  
-                                    default:
-                                $q->Where( $valor_campo, 'like', '%'.$valor_columna.'%');    
-                                }
-
-                        
-                            }//if
-                           }
-			            }
-                    });
-                }
-               // dd($q->toSql());
-                  return true;
-               })*/
-                /*->orderColumn('nro_interno', function($query, $order) {
-				$query->orderBy('nro_interno', "Desc");
-			})*/
                 ->addColumn('id', function ($data) {
 
                     if ($data->company_id == 1) {
@@ -2215,17 +2135,33 @@ public function buscar(Request $request): JsonResponse
 {
 				$search = $request->input('q');
 				$carId = $request->input('nro_interno');
+				$currentId = $request->input('current_id'); 
+
 
 				if (empty($search)) {
 					return response()->json(['items' => [], 'more' => false]);
 				}
-
+				
 				$itemsPaginados = Item::query()
+				->select('id', 'item_name as text')
+				->where('item_name', 'LIKE', "%{$search}%")
+				->where(function ($query) use ($currentId) {
+					$query->where('activo', 'Si')
+						  ->where('allCar', 1);
+					if (!empty($currentId)) {
+						$query->orWhere('id', $currentId);
+					}
+				})
+				->orderBy('item_name', 'ASC')
+				->paginate(10);
+
+/*				$itemsPaginados = Item::query()
 					->select('id', 'item_name')
 					->where('activo', 'Si')
+					->where("allCar", 1)
 					->where('item_name', 'LIKE', "%{$search}%")
 					->orderBy('item_name', 'ASC')
-					->paginate(10);
+					->paginate(10);*/
 
 				if (empty($carId) || $itemsPaginados->isEmpty()) {
 					$existingItemsIds = [];
@@ -2236,14 +2172,26 @@ public function buscar(Request $request): JsonResponse
 						->pluck('item_id')
 						->toArray();
 				}
+				
+					$itemsFormateados = $itemsPaginados->getCollection()
+						->unique('id') 
+						->map(function ($item) use ($existingItemsIds) {
+							return [
+								'id' => $item->id,
+								'text' => $item->text,
+								'disabled' => isset($existingItemsIds[$item->id]),
+							];
+						});
 
-				$itemsFormateados = $itemsPaginados->getCollection()->map(function ($item) use ($existingItemsIds) {
+
+
+/*				$itemsFormateados = $itemsPaginados->getCollection()->map(function ($item) use ($existingItemsIds) {
 					return [
 						'id' =>   $item->id,
 						'text' => $item->item_name,
 						'disabled' => in_array($item->id, $existingItemsIds),
 					];
-				});
+				});*/
 
 				return response()->json([
 					'items' => $itemsFormateados->values()->all(),
