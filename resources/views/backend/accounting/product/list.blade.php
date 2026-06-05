@@ -117,7 +117,7 @@
             orderCellsTop: true,
 			pageLength: 10,
 			//lengthMenu: [10, 20, 50, 100, 200, 500],
-			lengthMenu: [[ 10, 20, 50, 500, 1000 ], [10, 20,50, 500, 1000 ]],
+			lengthMenu: [[ 10, 20, 50, 500], [10, 20,50, 500]],
 			autoWidth: false,
             buttons: [
                 {
@@ -825,6 +825,37 @@
         body: JSON.stringify({ 
                 id: itemId, 
                 nro_oblea: nro_oblea 
+            })
+    })
+
+       
+    const data = await response.json();
+    closeLoading();
+	//console.log(data);
+
+    /*if (typeof table !== 'undefined' && table !== null) {
+            table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
+        }
+	*/	
+        
+    }
+	
+	
+	async function ActualizarDeposito(id) {
+        inicioLoading();
+		 const itemId = id;
+		  const deposito= $("#prod_depo_id-"+itemId).val();
+		 
+		 const response = await fetch('{{ route("actualizaStockitems") }}',{
+        headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            },
+        method: 'POST',
+        body: JSON.stringify({ 
+                id: itemId, 
+                campo: 'idDeposito', 
+                valor: deposito 
             })
     })
 
