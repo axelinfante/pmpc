@@ -48,6 +48,7 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
+		$lugar_entregas = Lugar_entregas::all();
         if (request()->ajax()) {
             $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
             // Iniciamos la consulta base
@@ -215,14 +216,17 @@ class ProductController extends Controller
                 ->addColumn('modelo', function ($data) {
                     return ($data->marcaModelo->modelo->modelo ?? '');
                 })
-                ->addColumn('deposito', function ($data) {
-                    return $data->deposito->nombre ?? '';
-                })
                 ->addColumn('dominio', function ($data) {
                     return $data->dominio ?? '';
                 })
 				->addColumn('motor_nro', function ($data) {
                     return $data->motor_nro ?? '';
+                })
+				->editColumn('deposito', function ($data) use ($request,$lugar_entregas) {
+                    if (!isset($request->exportar)){
+                        return view('backend.accounting.product.include.product-deposito', ['data' => $data,'lugar_entregas'=> $lugar_entregas]);
+                    }
+					return $data->deposito->nombre ?? '';
                 })
                 ->editColumn('mercado_libre', function ($data) use ($request) {
 					
@@ -264,11 +268,11 @@ class ProductController extends Controller
                     }
                      return $data->nro_oblea;
                 })
-				->rawColumns(['mercado_libre','action'])
+				->rawColumns(['mercado_libre','action','deposito'])
 				->tojson();
         }
 
-        $lugar_entregas = Lugar_entregas::all();
+        
         $estados = Estado::select('*')->where('Activo', "Si")->orderBy('estado', 'asc')->get();
 
         return view('backend.accounting.product.list', compact(['lugar_entregas', 'estados']));
@@ -833,7 +837,7 @@ class ProductController extends Controller
         }
 
         if ($modalInStock) {
-            return view('backend.accounting.product.modal.createMo', compact('interno', 'cias', 'cars', 'items'));
+            return view('backend.accounting.product.modal.createMo', compact('interno', 'cias', 'cars', 'items','company_id'));
         }
 
 
