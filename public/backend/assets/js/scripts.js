@@ -934,6 +934,7 @@
 							var newOption = new Option(select_display, select_value, true, true);
 							target_select.append(newOption).trigger('change');
 						}
+						$(current_modal).data('seGuardo', true);
 						$(current_modal).modal('hide');
 					}
 					
@@ -2303,6 +2304,7 @@ function showRole(elem){
 						var newOption = new Option(select_display, select_value, true, true);
 						target_select.append(newOption).trigger('change');
 						
+						$(current_modal).data('seGuardo', true);
 						$(current_modal).modal('hide');
 					}
 					
