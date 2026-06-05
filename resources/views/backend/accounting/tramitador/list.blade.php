@@ -1,5 +1,10 @@
 @extends('layouts.app')
-
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script>
+<style>
+ .lozad.is-loaded {
+    opacity: 1 !important;
+}
+ </style>
 @section('content')
     <div class="row">
         <div class="col-lg-12">
@@ -105,6 +110,7 @@
 			
 		var table = $("#vehiculos_table").appTable({
 		title:"Lista Tramitadores",
+		visibleGlobal: true,
         ajax: {
             url: _url + '/tramitador/get_table_data',
             method: "POST",
@@ -170,11 +176,14 @@
 	  $('.page-container').addClass('sbar_collapsed');
 	
 	$('.select-filter').on('change', function (e) {
+		 if (window.isResettingFilters) {
+				return; 
+			}
         table.draw();
     });
 
     $(window).resize(function () {
-        table.columns.adjust().draw();
+     //   table.columns.adjust().draw();
     });
 	
 	
@@ -217,7 +226,49 @@
 			});*/
 	});	
 	
+	const observer = lozad('.lozad', {
+    rootMargin: '10px 0px', // margin around the root
+    threshold: 0.1,         // ratio of element visibility before loading
+    load: function(el) {
+        //console.log('Loading element:', el);
+        // Custom loading logic here
+      
+		
+		if (el.nodeName.toLowerCase() === 'video') {
+            // Si tiene data-src directo
+            if (el.dataset.src) {
+                el.src = el.dataset.src;
+            }
+            // Si tiene fuentes internas
+            const sources = el.querySelectorAll('source');
+            if (sources.length > 0) {
+                sources.forEach(source => {
+                    source.src = source.dataset.src;
+                });
+            }
+			  el.load(); // ¡Importante! Esto fuerza al navegador a leer el nuevo src
+		}else{
+			  el.src = el.dataset.src;
+		}
+    },
+    loaded: function(el) {
+        // Run after element is loaded
+        el.classList.add('fade-in');
+		
+		
+    }
+});
 	
+	/*const observer = lozad('.lozad', {
+    loaded: function(el) {
+        //console.log('Elemento cargado:', el.src);
+    }
+	});*/
+	
+	$("#main_modal").on('show.bs.modal', function () {
+			observer.observe(); 
+	 });
+	    
 	
     </script>
 

@@ -1485,7 +1485,10 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             //->where('company_id', company_id())
             ->first();
         //dd($car);
-
+			 //$this->crearCheckPoint($car);
+			 //dd();
+			
+			
         if ($car->company_id != auth()->user()->company_id && strtolower(auth()->user()->role->name) == 'actualización de estados') {
             if ($request->ajax()) {
                 return new Response('<h5 class="text-center red">' . _lang('No puede hacer cambios de otras compañías !') . '</h5>');
@@ -2226,7 +2229,60 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
         return response()->json($marca_modelo);
     }
-    public function crearCheckPoint($car)
+
+	
+	  public function crearCheckPoint($car)
+    {
+		
+	try {
+			$now = Carbon::now()->toDateTimeString();
+			$userId = Auth::id() ?? 1; 
+			$ids = "1,2,5,10,11,12,13,14";
+			//$idsArray = explode(',', $ids);
+			DB::statement("
+				INSERT INTO vehiculos_checkpoints (
+					vehiculo_id, 
+					checkpoint_id, 
+					start_date, 
+					end_date, 
+					observaciones, 
+					user_id, 
+					status, 
+					status_date, 
+					created_at, 
+					updated_at
+				)
+				SELECT 
+					:vehiculo_id AS vehiculo_id,
+					c.id AS checkpoint_id,
+					NULL AS start_date,
+					NULL AS end_date,
+					'' AS observaciones,
+					:user_id AS user_id,
+					'pendiente' AS status,
+					:status_date AS status_date,
+					:created_at AS created_at,
+					:updated_at AS updated_at
+				FROM checkpoints c
+				WHERE c.id in ($ids)
+			", [
+				'vehiculo_id' => $car->id,
+				'user_id'     => $userId,
+				'status_date' => $now,
+				'created_at'  => $now,
+				'updated_at'  => $now
+			]);
+			
+
+			Log::info("¡Inicialización masiva de checkpoints en 'pendiente' completada!");
+				} catch (\Exception $e) {
+					//dd($e->getMessage());
+					Log::error('Error updating car status for car ID ' . $car->id . ': ' . $e->getMessage());
+				}
+			}
+	
+	
+ /*   public function crearCheckPoint($car)
     {
         // Fetch all checkpoints
         $checkpoints = Checkpoint::all();
@@ -2357,7 +2413,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             Log::error('Error updating car status for car ID ' . $car->id . ': ' . $e->getMessage());
         }
     }
-
+*/
     public function updateCheckPoint($car)
     {
         // Fetch all checkpoints
