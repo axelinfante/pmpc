@@ -332,11 +332,12 @@ if ($pagos->type == 'income') {
             </div>
         </div>
      @endif
-     @if(get_company_field($invoice->company_id,'invoice_footer') != '')
-        <div>
-            <div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id,'invoice_footer')) !!}</div>
-        </div>
-     @endif
+     <div>
+								<div class="invoice-note">Nota: Saldo parcial , solo valido con resumen de cuenta corriente</div>
+							  @if (get_company_field($invoice->company_id, 'invoice_footer') != '')
+                                <div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id, 'invoice_footer')) !!}</div>
+							  @endif
+                            </div>
      </div>
 </body>
 </html>
