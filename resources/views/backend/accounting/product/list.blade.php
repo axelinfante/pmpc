@@ -34,7 +34,7 @@
                                 <th>{{ _lang('Modelo') }}</th>
                                 <th>{{ _lang('nº motor') }}</th>
                                 <th>{{ _lang('nº oblea') }}</th>
-                                <th>{{ _lang('Deposito') }}</th>
+                                <th style="width: 200px; min-width: 200px;">{{ _lang('Deposito') }}</th>
                                 <th>{{ _lang('Ubicacion') }}</th>
                                 <th>{{ _lang('Descripcion') }}</th>
                                 <th>{{ _lang('Publicado ML') }}</th>
