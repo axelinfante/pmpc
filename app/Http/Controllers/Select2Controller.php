@@ -33,7 +33,7 @@ class Select2Controller extends Controller
             '7' => array( 'staff_roles.name' => 'tramitador'), //roles.
             //8, // marca y modelo
             '9' => array('item_type' => 'product'), //Item Type Product Piezas $display_option
-            '100' => array('item_type' => 'product','activo' => 'Si','allCar' => 1), //Item Type Product Piezas $display_option
+            '100' => array('item_type' => 'product','activo' => 'Si'), //Item Type Product Piezas $display_option
         );
 
         
