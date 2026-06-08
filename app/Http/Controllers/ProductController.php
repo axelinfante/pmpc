@@ -48,6 +48,7 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
+		$lugar_entregas = Lugar_entregas::all();
         if (request()->ajax()) {
             $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
             // Iniciamos la consulta base
@@ -186,86 +187,6 @@ class ProductController extends Controller
                     });
                 })
 
-
-
-
-                /*  ->filter(function ($q) use ($request) {
-
-                //busqueda individuales
-                $columns_ind=array_filter($request['columns'], function ($filtro) {
-                    return $filtro['search']['value'] != "";
-                });
-                // busqueda global
-                $keyword = (isset($request['search']) ? $request['search']['value'] : "" ); 
-
-                if ($keyword !=""  || count($columns_ind)>0){
-                    $q->where(function ($q) use ($request,$columns_ind,$keyword) {
-
-                      foreach ($request['columns'] as $column) {
-                        if ($column['searchable'] == 'true') {
-                            $valor_campo=$column['name'];
-                            $valor_columna= ($column['search']['value']!="" ? $column['search']['value'] : $keyword );
-                            if ($valor_columna!=""){
-                            
-                            switch ($valor_campo) {
-                                    case "id":
-                                    case "nro_interno":                                        
-                               $q->where( "products.$valor_campo", 'like', '%'. $valor_columna.'');
-                                    break;
-                                    case "productItem":
-                                         $q->orWhereHas('item', function ($subQuery) use ($valor_columna) {
-                                              $subQuery->where('item_name', 'like', "%{$valor_columna}%");
-                                        });
-                                    break;
-                                    case "marca":
-                                         $q->orWhereHas('marcamodelo', function ($str) use ($valor_columna) {
-                                                $str->whereHas('marca', function ($str) use ($valor_columna) {
-                                                 $str->where('marca', 'like', "%{$valor_columna}%");
-                                                 });
-                                        });
-                                    break; 
-                                    case "modelo":
-                                         $q->orWhereHas('marcamodelo', function ($str) use ($valor_columna) {
-                                                $str->whereHas('modelo', function ($str) use ($valor_columna) {
-                                                 $str->where('modelo', 'like', "%{$valor_columna}%");
-                                                 });
-                                        });
-                                    break;  
-                                    case "deposito":
-                                         $q->orWhereHas('deposito', function ($str) use ($valor_columna) {
-                                             if ($valor_columna=="todos") {
-                                                $str->where('nombre','=', "")
-                                                ->orWhereNull('nombre');
-                                            }elseif($valor_columna!=""){
-                                                $str->where('nombre', 'like', "%{$valor_columna}%");
-                                            }
-                                       });
-                                    break;     
-                                    case "created_at":
-                                        $date_range=($valor_columna!='') ? explode(" - ",$valor_columna) : array();
-                                        if (count($date_range)==2){
-                                            $q->whereBetween('products.created_at', [$date_range[0], $date_range[1]]);
-                                        }
-                                    break;  
-                                    case "fecha_ingreso_a_stock":
-                                          $q->whereRaw("DATE_FORMAT(fecha_ingreso_a_stock,'%d/%m/%Y') LIKE ?", ["%$valor_columna%"]);
-                                    break;  
-                                    default:
-                                $q->Where( $valor_campo, 'like', '%'.$valor_columna.'%');    
-                                }
-
-                        
-                            }//if
-                           }
-			            }
-                    });
-                }
-               // dd($q->toSql());
-                  return true;
-               })*/
-                /*->orderColumn('nro_interno', function($query, $order) {
-				$query->orderBy('nro_interno', "Desc");
-			})*/
                 ->addColumn('id', function ($data) {
 
                     if ($data->company_id == 1) {
@@ -295,14 +216,17 @@ class ProductController extends Controller
                 ->addColumn('modelo', function ($data) {
                     return ($data->marcaModelo->modelo->modelo ?? '');
                 })
-                ->addColumn('deposito', function ($data) {
-                    return $data->deposito->nombre ?? '';
-                })
                 ->addColumn('dominio', function ($data) {
                     return $data->dominio ?? '';
                 })
 				->addColumn('motor_nro', function ($data) {
                     return $data->motor_nro ?? '';
+                })
+				->editColumn('deposito', function ($data) use ($request,$lugar_entregas) {
+                    if (!isset($request->exportar)){
+                        return view('backend.accounting.product.include.product-deposito', ['data' => $data,'lugar_entregas'=> $lugar_entregas]);
+                    }
+					return $data->deposito->nombre ?? '';
                 })
                 ->editColumn('mercado_libre', function ($data) use ($request) {
 					
@@ -334,8 +258,8 @@ class ProductController extends Controller
 					$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
 					data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
 					
-                    $result .= "<button class='btn btn-warning' type='button' data-id='$data->id' onClick='toggleStock(this)' ><i class='fa fa-ban'></i></button> ";
-                    $result .= "</form>";
+                    /*$result .= "<button class='btn btn-warning' type='button' data-id='$data->id' onClick='toggleStock(this)' ><i class='fa fa-ban'></i></button> ";
+                    $result .= "</form>";*/
                     return $result;
                 })
 				->editColumn('nro_oblea', function ($data) use ($request) {
@@ -344,156 +268,17 @@ class ProductController extends Controller
                     }
                      return $data->nro_oblea;
                 })
-				->rawColumns(['mercado_libre','action'])
+				->rawColumns(['mercado_libre','action','deposito'])
 				->tojson();
         }
 
-        $lugar_entregas = Lugar_entregas::all();
+        
         $estados = Estado::select('*')->where('Activo', "Si")->orderBy('estado', 'asc')->get();
 
         return view('backend.accounting.product.list', compact(['lugar_entregas', 'estados']));
     }
 
-    public function index_old()
-    {
-
-        if (request()->ajax()) {
-            $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-            // Iniciamos la consulta base
-            $products = Product::select('products.*', 'cars.tipo_vehiculo')
-                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-                ->where('car_id', null)
-                ->where('stock', '>=', 1)
-                ->whereIn('products.company_id', $company_id)
-                ->with('category')
-                ->whereHas('item', function ($query) {
-                    $query->where("item_type", "product");
-                });
-
-            // Condición adicional por rol del usuario
-            /*if (auth()->user()->role->name != 'Gerencial') {
-            $id_cia=(!empty(session('cia'))) ? session('cia'):auth()->user()->company_id;
-                if ($id_cia!=100){
-                    $products->where('products.company_id', $id_cia);
-                }
-            //$products->where('products.company_id', auth()->user()->company_id);
-        }*/
-
-
-            //$data->marcaModelo->modelo->modelo 
-
-            /*  if ($request->has('marcamodelo'))
-        {
-            $products->where('last_name', 'LIKE', '%' . $request->input('last_name') . '%');
-        }*/
-
-            $products->orderBy('products.id', 'desc');
-            return DataTables::eloquent($products)
-                ->filterColumn('id', function ($query, $keyword) {
-                    $query->where('products.id', 'like', '%' . $keyword . '%');
-                })
-                ->filterColumn('marca', function ($query, $keyword) {
-                    $query->orwhereHas('marcamodelo', function ($str) use ($keyword) {
-                        $str->whereHas('marca', function ($str) use ($keyword) {
-                            $str->where('marca', 'like', "%{$keyword}%");
-                        });
-                        /*$str->orwhereHas('modelo', function ($str) use ($keyword) {
-                        $str->where('modelo', 'like', "%{$keyword}%");
-                    });*/
-                    });
-                })
-                ->filterColumn('modelo', function ($query, $keyword) {
-                    $query->orwhereHas('marcamodelo', function ($str) use ($keyword) {
-                        $str->whereHas('modelo', function ($str) use ($keyword) {
-                            $str->where('modelo', 'like', "%{$keyword}%");
-                        });
-                    });
-                })
-                ->filterColumn('created_at', function ($query, $keyword) {
-                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
-                    if (count($date_range) == 2) {
-                        $query->whereBetween('products.created_at', [$date_range[0], $date_range[1]]);
-                    }
-                })
-                ->filterColumn('interno', function ($query, $keyword) {
-                    $query->where('cars.id', 'like', '%' . $keyword . '%');
-                })
-                ->filterColumn('productItem', function ($query, $keyword) {
-                    $query->whereHas('item', function ($query) use ($keyword) {
-                        $query->where('item_name', 'like', "%{$keyword}%");
-                    });
-                })
-                ->filterColumn('deposito', function ($query, $keyword) {
-                    $query->orwhereHas('deposito', function ($str) use ($keyword) {
-                        //$str->where('nombre', 'like', "%{$keyword}%");
-                        if ($keyword == "todos") {
-                            $str->where('nombre', '=', "")
-                                ->orWhereNull('nombre');
-                        } elseif ($keyword != "") {
-                            $str->where('nombre', 'like', "%{$keyword}%");
-                        }
-                    });
-                })
-                ->addColumn('id', function ($data) {
-
-                    if ($data->company_id == 1) {
-                        $in = 'PM-';
-                    } else if ($data->company_id == 2) {
-                        $in = 'PC-';
-                    }
-                    return $in . $data->id;
-                })
-
-
-                ->addColumn('created_at', function ($data) {
-                    return formatDate($data->created_at);
-                })
-                ->addColumn('fecha_ingreso_a_stock', function ($data) {
-                    return formatDate($data->fecha_ingreso_a_stock);
-                })
-                ->addColumn('interno', function ($data) {
-                    return nroInternoAlias($data->company_id, $data->tipo_vehiculo, $data->nro_interno);
-                })
-                ->addColumn('productItem', function ($data) {
-                    return $data->item->item_name ?? null;
-                })
-                ->addColumn('marca', function ($data) {
-                    return ($data->marcaModelo->marca->marca ?? '');
-                })
-                ->addColumn('modelo', function ($data) {
-                    return ($data->marcaModelo->modelo->modelo ?? '');
-                })
-                ->addColumn('deposito', function ($data) {
-                    return $data->deposito->nombre ?? '';
-                })
-                /*->addColumn('ubicacion', function ($data) {
-                return $data->lugar_entrega->nombre ?? '';
-            })*/
-                ->addColumn('action', function ($data) {
-
-                    $result =  "<form action='" . action('ProductController@destroy', $data->id) . "' method='post'>";
-                    $result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
-
-                    $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
-
-                    $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
-
-                    $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
-
-                    $result .= csrf_field();
-
-                    $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
-                    class='ti-eraser'></i></button>";
-                    $result .= "</form>";
-                    return $result;
-                })->tojson();
-            /*->rawColumns(['action'])
-            ->addIndexColumn()
-            ->make(true);*/
-        }
-        return view('backend.accounting.product.list');
-    }
-
+    
     public function historial(Request $request)
     {
         if (request()->ajax()) {
@@ -913,7 +698,7 @@ class ProductController extends Controller
         }
 
         if ($modalInStock) {
-            return view('backend.accounting.product.modal.createMo', compact('interno', 'cias', 'cars', 'items'));
+            return view('backend.accounting.product.modal.createMo', compact('interno', 'cias', 'cars', 'items','company_id'));
         }
 
 
@@ -1468,6 +1253,7 @@ class ProductController extends Controller
 
         $this->grabarHistorial($request, $product);
 
+        $product->estado = "Anulado";
         $product->stock = 0;
         $product->save();
 
@@ -1589,12 +1375,17 @@ class ProductController extends Controller
 
         //     // 3. Obtener la colección de resultados
         //     ->get();
-
+		$lugar_entregas = Lugar_entregas::all()->map(function ($item) {
+					return [
+						'id'   => $item->nombre,    
+						'text' => $item->nombre,
+					];
+				});
 
         if ($request->ajax()) {
 
             $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-
+			
 
             $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
@@ -1611,10 +1402,9 @@ class ProductController extends Controller
 
             $products->orderBy('products.id', 'desc');
 
-
             return DataTables::eloquent($products)
-                ->filterColumn('id', function ($query, $keyword) {
-                    $query->where('products.id', 'like', "%{$keyword}");
+                ->filterColumn('productsid', function ($query, $keyword) {
+                    $query->where('products.id', 'like', "%{$keyword}%");
                 })
                 ->filterColumn('created_at', function ($query, $keyword) {
                     $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
@@ -1656,7 +1446,7 @@ class ProductController extends Controller
                 })
                 ->filterColumn('deposito', function ($query, $keyword) {
                     $query->orWhereHas('deposito', function ($str) use ($keyword) {
-                        if ($keyword == "todos") {
+                        if ($keyword == "") {
                             $str->where('nombre', '=', "")
                                 ->orWhereNull('nombre');
                         } elseif ($keyword != "") {
@@ -1664,7 +1454,7 @@ class ProductController extends Controller
                         }
                     });
                 })
-                ->addColumn('id', function ($data) {
+                ->addColumn('productsid', function ($data) {
                     if ($data->company_id == 1) {
                         $in = 'PM-';
                     } else if ($data->company_id == 2) {
@@ -1711,7 +1501,7 @@ class ProductController extends Controller
         }
 
         // 3. Retorna la vista específica para stock 0 y no vendidos
-        return view('backend.accounting.product.anulados');
+        return view('backend.accounting.product.anulados', compact("lugar_entregas"));
 
         // dd($productosNoVendidosSinStock)
 
@@ -1724,6 +1514,7 @@ class ProductController extends Controller
 
         $product = Product::find($id);
         if ($product->stock <= 0) {
+            $product->estado = "habilitado";
             $product->stock = 1;
         } else {
             $product->stock = 0;
@@ -2005,10 +1796,50 @@ class ProductController extends Controller
     {
 		
         if ($request->ajax()) {
+	
+				$products = Item::select(
+					'products.id as product_id', 
+					'items.id as item_id',       
+					'products.stock', 
+					'products.nro_oblea',
+			        DB::raw("CONCAT(items.item_name, CASE WHEN items.allCar = 0 OR items.allCar IS NULL THEN ' (*)' ELSE '' END) as item_name"),
+					//'items.item_name',
+					'items.allCar',
+					'items.activo',
+					'products.estado',
+					'invoices.invoice_number'
+				)
+				->leftJoin('products', function($join) use ($request) {
+					$join->on('products.item_id', '=', 'items.id')
+						 ->where('products.nro_interno', $request->nro_interno); 
+				})
+				 ->leftJoin('invoice_items', function($join) {
+					$join->on('invoice_items.product_id', '=', 'products.id');
+					})
+				->leftJoin('invoices', function($join) {
+					$join->on('invoices.id', '=', 'invoice_items.invoice_id');
+				})
+				->where(function($query) {
+					$query->where('items.item_type', 'product')
+						  ->where('items.activo', 'Si');
+					$query->where(function($subQuery) {
+						$subQuery->where('items.allCar', 1)
+						->orwhere(function($q) {
+								$q->where(function($allCarQuery) {
+									$allCarQuery->where('items.allCar', 0)
+												->orWhereNull('items.allCar');
+								})
+								->where('products.stock', '>', 0);
+							});
+					});
+				})
+				->get();
+	
+	
 			
-			$products = Item::select(
-        'products.id as product_id', // Alias claro para detectar si existe el producto
-        'items.id as item_id',       // Alias claro para conservar SIEMPRE el ID del ítem
+		/*$products = Item::select(
+        'products.id as product_id', 
+        'items.id as item_id',       
         'products.stock', 
         'products.nro_oblea',
         'items.item_name',
@@ -2023,6 +1854,8 @@ class ProductController extends Controller
     ->where(function($query) use ($request) {
         // Filtro de tipo base obligatorio
         $query->where('items.item_type', 'product');
+		 $query->where('items.activo', 'Si')
+               ->where('items.allCar', 1);
 
         // Filtros dinámicos según el Request
         if ($request->has('filtrado')) {
@@ -2047,7 +1880,8 @@ class ProductController extends Controller
             $query->where('items.activo', 'Si');
         }
     })
-    ->get(); // ¡Importante! Ejecutamos la consulta antes de pasarla a DataTables
+    ->get(); */
+
 
 return DataTables::of($products)
     ->addIndexColumn()
@@ -2078,7 +1912,12 @@ return DataTables::of($products)
 						 return $row->nro_oblea ?? '';
                 })
 				->addColumn('id_producto', function ($row) {
-                    return $row->product_id ?? '';
+					$texto="";
+					
+					if ($row->invoice_number) {
+							$texto=" (" . ($row->invoice_number ?? '') . ")";	
+					}
+                    return ($row->product_id ?? '') . $texto;
                 })
 				->addColumn('estado', function ($row)  {
                     return $row->estado ?? '';
@@ -2215,35 +2054,106 @@ public function buscar(Request $request): JsonResponse
 {
 				$search = $request->input('q');
 				$carId = $request->input('nro_interno');
+				$currentId = $request->input('current_id'); 
+
 
 				if (empty($search)) {
 					return response()->json(['items' => [], 'more' => false]);
 				}
-
+				
 				$itemsPaginados = Item::query()
-					->select('id', 'item_name')
-					->where('activo', 'Si')
-					->where('item_name', 'LIKE', "%{$search}%")
-					->orderBy('item_name', 'ASC')
-					->paginate(10);
+				->select('id', 'item_name as text')
+				->where('item_name', 'LIKE', "%{$search}%")
+				->where(function ($query) use ($currentId) {
+					$query->where('activo', 'Si')
+						  ->where('allCar', 1);
+					if (!empty($currentId)) {
+						$query->orWhere('id', $currentId);
+					}
+				})
+				->orderBy('item_name', 'ASC')
+				->paginate(10);
+				
+							$productsInfo = [];
 
-				if (empty($carId) || $itemsPaginados->isEmpty()) {
-					$existingItemsIds = [];
-				} else {
-					$existingItemsIds = Product::whereIn('item_id', $itemsPaginados->pluck('id'))
-						->whereNull('car_id')
-						->where('nro_interno', $carId)
-						->pluck('item_id')
-						->toArray();
-				}
+			if (!empty($carId) && $itemsPaginados->isNotEmpty()) {
+				$productsInfo = Product::select('item_id', 'estado', 'id as idproducto') 
+					->whereIn('item_id', $itemsPaginados->pluck('id'))
+					->where('nro_interno', $carId)
+					->get()
+					->keyBy('item_id') 
+					->toArray();
+			}
 
-				$itemsFormateados = $itemsPaginados->getCollection()->map(function ($item) use ($existingItemsIds) {
+			$itemsFormateados = $itemsPaginados->getCollection()
+				->unique('id') 
+				->map(function ($item) use ($productsInfo) {
+					$itemId = $item->id;
+					
+					$product = $productsInfo[$itemId] ?? null; 
+					$existeProducto = isset($productsInfo[$itemId]);
+					
+					$estado = $product['estado'] ?? '';   
+					$id_producto = $product['idproducto'] ?? '';
+					$mensaje = "";
+					$disabledRow = false;
+
+					if ($existeProducto) {
+						if ($estado == "Anulado") {
+							$mensaje = " ($estado)";
+							$disabledRow = true; // Permite volver a seleccionarlo si está Anulado
+						} else {
+							$mensaje = " ($id_producto)";
+							$disabledRow = true;  // Bloqueado para otros estados (ej: Vendido, Activo)
+						}
+					}	
+
 					return [
-						'id' =>   $item->id,
-						'text' => $item->item_name,
-						'disabled' => in_array($item->id, $existingItemsIds),
+						'id' => $itemId,
+						'text' => $item->text . $mensaje,
+						'disabled' => $disabledRow
 					];
 				});
+				
+				/*$productStatuses = [];
+
+					if (!empty($carId) && $itemsPaginados->isNotEmpty()) {
+						$productStatuses = Product::whereIn('item_id', $itemsPaginados->pluck('id'))
+							->where('nro_interno', $carId)
+							->pluck('id','estado', 'item_id')
+							->toArray();
+					}
+
+					$itemsFormateados = $itemsPaginados->getCollection()
+						->unique('id') 
+						->map(function ($item) use ($productStatuses) {
+							$itemId = $item->id;
+							$estadoInformativo = $productStatuses[$itemId] ?? null; 
+							$diseabledrow=isset($productStatuses[$itemId]);
+							return [
+								'id' => $itemId,
+								'text' => $item->text . ((($diseabledrow) && $estadoInformativo=="Anulado")  ? " ($estadoInformativo)":""),
+								'disabled' => $diseabledrow
+							];
+						});*/
+				
+				/*if (!empty($carId) && $itemsPaginados->isNotEmpty()) {
+						$existingItemsIds = Product::whereIn('item_id', $itemsPaginados->pluck('id'))
+							->where('nro_interno', $carId)
+							->pluck('item_id')
+							->flip() 
+							->toArray();
+					}
+				
+					$itemsFormateados = $itemsPaginados->getCollection()
+						->unique('id') 
+						->map(function ($item) use ($existingItemsIds) {
+							return [
+								'id' => $item->id,
+								'text' => $item->text,
+								'disabled' => isset($existingItemsIds[$item->id]),
+							];
+						});*/
 
 				return response()->json([
 					'items' => $itemsFormateados->values()->all(),
