@@ -1003,7 +1003,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 		$user = auth()->user();
 $role = strtolower($user->role->name);
 
-$ordenes = Orden_desarme::select('ordenes_desarme.*')
+/*$ordenes = Orden_desarme::select('ordenes_desarme.*')
     ->with([
         'venta', 
         'cotizacion', 
@@ -1046,9 +1046,53 @@ if (!$estEnv && !$isHistorial) {
         $query->where('estado', '!=', 'completado')
               ->orWhereNull('estado'); 
     });
-}
+}*/
 
-$ordenes->orderBy('created_at', 'desc');
+$ordenes = Orden_desarme::with([
+			'venta', 
+			'cotizacion', 
+			'car.estado_relacion' 
+		]);
+
+		$ordenes->whereHas('car', function ($q) use ($isHistorial, $company_id, $user, $role) {
+			if (in_array($role, ['operario', 'cadete', 'administrativo de desarme'])) {
+				if (!$isHistorial) {
+					$q->where('company_id', $user->company_id);
+				}
+			} else {
+				$q->whereIn('company_id', (array)$company_id); // Asegura que sea un array
+			}
+			
+			if (!$isHistorial) {
+				$q->where('idEstado', '!=', 1);
+			}
+		});
+
+		$ordenes->where(function ($mainQuery) use ($role) {
+			$mainQuery->whereHas('venta', function ($q) use ($role) {
+				$q->where('status', '!=', 'Canceled');
+				
+				if ($role === 'vendedor' && auth()->check()) {
+					$q->where('user_id', auth()->id());
+				}
+			})->orDoesntHave('venta'); // <- Esto permite incluir las órdenes que no tienen venta
+		});
+
+		if (in_array($role, ['operario', 'cadete']) && !$isHistorial) {
+			$ordenes->where('procesar', 1)
+				  ->where('idCadete_operario', auth()->id());
+		}
+
+		$estEnv = $request->estado;
+		if (!$estEnv && !$isHistorial) {
+			$ordenes->where(function ($q) {
+				$q->where('estado', '!=', 'completado')
+				  ->orWhereNull('estado'); 
+			});
+		}
+
+		$ordenes->orderBy('created_at', 'desc');
+
 
         return DataTables::eloquent($ordenes)
             ->filter(function ($query) use ($request) {

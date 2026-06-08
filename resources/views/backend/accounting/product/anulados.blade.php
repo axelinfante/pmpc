@@ -1,4 +1,15 @@
 @extends('layouts.app')
+<style>
+table.dataTable {
+            table-layout: fixed !important;
+            width: 100% !important;
+        }
+        table.dataTable td {
+            white-space: normal !important;
+            overflow-wrap: break-word !important;
+            word-wrap: break-word !important;
+        }
+</style>
 
 @section('content')
 <div class="row">
@@ -15,7 +26,8 @@
                 </div>
 
                 <hr>
-                <table id="table-data-product" class="table-bordered"> 
+                <!--<table id="table-data-product" class="table-bordered"> -->
+				<table id="table-data-product" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th>ID de producto</th>
@@ -28,10 +40,10 @@
                                 <th>{{ _lang('Modelo') }}</th>
                                 <th>{{ _lang('nº motor') }}</th>
                                 <th>{{ _lang('nº oblea') }}</th>
-                                <th>{{ _lang('Deposito') }}</th>
+                                <th style="width: 150px; min-width: 150px;" >{{ _lang('Deposito') }}</th>
                                 <th>{{ _lang('Ubicacion') }}</th>
                                 <th>{{ _lang('Descripcion') }}</th>
-                                <th>{{ _lang('Accciones disponibles') }}</th>
+                                <th class="notexport">{{ _lang('Accciones disponibles') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -50,12 +62,37 @@
 <script>
      var table; 
         $(function() {
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
+              $('#table-data-product').css('width', '100%');
+				table = $('#table-data-product').appTable({
+				    title:"Productos Anulados",
+					ajax: "{{ url('products/anulados') }}", 
+					visibleButtonsFilter:true, 
+					visibleButtons: {
+						reset: true,
+						excel: true,
+						print: false
+					},
+					columnFilters: ['input', 'daterangepicker','input',,,,,,,,{type: 'select',data: @json($lugar_entregas)}], 
+				   columns: [
+                   { data: 'productsid', name: 'productsid'},
+                    { data: 'created_at', name: 'created_at' },
+                    { data: 'fecha_ingreso_a_stock', name: 'fecha_ingreso_a_stock' },
+                    { data: 'interno', name: 'nro_interno' },
+                    { data: 'dominio', name: 'dominio' },
+                    { data: 'productItem', name: 'productItem' },
+                    { data: 'marca', name: 'marca' },
+                    { data: 'modelo', name: 'modelo' },
+                    { data: 'nro_motor', name: 'nro_motor' },
+                    { data: 'nro_oblea', name: 'nro_oblea' },
+                    { data: 'deposito', name: 'deposito' },
+                    { data: 'ubicacion', name: 'ubicacion' },
+                    { data: 'description', name: 'description' },
+                    { data: 'action', name: 'action',  searchable: false, orderable: false}
 
+                ],
+				});
+
+/*
              table = $('#table-data-product').DataTable({
                 processing:true,
                 serverSide:true,
@@ -127,9 +164,9 @@
              ],
 
             });
+*/
 
-
-            $('#table-data-product thead tr').clone().prependTo('#table-data-product thead');
+     /*       $('#table-data-product thead tr').clone().prependTo('#table-data-product thead');
 
                 $('#table-data-product thead tr:eq(0) th').each(function(i) {
                 var title = $(this).text();
@@ -141,10 +178,6 @@
                if(i == 1) {
 
                     $(this).html( '<input type="text" id="fecha_ingreso" name="fecha_ingreso" value="" class="form-control select-filter" placeholder="Search...'+title+'" />' );
-
-                    /*<input type="checkbox" id="mostrar-todos-input">
-  <label for="mostrar-ocultar-input">ocultar input?</label>
-  <input type="text" class="input-text form-control w-25">*/
             }else if(i == 10){
 
                 $(this).html('<input type="checkbox" id="mostrar-todos-input">vacios <input id="input-text" style="width:100%;" type="text" placeholder="' + title + '" />');
@@ -192,8 +225,8 @@
             }
          });
 
-
-                
+*/
+     /*           
         $('#fecha_ingreso').daterangepicker({
             autoUpdateInput: false,
             locale: {
@@ -219,9 +252,9 @@
             $('#fecha_ingreso').on('cancel.daterangepicker', function(ev, picker) {
                 $('#fecha_ingreso').val(null).trigger('change');    
         });
+*/
 
-
-        function newexportaction(e, dt, button, config) {
+       /* function newexportaction(e, dt, button, config) {
 
            this.processing( true );
          var self = this;
@@ -266,9 +299,9 @@
          dt.ajax.reload();
          this.processing( false );
      }
+*/
 
-
-     $('.dataTables_filter input')
+ /*    $('.dataTables_filter input')
     .unbind('keypress keyup input')
     .bind('change input', function (e) {
         if ($(this).val().length >= 3 && e.keyCode == 13) {
@@ -276,6 +309,7 @@
         }
     });
 
+*/
   });
 
   async function toggleStock(btn) {
@@ -293,11 +327,10 @@
 
     
     const data = await response.json();
-    console.log(data);
+    //console.log(data);
 
     if (typeof table !== 'undefined' && table !== null) {
             table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
-            console.log("DataTable recargado.");
         }
   }
     </script>

@@ -277,7 +277,7 @@
 								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
 			<a id="productLink_" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>								
 								<input type="hidden" name="desamar_item" id="desamar_item" value"">
-						<label class="control-label">{{ _lang('Producto en vehiculo') }}</label>
+						<label class="control-label">{{ _lang('Producto en vehiculo (Listado Predefinido)') }}</label>
 
 						<select class="form-control" data-value="items.id" data-display="items.item_name" 
 								data-table="items" data-where="100" data-option = '' name="product" id="product">

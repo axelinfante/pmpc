@@ -1,5 +1,5 @@
 <div class="input-group">
-    <select id="prod_depo_id-{{ $data->id }}" style="min-width: 120px;" required class="form-control select2">
+    <select id="prod_depo_id-{{ $data->id }}" style="min-width: 50px;" required class="form-control select2">
 	 @foreach ($lugar_entregas as $row)
                  <option {{ $row->id == $data->idDeposito ? 'selected' : '' }}   value="{{ $row->id }}">{{ $row->nombre }}</option>
     @endforeach
