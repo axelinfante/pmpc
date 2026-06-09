@@ -49,7 +49,7 @@ public function show()
 		->whereRaw("(ordenes_desarme.`estado` != 'completado' OR ordenes_desarme.`estado` is NULL)")
 		->limit(1), 'items_pendientes');*/
 		
-		$ordenes = OrdenDespacho::select('ordenes_despacho.*') // Evitamos colisiones de ID
+		$ordenes = OrdenDespacho::select('ordenes_despacho.*') 
     ->whereIn('company_id', $company_id)
     ->orderBy('created_at', 'desc')
     ->selectSub(function ($query) {
