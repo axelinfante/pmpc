@@ -2561,3 +2561,48 @@ if (!function_exists('actualizar_config_correlativo')) {
         }
     }
 }
+
+	if (!function_exists('crearSelect')) {
+		function crearSelect($name, $options, $selectedValue = '',  $incluirTodos = false, $selectTodos = false, $required=false,$id_alias='') {
+			$requiered= ($required) ?  "required": "";
+			$html = '<select style="width:100%" name="' . $name . '" id="' .$id_alias.$name . '" class="form-control" '.$requiered.'>';
+			
+			// Agrega la opción "Todos" si el parámetro es true
+			if ($selectTodos) {
+				$selectedTodos = ($selectedValue === '') ? 'selected' : '';
+			    $html .= '<option value="" ' . $selectedTodos . '>-- Seleccionar --</option>';
+			}
+			
+			if ($incluirTodos) {
+				$selectedTodos = ($selectedValue === 'todos') ? 'selected' : '';
+				$html .= '<option value="" ' . $selectedTodos . '>Todos</option>';
+			}
+
+			foreach ($options as $value => $text) {
+				$selected = ($value == $selectedValue) ? 'selected' : '';
+				$html .= '<option value="' . $value . '" ' . $selected . '>' . $text . '</option>';
+			}
+
+			$html .= '</select>';
+			return $html;
+			}
+	}
+	
+	if (!function_exists('formasEntrega')) {
+		function formasEntrega($name='forma_entrega',$selectedValue = '', $incluirTodos = false, $selectTodos = false, $required=false,$id_alias='') {
+			$formasEntrega = [
+				//'Retira Cliente' => 'Retira Cliente',
+				'Despacho' => 'Despacho',
+				'Flete' => 'Flete',
+				'Mostrador Colectora' => 'Mostrador Colectora',
+				'Mostrador ventanita' => 'Mostrador ventanita',
+				'Mostrador constituyentes' => 'Mostrador constituyentes',
+				'Mostrador Octubre' => 'Mostrador Octubre'
+			];
+		//{!! crearSelect('forma_entrega', $formasEntrega) !!}
+		
+		return crearSelect($name, $formasEntrega,$selectedValue,$incluirTodos,$selectTodos,$required,$id_alias);
+	}
+}	
+		
+		
