@@ -9,6 +9,16 @@
                 <span class="d-none panel-title">{{ _lang('Orden de despacho') }}</span>
 
                 <div class="card-body">
+									
+				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+					<span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
+					<span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">A despachar</span>
+					<span class="text-muted small">&rarr;</span>
+					<span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Despachado</span>
+					<span class="text-muted small">&rarr;</span>
+					<span class="badge rounded-pill bg-danger text-white px-2.5 py-1 fw-bold">Devolución</span>
+				</div>
+
                     @php $currency = currency() @endphp
                     <table id="orden-despacho-table" class="table table-bordered">
                         <thead>
@@ -311,11 +321,10 @@
 
                 createdRow: function(row, data) {
                     var estado = data.estatus;
-                    if (estado === 'listo para entrega') {
-                        $(row).css('background-color', '#98FB98');
+                    if (estado === 'devueltos') {
+                        $(row).css('background-color', '#FF0000');
                     } else if (estado === 'despachado') {
-                        $(row).css('background-color', '#FFFACD');
-
+                        $(row).css('background-color', '#98FB98');
                     } else if (!estado || estado === 'pendiente') {
                         $(row).css('background-color', '#FFFACD');
                         //$(row).css('background-color', '#F08080');
@@ -347,8 +356,8 @@
                 initComplete: function() {
                     var api = this.api();
 
-                    var columnasFecha = [3, 14, 16, 17,18];
-                    var columnaFormaEntrega = 19;
+                    var columnasFecha = [3, 15, 17, 18,19];
+                    var columnaFormaEntrega = 20;
 
                     api.columns().eq(0).each(function(colIdx) {
 
@@ -359,33 +368,15 @@
 
                         // Si es la columna "forma_entrega"
                         if (colIdx === columnaFormaEntrega) {
-                            var select = $(
-                                    '<select style="width:100%"><option value="">Todas</option></select>'
-                                )
-                                .appendTo(cell.empty())
-                                .on('change', function() {
-                                    var val = $.fn.dataTable.util.escapeRegex($(this)
-                                        .val());
-                                    api.column(colIdx)
-									table.column( colIdx ).search(val ? val : '', false, false).draw();
-                                    /*    .search(val ? '^' + val + '$' : '', true, false)
-                                        .draw();*/
-                                });
-
-                            [
-                                'retira cliente',
-                                'despacho',
-                                'flete',
-                                'Mostrador Colectora',
-                                'Mostrador ventanita',
-                                'Mostrador constituyentes',
-                                'Mostrador Octubre'
-                            ].forEach(function(d) {
-                                select.append('<option value="' + d + '">' + d +
-                                    '</option>');
-                            });
-
-                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 22) {
+							 const selectHTML = {!! json_encode(formasEntrega('forma_entrega','',true)) !!};
+							var select = $(selectHTML).appendTo(cell.empty())
+								.on('change', function() {
+									var val = $.fn.dataTable.util.escapeRegex($(this).val());
+									 api.column(colIdx)
+									 table.column( colIdx ).search(val ? val : '', false, false).draw();
+									//table.column(colIdx).search(val ? '^' + val + '$' : '', true, false).draw();
+								});
+                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 23) {
 							
 							if (colIdx == 6) {
 								

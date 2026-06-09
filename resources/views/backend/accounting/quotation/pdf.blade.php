@@ -268,9 +268,9 @@
 		  <!--END Related Transaction-->		
 					 					 
 					 <!--Quotation Note-->
-					 @if($quotation->note  != '')
+					 {{-- @if($quotation->note  != '') 
 						<div class="invoice-note">{{ $quotation->note }}</div>
-					 @endif
+					 @endif --}}
 					 <!--End Quotation Note-->
 					 
 					 <!--Quotation Footer Text-->
