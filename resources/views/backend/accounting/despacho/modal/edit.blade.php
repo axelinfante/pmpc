@@ -136,30 +136,10 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label class="control-label">{{ _lang('Forma de Entrega') }}</label>
-                    <select name="forma_entrega" id="forma_entrega" class="form-control">
-                        <option value="">-- Seleccionar --</option>
-                       <!-- <option value="retira cliente"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'retira cliente' ? 'selected' : '' }}>
-                            Retira cliente</option> -->
-                        <option value="despacho"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'despacho' ? 'selected' : '' }}>
-                            Despacho</option>
-                        <option value="flete"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'flete' ? 'selected' : '' }}>Flete
-                        </option>
-                        <option value="Mostrador Colectora"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'Mostrador Colectora' ? 'selected' : '' }}>
-                            Mostrador Colectora</option>
-                        <option value="Mostrador ventanita"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'Mostrador ventanita' ? 'selected' : '' }}>
-                            Mostrador ventanita</option>
-                        <option value="Mostrador constituyentes"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'Mostrador constituyentes' ? 'selected' : '' }}>
-                            Mostrador constituyentes</option>
-                        <option value="Mostrador Octubre"
-                            {{ old('forma_entrega', $o->forma_entrega ?? '') == 'Mostrador Octubre' ? 'selected' : '' }}>
-                            Mostrador Octubre</option>
-                    </select>
+                    @php 
+                        $select_value = old('forma_entrega', $o->forma_entrega ?? ''); 
+                    @endphp
+                      {!! formasEntrega('forma_entrega', $select_value, false,true,true) !!}
                 </div>
             </div>
 

@@ -18,21 +18,11 @@
             <label>Fecha de Entrega</label>
             <input type="date" class="form-control" name="fecha_entrega_max" id="modal_fecha_entrega_max" required>
           </div>
-
-          <div class="form-group">
+		  
+		  <div class="form-group">
             <label>Forma de Entrega</label>
-            <select name="forma_entrega_max" id="modal_forma_entrega_max" class="form-control" required>
-              <option value="">-- Seleccionar --</option>
-              {{-- <option value="retira cliente">Retira cliente</option> --}}
-              <option value="despacho">Despacho</option>
-              <option value="flete">Flete</option>
-              <option value="Mostrador Colectora">Mostrador Colectora</option>
-              <option value="Mostrador ventanita">Mostrador ventanita</option>
-              <option value="Mostrador constituyentes">Mostrador constituyentes</option>
-              <option value="Mostrador Octubre">Mostrador Octubre</option>
-            </select>
-          </div>
-
+                   {!! formasEntrega('forma_entrega_max', '', false,true,true,'modal_') !!}
+            <div>
           <div class="form-group">
             <label>Despachado por</label>
             <input type="text" class="form-control" name="despachado_por_max" id="modal_despachado_por">
