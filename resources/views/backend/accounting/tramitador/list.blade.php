@@ -32,7 +32,7 @@
                             <select class="form-control select2 select-filter"
                                 data-placeholder="{{ _lang('Estado Tramite') }}" name="estado_tramite" id="estado_tramite"
                                 multiple="true">
-                                <option value=""> Filtrar por estado del trámite</option>
+                                <!--<option value=""> Filtrar por estado del trámite</option>-->
                                 <option value="Pendiente" style="background-color: #FFFFFF;">Pendientes</option>
                                 <option value="En Proceso" style="background-color: #33FFAC;" #33FFAC>En Proceso</option>
                                 <option value="En Gestoria" style="background-color: #33A8FF;">En Gestoría</option>
