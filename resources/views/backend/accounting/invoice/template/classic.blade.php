@@ -175,6 +175,7 @@
                             <table class="table table-bordered mt-2" id="invoice-item-table">
                                 <thead class="base_color">
                                     <tr>
+                                        <th>Id_Producto / Nro Oblea</th>
                                         <th>{{ _lang('Name') }}</th>
                                         <th>{{ _lang('Marca y modelo') }}</th>
                                         <th>Nro interno Vehiculo</th>
@@ -186,6 +187,9 @@
                                 <tbody id="invoice">
                                     @foreach ($invoice->invoice_items as $item)
                                         <tr id="product-{{ $item->item_id }}">
+											<td>
+                                                <b>{{ $item->product->id }}/{{ $item->product->nro_oblea }}</b>
+                                            </td>
                                             <td>
                                                 <b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
                                             </td>

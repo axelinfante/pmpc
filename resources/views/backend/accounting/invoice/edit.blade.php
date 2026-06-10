@@ -438,6 +438,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 									<thead>
 										<tr>
 										    <th><input type="checkbox" id="seleccionar-todos"></th>
+											<th>Id_Producto / Nro Oblea</th>
 											<th>{{ _lang('Name') }}</th>
 											<th>{{ _lang('Description') }}</th>
 											<th class="text-center wp-100">{{ _lang('Quantity') }}</th>
@@ -455,6 +456,9 @@ Venta menos a 30000'  ? 'selected' : '' }}
 										{{-- {{ dd($item->product->marcaModelo->marca->marca) }} --}}
 											<tr <?php echo (in_array($item->product_id,$allReturnItemIds)) ? 'class="row-disabled"' :''; ?> id="product-{{ $item->product_id }}"  data-id="{{ $item->id }}">
 											<td>@if(!in_array($item->product_id,$allReturnItemIds)) <input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="{{ $item->id }}"> @endif </td>
+											<td>
+                                                <b>{{ $item->product->id }}/{{ $item->product->nro_oblea }}</b>
+                                            </td>
 												<td>
 													<b>{{ $item->item->item_name }}
 													@isset($item->product->marcaModelo)
@@ -465,6 +469,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 												</b><br>
 													
 												</td>
+												
 												<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="{{ $item->description }}"></td>
 
 												<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" value="{{ $item->quantity }}" max="1"></td>

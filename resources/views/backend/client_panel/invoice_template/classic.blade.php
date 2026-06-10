@@ -171,6 +171,7 @@
                             <table class="table table-bordered mt-2" id="invoice-item-table">
                                 <thead class="base_color">
                                     <tr>
+										<th>Id_Producto / Nro Oblea</th>
 										<th>{{ _lang('Name') }}</th>
                                         <th>{{ _lang('Marca y modelo') }}</th>
                                         <th>Nro interno Vehiculo</th>
@@ -184,6 +185,9 @@
                                 <tbody id="invoice">
                                     @foreach ($invoice->invoice_items as $item)
                                         <tr id="product-{{ $item->item_id }}">
+											<td>
+                                                <b>{{ $item->product->id }}/{{ $item->product->nro_oblea }}</b>
+                                            </td>
                                             <td>
                                                 <b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
                                             </td>
@@ -212,15 +216,15 @@
                                             <td>{!! clean(object_to_tax($item->taxes, 'name')) !!}</td>
                                             <td class="text-right">{{ decimalPlace($item->sub_total, $currency) }}</td>
                                         </tr>
-										@if ($invoice->note != '')
-                                        <tr>
+										 @if ($invoice->note != '')
+                                         {{-- <tr>
                                             <td colspan="2">
                                                 <small>{{ $invoice->note }}</small>
                                             </td>
                                             <td colspan="4">
                                              </td>   
-                                            </tr>
-                                           @endif 
+										</tr> --}}
+                                           @endif  
                                     @endforeach
                                 </tbody>
                             </table>
@@ -334,9 +338,9 @@
 
                         <!--Invoice Note-->
                         @if ($invoice->note != '')
-                            <div>
+                           {{-- <div>
                                 <div class="invoice-note">{{ $invoice->note }}</div>
-                            </div>
+						   </div> --}}
                         @endif
                         <!--End Invoice Note-->
 

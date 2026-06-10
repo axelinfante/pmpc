@@ -379,6 +379,7 @@
 					<table id="order-table" class="table table-bordered">
 						<thead>
 							<tr>
+								<th>Id_Producto / Nro Oblea</th>
 								<th>{{ _lang('Name') }}</th>
 								<th>{{ _lang('Description') }}</th>
 								<th class="text-center wp-100">{{ _lang('Quantity') }}</th>
@@ -395,6 +396,7 @@
 						<tfoot class="tfoot active">
 							<tr>
 								<th>{{ _lang('Total') }}</th>
+								<th></th>
 								<th></th>
 								<th class="text-center" id="total-qty">0</th>
 								<th></th>

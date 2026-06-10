@@ -136,6 +136,7 @@ var current_row;
                 //  max="${available_quantity}"
                 // ${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}
                 var product_row = `<tr id="product-${product['id']}">
+											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
 											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
 											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
 											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" ></td>
@@ -268,6 +269,7 @@ var current_row;
                     var tax_selector = $("#tax-selector").html();
 
                     var product_row = `<tr id="product-${product['id']}">
+											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
 											<td><b>${item['item_name']}</b></td>
 											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
 											<td class="text-center quantity"> 1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center"></td>
