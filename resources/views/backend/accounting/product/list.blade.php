@@ -38,6 +38,7 @@
                                 <th>{{ _lang('Ubicacion') }}</th>
                                 <th>{{ _lang('Descripcion') }}</th>
                                 <th>{{ _lang('Publicado ML') }}</th>
+								<th >{{ _lang('Reparaciones') }}</th>
                                 <th class="act">{{ _lang('Accciones disponibles') }}</th>
                                 <th class="text-center act">Lote</th>
                             </tr>
@@ -96,6 +97,7 @@
                     { data: 'ubicacion', name: 'ubicacion' },
                     { data: 'description', name: 'description' },
                     { data: 'mercado_libre', name: 'mercado_libre' },
+                    { data: 'reparaciones', name: 'reparaciones' },
                     { data: 'action', name: 'action',  searchable: false, orderable: false},
                      {
                         data: null,
@@ -414,7 +416,7 @@
                 var title = $(this).text();
                 //$(this).html('<input type="text" placeholder="Search" />');
 				
-				if(i < 14) {
+				if(i < 15) {
 						
 						$(this).html( '<input class="filtros" style="width:100%;" type="text" placeholder="' + title + '" />' );
 				 
@@ -555,7 +557,7 @@
 					
 					
 				}else{
-					if (i == 15) {
+					if (i == 16) {
                         $(this).html('<input type="checkbox" id="select-all">');
                     }else{
 						$(this).html('');
