@@ -68,4 +68,9 @@ class Product extends Model implements AuditableTable
     {
         return $this->hasMany('App\InvoiceItem', 'product_id', 'id');
     }
+	
+	public function devoluciones()
+    {
+        return $this->hasMany('App\ProductReturn', 'product_id');
+    }
 }

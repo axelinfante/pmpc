@@ -62,17 +62,25 @@ class ProductController extends Controller
                 })
 				//->whereNotIn('estado', ['desarme','desarme-stock'])
                 ->whereIn('products.company_id', $company_id)
-                ->with('category')
+				
+				->with([
+				'category', 
+				'devoluciones', // <-- Tu nueva relación añadida al modelo Product
+				'item' => function ($query) {
+					$query->where("item_type", "product");
+					}
+				]);
+				
+              /*  ->with('category')
                 ->whereHas('item', function ($query) {
                     $query->where("item_type", "product");
-                });
+                });*/
             //$products->orderBy('products.nro_interno', 'asc');
             if ($request->columns['3']['search']['value'] != "") {
                 $products->orderBy('products.nro_interno', 'asc');
             } else {
                 $products->orderBy('products.id', 'desc');
             }
-
 
             return DataTables::eloquent($products)
                 ->filterColumn('id', function ($query, $keyword) {
@@ -216,6 +224,60 @@ class ProductController extends Controller
                 ->addColumn('modelo', function ($data) {
                     return ($data->marcaModelo->modelo->modelo ?? '');
                 })
+				->addColumn('reparaciones', function ($data) {
+					
+					// 1. Validamos que el producto realmente tenga devoluciones registradas
+    if ($data->devoluciones->isEmpty()) {
+        return '';
+    }
+
+    $htmlResult = '<div class="d-flex flex-column" style="gap: 12px; font-size: 0.85rem; max-width: 350px; text-align: left; color: #2c3e50;">';
+
+    // 2. Iteramos cada una de las devoluciones de este producto
+    foreach ($data->devoluciones as $devolucion) {
+        $notaLimpia = str_replace('undefined', '', $devolucion->note);
+        $notaLimpia = trim($notaLimpia);
+
+        if (empty($notaLimpia)) {
+            continue; // Si esta devolución en particular no tiene nota, saltamos a la siguiente
+        }
+
+        // 3. Separamos el texto por saltos de línea por si una sola nota tiene historial interno
+        $lineas = preg_split('/\R+/', $notaLimpia);
+
+        foreach ($lineas as $linea) {
+            $linea = trim($linea);
+            if (empty($linea)) continue;
+
+            // 4. Si la línea incluye el formato de fecha [11/06/2026 ...]
+            if (preg_match('/^(\[.*?\]):(.*)$/', $linea, $matches)) {
+                $cabecera = htmlentities(trim($matches[1]), ENT_QUOTES, 'UTF-8');
+                $cuerpo = htmlentities(trim($matches[2]), ENT_QUOTES, 'UTF-8');
+
+                $htmlResult .= '<div class="pb-2" style="border-bottom: 1px dashed #ced4da;">
+                                    <span class="font-weight-bold d-block mb-1" style="font-size: 0.78rem; color: #0056b3;">
+                                        <i class="far fa-clock mr-1"></i> ' . $cabecera . '
+                                    </span>
+                                    <span class="d-block" style="line-height: 1.4; color: #1a252f; font-weight: 400;">' . $cuerpo . '</span>
+                                </div>';
+            } else {
+                // Texto plano
+                $textoPlano = htmlentities($linea, ENT_QUOTES, 'UTF-8');
+                $htmlResult .= '<div class="pb-2" style="border-bottom: 1px dashed #ced4da;">
+                                    <span class="d-block" style="line-height: 1.4; color: #1a252f; font-weight: 400;">' . $textoPlano . '</span>
+                                </div>';
+            }
+        }
+    }
+
+    $htmlResult .= '</div>';
+
+    return $htmlResult;
+					
+					
+					
+                    //return ($data->marcaModelo->modelo->modelo ?? '');
+                })
                 ->addColumn('dominio', function ($data) {
                     return $data->dominio ?? '';
                 })
@@ -268,7 +330,7 @@ class ProductController extends Controller
                     }
                      return $data->nro_oblea;
                 })
-				->rawColumns(['mercado_libre','action','deposito'])
+				->rawColumns(['mercado_libre','action','deposito','reparaciones'])
 				->tojson();
         }
 
