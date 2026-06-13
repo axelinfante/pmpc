@@ -223,8 +223,52 @@ class ProductsReturnController extends Controller
 		}
 	}
 	
-	   
 	
+	public function edit(Request $request, $id)
+    {
+        $product_return = ProductReturn::where('id', $id)->first();
+		$status = $request->get('status', '');
+        return view('backend.accounting.products_return.modal.edit_observaciones', compact('product_return', 'id','status'));
+    }	
+	
+	public function update(Request $request, $id)
+{
+	$validator = Validator::make($request->all(), [
+        'note' => 'required|string'
+	]);
+	
+	if ($validator->fails()) {
+            if($request->ajax()){
+                return response()->json(['result'=>'error','message'=>$validator->errors()->all()]);
+            }else{
+                return redirect()->route('products_returns.edit')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+
+    $productReturn = ProductReturn::findOrFail($id);
+
+    $fechaActual = now()->format('d/m/Y H:i');
+    $usuario = auth()->user()->name ?? 'Sistema'; 
+    $nuevaEntrada = "[{$fechaActual} - {$usuario}]: " . trim($request->input('note'));
+
+    if (!empty($productReturn->note)) {
+        $productReturn->note = $productReturn->note . "\n\n" . $nuevaEntrada;
+    } else {
+        $productReturn->note = $nuevaEntrada;
+    }
+	$estatus= trim($request->input('status'));
+	if ($estatus=="procesada"){
+		Product::where('id', $productReturn->product_id)->update(['stock' => 1]);
+	}	
+
+    $productReturn->status = $estatus;
+    $productReturn->save();
+	
+	return response()->json(['result' => 'success', 'action' => 'update', 'message' => _lang('Updated sucessfully'), 'data' => $productReturn]);
+}
+
 	public function process(Request $request)
 	{
 
@@ -383,13 +427,45 @@ class ProductsReturnController extends Controller
         'descompuesto' => '<span class="badge badge-danger">Defectuoso a destruir</span>',
     ];
 
-    // Busca el estado en el arreglo; si no existe, muestra el valor original seguro
+    
     return $statuses[$ProductReturn->status] ?? '<span class="badge badge-secondary">' . e($ProductReturn->status) . '</span>';
 })
 		->editColumn('note', function ($ProductReturn) {
-			//trim($product_return->note)." ".($request->observacion ?? '');
-			 $valor=str_replace('undefined', '', $ProductReturn->note);
-            return $valor ?? '';
+	    $notaLimpia = str_replace('undefined', '', $ProductReturn->note);
+    $notaLimpia = trim($notaLimpia);
+
+    if (empty($notaLimpia)) {
+        return '';
+       // return '<span class="text-dark small"><i>' . _lang('Sin observaciones') . '</i></span>';
+    }
+
+    $lineas = preg_split('/\R+/', $notaLimpia);
+    $htmlResult = '<div class="d-flex flex-column" style="gap: 12px; font-size: 0.85rem; max-width: 350px; text-align: left; color: #2c3e50;">';
+
+    foreach ($lineas as $linea) {
+        $linea = trim($linea);
+        if (empty($linea)) continue;
+        if (preg_match('/^(\[.*?\]):(.*)$/', $linea, $matches)) {
+            $cabecera = htmlentities(trim($matches[1]), ENT_QUOTES, 'UTF-8');
+            $cuerpo = htmlentities(trim($matches[2]), ENT_QUOTES, 'UTF-8');
+
+            $htmlResult .= '<div class="pb-2" style="border-bottom: 1px dashed #ced4da;">
+                                <span class="font-weight-bold d-block mb-1" style="font-size: 0.78rem; color: #0056b3;">
+                                    <i class="far fa-clock mr-1"></i> ' . $cabecera . '
+                                </span>
+                                <span class="d-block" style="line-height: 1.4; color: #1a252f; font-weight: 400;">' . $cuerpo . '</span>
+                            </div>';
+        } else {
+            $textoPlano = htmlentities($linea, ENT_QUOTES, 'UTF-8');
+            $htmlResult .= '<div class="pb-2" style="border-bottom: 1px dashed #ced4da;">
+                                <span class="d-block" style="line-height: 1.4; color: #1a252f; font-weight: 400;">' . $textoPlano . '</span>
+                            </div>';
+        }
+    }
+
+    $htmlResult .= '</div>';
+
+    return $htmlResult;
         })
         ->filterColumn('client', function ($query, $keyword) {
             $query->whereHas('invoice.client', function ($subQuery) use ($keyword) {
@@ -416,32 +492,52 @@ class ProductsReturnController extends Controller
 			});
 		})
 		->filterColumn('return_date', function ($query, $keyword) {
-			$query->whereRaw("DATE_FORMAT(return_date, '%d-%m-%Y') like ?", ["%{$keyword}%"]);
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('return_date', '>=', $date_range[0])
+                            ->whereDate('return_date', '<=', $date_range[1]);
+                    }
+			//$query->whereRaw("DATE_FORMAT(return_date, '%d-%m-%Y') like ?", ["%{$keyword}%"]);
 		})
         ->editColumn('action', function ($ProductReturn) {
             //if (strtolower(auth()->user()->role->name) !== 'despacho' && $ProductReturn->status === 'pendiente') {
+				
+				 /*<a class="dropdown-item procesar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
+                                    <i class="far fa-check-circle"></i> ' . _lang('Devolver a stock') . '
+                                </a>
+								
+								
+								<a class="dropdown-item reparar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
+                                    <i class="fas fa-tools"></i> ' . _lang('Defectuoso a reparar') . '
+                                </a>
+								
+								
+								<a class="dropdown-item anular-devolucion" href="#" data-id="' . $ProductReturn->id . '">
+                                    <i class="fas fa-trash-alt"></i> ' . _lang('Defectuoso a destruir') . '
+                                </a>*/
+				
             if (strtolower(auth()->user()->role->name) !== 'despacho' &&  (in_array($ProductReturn->status, array('pendiente','descompuesto')))) {
+				
                 return '<div class="dropdown">
                             <button class="btn btn-xs dropdown-toggle" type="button" data-toggle="dropdown" 
                         		style="background-color: white; color: black; border: 1px solid #ced4da; font-family: \'Poppins\', sans-serif;">
                         		' . _lang('Actions') . ' <i class="fa fa-angle-down"></i>
                     		</button>
                             <div class="dropdown-menu" style = "z-index: 10000; position: relative;">
-                                <a class="dropdown-item procesar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
-                                    <i class="far fa-check-circle"></i> ' . _lang('Devolver a stock') . '
-                                </a>
-								<a class="dropdown-item reparar-devolucion" href="#" data-id="' . $ProductReturn->id . '">
-                                    <i class="fas fa-tools"></i> ' . _lang('Defectuoso a reparar') . '
-                                </a>
-								<a class="dropdown-item anular-devolucion" href="#" data-id="' . $ProductReturn->id . '">
-                                    <i class="fas fa-trash-alt"></i> ' . _lang('Defectuoso a destruir') . '
-                                </a>
+								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=' . urlencode($ProductReturn->status) . '" class="dropdown-item ajax-modal"><i class="far fa-handshake"></i> ' . _lang('Observaciones Piezas') . '</a>
+								
+								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=procesada" class="dropdown-item ajax-modal"><i class="far fa-check-circle"></i> ' . _lang('Devolver a stock') . '</a>
+								
+								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=reparar" class="dropdown-item ajax-modal"><i class="fas fa-tools"></i> ' . _lang('Defectuoso a reparar') . '</a>
+								
+								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=descompuesto" class="dropdown-item ajax-modal"><i class="fas fa-trash-alt"></i> ' . _lang('Defectuoso a destruir') . '</a>
+                               
                             </div>
                         </div>';
             }
             return '';
         })
-		 ->rawColumns(['action','product_name','status'])
+		 ->rawColumns(['action','product_name','status','note'])
         ->make(true);
 }
 

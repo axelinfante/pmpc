@@ -39,7 +39,7 @@
                                 {{-- <th class="text-right d-none">{{ _lang('Cantidad') }}</th> --}}
                                 <th>{{ _lang('Motivo') }}</th>
                                 <th>{{ _lang('Estatus') }}</th>
-                                <th class="text-center">{{ _lang('Action') }}</th>
+                                <th class="text-center notexport">{{ _lang('Action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -53,7 +53,7 @@
 @endsection
 
 @section('js-script')
-    <script src="{{ asset('public/backend/assets/js/ajax-datatable/products_returns.js') }}"></script>
+    <script src="{{-- asset('public/backend/assets/js/ajax-datatable/products_returns.js') --}}"></script>
     <script>
         $.ajaxSetup({
             headers: {
@@ -64,7 +64,42 @@
         (function($) {
             "use strict";
 
-            $(document).on('click', '.procesar-devolucion', function(event) {
+			var products_returns_table = $("#products_returns_table").appTable({
+							title:"marcas",
+									ajax: {
+							url: _url + '/products_returns/get_table_data',
+							method: "POST",
+							data: function (d) {
+								d._token = $('meta[name="csrf-token"]').attr('content');
+								if ($('select[name=status]').val() != null) {
+									d.status = $('select[name=status]').val(); // No necesitas stringify
+								}
+							},
+						},
+					columnFilters: ['input','daterangepicker',,,,,'none'],
+					columns: [
+						{ data: 'return_number', name: 'return_number' },
+						{ data: 'return_date', name: 'return_date' },
+						{ data: 'invoice_id', name: 'invoice_id' },
+						{ data: 'client', name: 'client' },
+						// { data: 'product_id', name: 'product_id' },
+						{ data: 'product_name', name: 'product_name' },
+						//{ data: 'quantity', name: 'quantity', className: 'd-none' },
+						{ data: 'note', name: 'note' },
+						{ data: 'status', name: 'status' },
+						{ data: 'action', name: 'action', className: 'text-center', orderable: false, searchable: false },
+						],
+				});
+
+
+
+	$('.select-filter').on('change', function (e) {
+		products_returns_table.draw();
+	});
+	
+	
+	
+         /*   $(document).on('click', '.procesar-devolucion', function(event) {
                 event.preventDefault();
                 let id = $(this).data('id');
 
@@ -188,11 +223,11 @@ function repair_returns(id, observacion) {
             products_returns_table.ajax.reload(null, false);
         }
     });
-}
+}*/
 
         })(jQuery);
 
-        function process_returns(id,observacion) {
+        /*function process_returns(id,observacion) {
             $.ajax({
                 url: "{{ route('products_returns.procesar') }}",
                 type: 'POST',
@@ -281,6 +316,6 @@ function repair_returns(id, observacion) {
                     products_returns_table.ajax.reload(null, false);
                 }
             });
-        }
+        }*/
     </script>
 @endsection
