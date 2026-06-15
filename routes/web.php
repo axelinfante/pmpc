@@ -1221,6 +1221,12 @@ Route::group(["middleware" => ["install"]], function () {
             "product/printsin-qr/{id}",
             "ProductController@printsinQR",
         )->name("printsin-qr");
+		
+		
+		 // aqui print QR multiple
+       Route::post("product/print-qr-mult", "ProductController@printQR_multi")->name("print-qr-mult");
+		
+		
     });
 
     //Convert Currency
