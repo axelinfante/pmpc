@@ -159,9 +159,9 @@ $(document).ready(function() {
                 if($('select[name=nro_interno]').val() != ''){
                     d.nro_interno = $('select[name=nro_interno]').val();
                 }
-				if($('select[name=filtrado]').val() != ''){
-					d.filtrado = $('select[name=filtrado]').val();
-				}
+				//if($('select[name=filtrado]').val() != ''){
+					d.filtrado = "predefinido";//$('select[name=filtrado]').val();
+				//}
             },
             error: function (request, status, error) {
                 // console.log(error);
@@ -172,7 +172,7 @@ $(document).ready(function() {
         excel: false,
         print: false
 		},
-		customButtons: [{
+		/*customButtons: [{
                    text: 'Filtrar por: ' +
                       '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
                       '<option value="predefinido">Predefinidos</option>' +
@@ -182,7 +182,7 @@ $(document).ready(function() {
                 action: function ( e, dt, node, config ) {
 						}
 					}
-				],
+				],*/
 		columnFilters: [
         'none', 
         'input',

@@ -175,6 +175,7 @@
                             <table class="table table-bordered mt-2" id="invoice-item-table">
                                 <thead class="base_color">
                                     <tr>
+                                        <th>Id_Producto / Nro Oblea</th>
                                         <th>{{ _lang('Name') }}</th>
                                         <th>{{ _lang('Marca y modelo') }}</th>
                                         <th>Nro interno Vehiculo</th>
@@ -186,6 +187,9 @@
                                 <tbody id="invoice">
                                     @foreach ($invoice->invoice_items as $item)
                                         <tr id="product-{{ $item->item_id }}">
+											<td>
+                                                <b>{{ $item->product->id }}/{{ $item->product->nro_oblea }}</b>
+                                            </td>
                                             <td>
                                                 <b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
                                             </td>
@@ -354,7 +358,7 @@
                                 <table class="table table-bordered" id="invoice-payment-history-table">
                                     <thead class="base_color">
                                         <tr>
-                                            <td colspan="6" class="text-center"><b>{{ _lang('Historial devoluciones') }}</b>
+                                            <td colspan="4" class="text-center"><b>{{ _lang('Historial devoluciones') }}</b>
                                             </td>
                                         </tr>
                                         <tr>
@@ -378,7 +382,7 @@
                                                     $html = '';
                                                     if (!empty($dev->sales_return_items)) {
                                                         foreach ($dev->sales_return_items as $pieza) {
-                                                            $html .= (($pieza->company_id == 1) ? 'PM-' : 'PC-') . $pieza->product_id . ") "   .  $pieza->item->item_name . '<br>';
+                                                            $html .=  '('. (($pieza->company_id == 1) ? 'PM-' : 'PC-') . $pieza->product_id . ") "   .  $pieza->product->item->item_name . '<br>';
                                                         }
                                                     }
                                                     echo $html;

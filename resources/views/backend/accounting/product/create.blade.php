@@ -32,7 +32,7 @@
                                 <div class="form-group">
 								<!--<a id="productLink" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
 						<label class="control-label">{{ _lang('Producto en vehiculo') }}</label>
-                                    <label class="control-label">Productos</label>
+                                    <label class="control-label">Productos (Listado Predefinido)</label>
 									<select id="item_id" required name="item_id" class="form-control select2" style="width: 100%;">
 							</select>
                             <!--        <select id="item_id" name="item_id" required class="form-control select2">

@@ -18,6 +18,11 @@ class SalesReturnItem extends Model
         return $this->belongsTo('App\Item',"product_id")->withDefault();
     }
 	
+	 public function product()
+    {
+        return $this->belongsTo('App\Product',"product_id")->withDefault();
+    }
+	
 	public function taxes()
     {
         return $this->hasMany('App\SalesReturnItemTax',"sales_return_item_id");

@@ -220,7 +220,7 @@
                                         <th>{{ _lang('Estado Actual') }}</th>
                                         {{-- <th>{{ _lang('Observaciones') }}</th> --}}
                                         <th>{{ _lang('Usuario') }}</th>
-                                        <th class='notexport'>{{ _lang('Actions') }}</th>
+                                        <th>{{ _lang('Actions') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -236,6 +236,10 @@
 @endsection
 
 @section('js-script')
+    {{-- <script src="https://code.jquery.com/jquery-3.5.1.js"></script> --}}
+    {{-- <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script> --}}
+    {{-- <script src="https://cdn.datatables.net/fixedheader/3.2.3/js/dataTables.fixedHeader.min.js"></script> --}}
+    {{-- <script src="{{ asset('public/backend/assets/js/ajax-datatable/tramitador.js') }}"></script> --}}
     <script>
         let ejecuting = false;
         let checkpoint_list_table = false;
@@ -371,46 +375,8 @@
                 }
 
             });
-			
-		let checkpoints_vehiculos_table = $('#checkpoints_vehiculos_table').appTable({
-		title:"checkpoints_vehiculos",
-        ajax: {
-                    url: "{{ route('checkpoints_vehiculos.get_table_data') }}",
-                    type: 'POST',
-                    data: {
-                        'vehiculo_id': vehiculo_id
-                    },
-                },
-				visibleButtonsGlobal : false,
-       columns: [{
-                        data: 'numero',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'nombre',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'status',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'user',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'action',
-                        orderable: false,
-                        searchable: false
-                    },
-                ],
-    });
 
-         /*   let checkpoints_vehiculos_table = $('#checkpoints_vehiculos_table').DataTable({
+            let checkpoints_vehiculos_table = $('#checkpoints_vehiculos_table').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
@@ -487,7 +453,7 @@
                     $(this.api().columns().header()).css('min-width', '0');
                     $(this.api().table().container()).css('width', '100%');
                 }
-            });*/
+            });
 
 
             $(document).on('click', '#save04d', function(e) {

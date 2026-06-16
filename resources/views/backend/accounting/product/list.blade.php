@@ -34,10 +34,11 @@
                                 <th>{{ _lang('Modelo') }}</th>
                                 <th>{{ _lang('nº motor') }}</th>
                                 <th>{{ _lang('nº oblea') }}</th>
-                                <th>{{ _lang('Deposito') }}</th>
+                                <th style="width: 200px; min-width: 200px;">{{ _lang('Deposito') }}</th>
                                 <th>{{ _lang('Ubicacion') }}</th>
                                 <th>{{ _lang('Descripcion') }}</th>
                                 <th>{{ _lang('Publicado ML') }}</th>
+								<th >{{ _lang('Reparaciones') }}</th>
                                 <th class="act">{{ _lang('Accciones disponibles') }}</th>
                                 <th class="text-center act">Lote</th>
                             </tr>
@@ -96,6 +97,7 @@
                     { data: 'ubicacion', name: 'ubicacion' },
                     { data: 'description', name: 'description' },
                     { data: 'mercado_libre', name: 'mercado_libre' },
+                    { data: 'reparaciones', name: 'reparaciones' },
                     { data: 'action', name: 'action',  searchable: false, orderable: false},
                      {
                         data: null,
@@ -117,7 +119,7 @@
             orderCellsTop: true,
 			pageLength: 10,
 			//lengthMenu: [10, 20, 50, 100, 200, 500],
-			lengthMenu: [[ 10, 20, 50, 500, 1000 ], [10, 20,50, 500, 1000 ]],
+			lengthMenu: [[ 10, 20, 50, 500], [10, 20,50, 500]],
 			autoWidth: false,
             buttons: [
                 {
@@ -414,7 +416,7 @@
                 var title = $(this).text();
                 //$(this).html('<input type="text" placeholder="Search" />');
 				
-				if(i < 14) {
+				if(i < 15) {
 						
 						$(this).html( '<input class="filtros" style="width:100%;" type="text" placeholder="' + title + '" />' );
 				 
@@ -555,7 +557,7 @@
 					
 					
 				}else{
-					if (i == 15) {
+					if (i == 16) {
                         $(this).html('<input type="checkbox" id="select-all">');
                     }else{
 						$(this).html('');
@@ -825,6 +827,37 @@
         body: JSON.stringify({ 
                 id: itemId, 
                 nro_oblea: nro_oblea 
+            })
+    })
+
+       
+    const data = await response.json();
+    closeLoading();
+	//console.log(data);
+
+    /*if (typeof table !== 'undefined' && table !== null) {
+            table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
+        }
+	*/	
+        
+    }
+	
+	
+	async function ActualizarDeposito(id) {
+        inicioLoading();
+		 const itemId = id;
+		  const deposito= $("#prod_depo_id-"+itemId).val();
+		 
+		 const response = await fetch('{{ route("actualizaStockitems") }}',{
+        headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            },
+        method: 'POST',
+        body: JSON.stringify({ 
+                id: itemId, 
+                campo: 'idDeposito', 
+                valor: deposito 
             })
     })
 

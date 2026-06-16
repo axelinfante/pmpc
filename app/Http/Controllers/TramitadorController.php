@@ -176,7 +176,9 @@ class TramitadorController extends Controller
             'modelos'
         ]);
     }
-    public function update(Request $request)
+	
+	
+	public function update(Request $request)
     {
         $company_id = company_id();
         $vehiculo_id = $request->input('vehiculo_id');
@@ -186,18 +188,105 @@ class TramitadorController extends Controller
             ->first();
         $CheckpointVehiculo = CheckpointVehiculo::where('vehiculo_id', $vehiculo_id)->where('checkpoint_id', $checkpoint_id)->first();
 
-        // if (($checkpoint_id < 8) && ($CheckpointVehiculo->status != $request->input('status'))) {
-        //     $checkpoint_id_siguiente = $checkpoint_id + 1;
-        //     $statusSiguiente = CheckpointVehiculo::where('vehiculo_id', $vehiculo_id)->where('checkpoint_id', $checkpoint_id_siguiente)->first();
-        //     if ($statusSiguiente) {
-        //         if ( ($statusSiguiente->status == 'completado' || $statusSiguiente->status == 'iniciado') && $checkpoint_id != 2){
-        //             // rechazo
-        //             return response()->json(['result' => 'error', 'action' => 'update', 'message' => 'Este paso no se puede realizar, hay procesos posteriores iniciados o complatados']);
-        //         }
-        //     } else {
-        //         return response()->json(['result' => 'error', 'action' => 'update', 'message' => 'Este paso no se puede realizar, hay procesos posteriores iniciados o complatados']);
-        //     }
-        // };
+        switch ($checkpoint_id) {
+            case '1':
+                $car->asegurado = $request->input('asegurado');
+                $car->contacto = $request->input('contacto');
+                $car->fecha_confirmacion_contacto =  $request->input('fecha_confirmacion');
+                if (!$car->fecha_inicio) {
+                    $car->fecha_inicio = \Carbon\Carbon::now();
+                }
+                break;
+            case '2':
+                // $car->fecha_limite_retiro = $request->input('fecha_limite_retiro');
+                $car->coordinar_retiro = $request->input('coordinar_retiro');
+                $currentFechaLimiteRetiro = Carbon::parse($car->fecha_limite_retiro);
+                $newFechaLimiteRetiro = Carbon::parse($request->input('fecha_limite_retiro'));
+                if ($currentFechaLimiteRetiro->toDateString() !== $newFechaLimiteRetiro->toDateString()) {
+              //  if (!$currentFechaLimiteRetiro->eq($newFechaLimiteRetiro)) {
+                    $car->fecha_limite_retiro = $newFechaLimiteRetiro;
+                    $avisarRetiros = $request->input('coordinar_retiro');
+                    if ($avisarRetiros) {
+                        $idRol = Role::where('name', 'Retiros')->first()->id;
+                        Notification::send(User::where('role_id', $idRol)->get(), new RetiroVehiculoUpdated($car));
+                    }
+                }
+
+
+                break;
+            case '3':
+                $car->fecha_entrega_asegurado_cia = $request->input('fecha_entrega');
+                $car->entregado_a =  $request->input('entregado_a');
+                break;
+            case '4':
+                $car->gestor = $request->input('gestor');
+                break;
+            case '5':
+                $car->fecha_envio_baja = $request->input('fecha_envio_baja');
+                break;
+            case '6':
+                $car->fecha_recepcion = $request->input('fecha_documento');
+                break;
+            case '7':
+                $car->fecha_envio_doc = $request->input('fecha_envio_doc');
+                break;
+            case '8':
+                $car->fecha_envio_drnpa = $request->input('fecha_envio_drnpa');
+                break;
+            case '9':
+                if ($request->input('status') == 'iniciado')
+                    $car->fecha_finalizacion = Null;
+                else $car->fecha_finalizacion = $request->input('fecha_finalizacion');
+                break;
+            case '10':
+                $car->fecha_inicio_preinforme = $request->input('fecha_inicio_preinforme');
+                $car->fecha_finalizacion_preinforme = $request->input('fecha_finalizacion_preinforme');
+                break;
+            case '11':
+                   // $car->observaciones_tramitadores = $request->input('observaciones');
+                   //$CheckpointVehiculo->observaciones =  $request->input('observaciones');
+                    break;
+             case '12':
+                   $car->fecha_envio_doc = $request->input('fecha_envio_doc');
+                  // $CheckpointVehiculo->observaciones =  $request->input('observaciones');
+                    break; 
+			  case '13':
+                    $car->fecha_entrega_asegurado_cia = $request->input('fecha_entrega');
+					$car->entregado_a =  $request->input('entregado_a');
+					$car->gestor = $request->input('gestor');
+                    break; 		
+			  case '14':
+                    $car->fecha_recepcion = $request->input('fecha_documento');
+					$car->fecha_envio_doc = $request->input('fecha_envio_doc');
+					$car->fecha_envio_doc = $request->input('fecha_envio_doc');
+                    break; 				
+            default:
+                echo "Error Checkpoint no especificado";
+                break;
+        }
+
+        $car->save();
+
+        $CheckpointVehiculo->status =  $request->input('status');
+        $CheckpointVehiculo->observaciones =  $request->input('observaciones');
+        $CheckpointVehiculo->user_id =  auth()->user()->id;
+        $CheckpointVehiculo->status_date =  Carbon::now();
+        $CheckpointVehiculo->save();
+
+        $this->updateCheckPoint($car);
+        return response()->json(['result' => 'success', 'action' => 'update', 'message' => 'Actualizacion Satisfactoria']);
+    }
+	
+	
+    /* public function update(Request $request)
+    {
+        $company_id = company_id();
+        $vehiculo_id = $request->input('vehiculo_id');
+        $checkpoint_id = $request->input('checkpoint_id');
+
+        $car = Cars::where('id', $vehiculo_id)
+            ->first();
+        $CheckpointVehiculo = CheckpointVehiculo::where('vehiculo_id', $vehiculo_id)->where('checkpoint_id', $checkpoint_id)->first();
 
         switch ($checkpoint_id) {
             case '1':
@@ -289,10 +378,9 @@ class TramitadorController extends Controller
         // $car->save();
 
         return response()->json(['result' => 'success', 'action' => 'update', 'message' => 'Actualizacion Satisfactoria']);
-    }
+    } */
     public function checkpointVehiculosGetTramite(Request $request, $vehiculo_id, $checkpoint_id)
     {
-
         // Se comenta para permitir edicion libre
         // if ($checkpoint_id > 1 && $checkpoint_id != 9) {
         //     $checkpoint_id_anterior = $checkpoint_id - 1;
@@ -448,7 +536,7 @@ class TramitadorController extends Controller
                 $buttons = '<div class="btn-group">';
                 $buttons .= '<button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Acciones</button>';
                 $buttons .= '<div class="dropdown-menu action">';
-                $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@show', $car['id']) . '" data-title="' . _lang('Multimedia') . '"><i class="ti-eye"></i> ' . _lang('Multimedia') . '</a>';
+                $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@show', $car['id']) . '" data-reload="false" data-title="' . _lang('Multimedia') . '"><i class="ti-eye"></i> ' . _lang('Multimedia') . '</a>';
                 $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@edit', $car['id']) . '" data-title="' . _lang('Update Vehicle') . '"><i class="ti-pencil"></i> ' . _lang('Update Vehicle') . '</a>';
                 $buttons .= '<a class="dropdown-item" target="_blank" href="' . action('VehiculoController@movimientos', $car['id']) . '" data-title="' . _lang('Ver movimientos') . '"><i class="ti-receipt"></i> ' . _lang('Ver movimientos') . '</a>';
                 $buttons .= '<a class="dropdown-item ajax-modal" href="' . action('VehiculoController@seguimiento', $car['id']) . '" data-title="' . _lang('Ver Estado') . '"><i class="fas fa-search"></i> ' . _lang('Ver Estado') . '</a>';
@@ -646,15 +734,15 @@ class TramitadorController extends Controller
         return Datatables::eloquent($vehiculos_checkpoints)
 
             ->addColumn('numero', function ($vehiculos_checkpoints) {
-
-                return $vehiculos_checkpoints->checkpoint->orden;
+				  static $rowNumber = 0;
+                  return ++$rowNumber;
+                //return $vehiculos_checkpoints->checkpoint->orden;
             })
-
             ->addColumn('nombre', function ($vehiculos_checkpoints) {
 
                 $observaciones=($vehiculos_checkpoints->checkpoint_id==11) ? "<br>$vehiculos_checkpoints->observaciones":"";
 
-                return '<a href=' . route("checkpoints_vehiculos.get_tramite", [$vehiculos_checkpoints->vehiculo_id, $vehiculos_checkpoints->checkpoint_id]) . ' data-status="' . $vehiculos_checkpoints->status . '" data-prev="' . ($vehiculos_checkpoints->checkpoint->orden - 1) . '" data-orden="' . $vehiculos_checkpoints->checkpoint->orden . '" data-title="' . _lang('Procesar') . '" class="ajax-modal">' . $vehiculos_checkpoints->checkpoint->nombre . '</a>'.$observaciones;
+                return '<a href=' . route("checkpoints_vehiculos.get_tramite", [$vehiculos_checkpoints->vehiculo_id, $vehiculos_checkpoints->checkpoint_id]) . ' data-status="' . $vehiculos_checkpoints->status . '" data-prev="' . ($vehiculos_checkpoints->checkpoint->orden - 1) . '" data-orden="' . $vehiculos_checkpoints->checkpoint->orden . '" data-title="' . _lang('Procesar') . '" data-reload="false" class="ajax-modal">' . $vehiculos_checkpoints->checkpoint->nombre . '</a>'.$observaciones;
             })
             ->addColumn('fecha_inicio', function ($vehiculos_checkpoints) {
 
@@ -675,7 +763,7 @@ class TramitadorController extends Controller
                     return '';
                 else
                     return '<div class="action-buttons">'
-                        . '<a href=' . route("checkpoints_vehiculos.get_tramite", [$vehiculos_checkpoints->vehiculo_id, $vehiculos_checkpoints->checkpoint_id]) . ' data-status="' . $vehiculos_checkpoints->status . '" data-prev="' . ($vehiculos_checkpoints->checkpoint->orden - 1) . '" data-orden="' . $vehiculos_checkpoints->checkpoint->orden . '" data-title="' . _lang('Procesar') . '" class="btn btn-warning btn-xs ajax-modal"><i class="far fa-folder"></i></a>'
+                        . '<a href=' . route("checkpoints_vehiculos.get_tramite", [$vehiculos_checkpoints->vehiculo_id, $vehiculos_checkpoints->checkpoint_id]) . ' data-status="' . $vehiculos_checkpoints->status . '" data-prev="' . ($vehiculos_checkpoints->checkpoint->orden - 1) . '" data-orden="' . $vehiculos_checkpoints->checkpoint->orden . '" data-reload="false" data-title="' . _lang('Procesar') . '" class="btn btn-warning btn-xs ajax-modal"><i class="far fa-folder"></i></a>'
                         . '</div>';
             })
 

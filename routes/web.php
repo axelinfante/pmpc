@@ -1020,6 +1020,9 @@ Route::group(["middleware" => ["install"]], function () {
             )->name("products_returns.cancel");
             
             Route::post('products-returns-repair', 'ProductsReturnController@repair')->name('products_returns.repair');
+			
+			Route::get('products-returns/{id}/edit', 'ProductsReturnController@edit')->name('products_returns.edit');
+			Route::post('products-returns-update/{id}', 'ProductsReturnController@update')->name('products_returns.update');
 
             //Tramitadores
 
@@ -1218,6 +1221,12 @@ Route::group(["middleware" => ["install"]], function () {
             "product/printsin-qr/{id}",
             "ProductController@printsinQR",
         )->name("printsin-qr");
+		
+		
+		 // aqui print QR multiple
+       Route::post("product/print-qr-mult", "ProductController@printQR_multi")->name("print-qr-mult");
+		
+		
     });
 
     //Convert Currency

@@ -11,6 +11,8 @@ use App\Quotation;
 use App\QuotationItemTax;
 use App\Transaction;
 use App\Utilities\Overrider;
+use App\SalesReturnItem;
+use App\SalesReturn;
 use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -72,15 +74,21 @@ class ClientController extends Controller {
 			return back()->with('error', _lang('Sorry, Invoice not found !'));
 		}
 
-		$transactions = Transaction::where('invoice_id', $invoice->id)->get();
+//		$transactions = Transaction::where('invoice_id', $invoice->id)->get();
 
 		$company = CompanySetting::where('company_id', $invoice->company_id)->get();
+		
+		$transactions = Transaction::where("invoice_id", $id)->where("amount", '>', 0)->get();
+		$salesReturns = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->get(); // Get all SalesReturns with items
+		$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+		$allReturnItemIds = $salesReturns->pluck('sales_return_items')->flatten()->pluck('product_id')->toArray();
+		
 
 		$template = $invoice->template;
 		if ($invoice->template == "") {
 			$template = "modern";
 		}
-		return view("backend.client_panel.invoice_template.$template", compact('invoice', 'invoice_taxes', 'transactions', 'company'));
+		return view("backend.client_panel.invoice_template.$template", compact('invoice', 'invoice_taxes', 'transactions', 'company','allReturnItemIds','salesReturns','salesReturnstotal'));
 	}
 
 	public function quotations() {
@@ -136,10 +144,25 @@ class ClientController extends Controller {
 			->selectRaw('invoice_item_taxes.*,sum(invoice_item_taxes.amount) as tax_amount')
 			->groupBy('invoice_item_taxes.tax_id')
 			->get();
-		$data['transactions'] = Transaction::where("invoice_id", $id)->get();
+		//$data['transactions'] = Transaction::where("invoice_id", $id)->get();
 		$data['company'] = CompanySetting::where('company_id', $data['invoice']->company_id)->get();
 
 		$template = $data['invoice']->template;
+		
+		
+		$data['transactions'] = Transaction::where("invoice_id", $id)->where("amount", '>', 0)->get();
+		
+		$salesReturns = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->get(); // Get all SalesReturns with items
+		$data['salesReturns'] = $salesReturns;
+		$data['salesReturnstotal'] = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+		$data['allReturnItemIds'] = $salesReturns->pluck('sales_return_items')->flatten()->pluck('product_id')->toArray();
+		
+		//$SalesReturn = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->get(); 
+		//$data['salesReturnstotal']  = $SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+		//$data['allReturnItemIds'] = $salesReturns->pluck('sales_return_items')->flatten()->pluck('product_id')->toArray();
+		
+		//,'salesReturns','allReturnItemIds','salesReturnstotal'
+		
 
 		if ($template == "") {
 			$template = "modern";
@@ -151,7 +174,7 @@ class ClientController extends Controller {
 			//->first();
 			$template = 'modern';
 		}
-
+		
 		$pdf = PDF::loadView("backend.client_panel.invoice_template.pdf.$template", $data);
 		$pdf->setWarnings(false);
 

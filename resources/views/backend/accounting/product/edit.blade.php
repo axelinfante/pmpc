@@ -311,8 +311,9 @@
             let marca_modelo = $('#marca_modelo');
             let result;
             let item_id = $('#item_id');
+			let item_seleccionado=item_id.val();
 
-            if (item_id.val() != '') {
+            /*if (item_id.val() != '') {
                 $.ajax({
                     url: "{{ url('products/item/') }}/" + item_id.val(),
                     dataType: 'json',
@@ -333,15 +334,21 @@
                     }
 
                 })
-            }
+            }*/
 
+			if (item_id.val() != '') {
+				item_id.change();
+			}
+	
+	
          
             item_id.change(function(e) {
+			//	console.log(item_seleccionado);
                 $.ajax({
                     url: "{{ url('products/item/') }}/" + item_id.val(),
                     dataType: 'json',
                     success: function(res) {
-                        console.log(res);
+                        //console.log(res);
                         let contNroMotor = $('#contNroMotor');
                         if (res && (res.item_name == 'Motor Semiarmado Con Accesorios' || res
                                 .item_name == 'Motor Semiarmado Sin Acesorios')) {
@@ -358,7 +365,8 @@
 
                 })
             })
-            marca.change(function() {
+     
+				marca.change(function() {
                 let modelo_id= modelo.val();
                 modelo.html(`<option selected value="">{{ _lang('Select One') }}</option>`);
                 //console.log(marca.val())
@@ -385,7 +393,7 @@
 
                         modelo.html(html);
                        // result = res;
-                        console.log(result);
+                        //console.log(result);
 
                         let modeloAjax = result.find(r => r.idModelo == modelo.val() && r.idMarca == marca.val());
                     if (modeloAjax)
@@ -399,7 +407,7 @@
             modelo.change(function() {
                 marca_modelo.val('');
 
-                console.log(result);
+                //console.log(result);
 
                 //console.log(result.find(r => r.idModelo == modelo.val() && r.idMarca == marca.val()));
                 let modeloAjax = result.find(r => r.idModelo == modelo.val() && r.idMarca == marca.val());
@@ -413,7 +421,7 @@
 			
 			
 			
-			 $('#item_id').select2({
+	  $('#item_id').select2({
         placeholder: 'Escribe el modelo o producto...',
         minimumInputLength: 2,
         allowClear: true,
@@ -426,7 +434,9 @@
                 return {
                     q: params.term,          
                     page: params.page || 1,  
-                    nro_interno:  $('#nro_interno').val()
+                    nro_interno:  $('#nro_interno').val(),
+                    currentId:  item_seleccionado
+					
                 };
             },
             processResults: function (data, params) {
@@ -449,7 +459,6 @@
 
     $('#item_id').on('select2:select', function (e) {
         let datosProducto = e.params.data; 
-        
         if (!datosProducto.id) return; 
     });
 			

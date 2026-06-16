@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>{{ get_option('site_title', 'ElitKit Invoice') }}</title>
+<title>{{ get_option('site_title', 'PMPC') }}</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -178,6 +178,7 @@ if ($pagos->type == 'income') {
         <table class="table table-bordered mt-2" id="invoice-item-table">
              <thead class="base_color">
                  <tr>
+				 	<th>Id_Producto / Nro Oblea</th>
                     <th>{{ _lang('Name') }}</th>
                     <th>{{ _lang('Marca y modelo') }}</th>
                     <th>Nro interno Vehiculo</th>
@@ -190,7 +191,9 @@ if ($pagos->type == 'income') {
              <tbody id="invoice">
                  @foreach($invoice->invoice_items as $item)
                      <tr id="product-{{ $item->item_id }}">
-                                        
+                                        <td>
+                                                <b>{{ $item->product->id }}/{{ $item->product->nro_oblea }}</b>
+                                            </td>
                                         <td>
                                             <b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
                                         </td>
@@ -234,6 +237,15 @@ if ($pagos->type == 'income') {
                                             </tr>
                                            @endif       
                                 --}}
+								
+								 @if (in_array(($item->product->id ?? 0),$allReturnItemIds))
+                                        <tr>
+                                            <td colspan="2">
+                                                <small>{{ "Producto Devuelto" }}</small>
+                                            </td>
+                                            <td colspan="4"></td>   
+                                        </tr>
+                                        @endif  
 
                  @endforeach
              </tbody>
@@ -266,61 +278,134 @@ if ($pagos->type == 'income') {
                     </td>
                 </tr>
                 <tr>
-                    <td>{{ _lang('Total Paid') }}</td>
-                    <td class="text-right">
-                        <span>{!! strip_tags(decimalPlace($paid, $currency)) !!}</span>
-                        @if($client_currency != $base_currency)
-                            <br><span>{!! strip_tags(decimalPlace(convert_currency($base_currency, $client_currency, $paid), get_currency_symbol($client_currency))) !!}</span>
-                        @endif
-                    </td>
-                </tr>
-                @if($invoice->status != 'Paid')
-                    <tr>
-                        <td>{{ _lang('Amount Due') }}</td>
-                        <td class="text-right">
-                            <span>{!! strip_tags(decimalPlace(($invoice->grand_total - $paid), $currency)) !!}</span>
-                            @if($client_currency != $base_currency)
-                                <br><span>{!! strip_tags(decimalPlace(convert_currency($base_currency, $client_currency, ($invoice->grand_total - $paid)), get_currency_symbol($client_currency))) !!}</span>
-                            @endif
-                        </td>
-                    </tr>
-                @endif
+                                        <td>{{ _lang('Total Cobrado') }}</td>
+                                        <td class="text-right">
+                                            <span style="{{ $invoice->grand_total - $paid < 0 ? 'color: #ff0000; font-weight: bold;' : '' }}">
+                                                {{ decimalPlace($paid, $currency) }}
+                                            </span>
+
+                                            @if ($client_currency != $base_currency)
+                                                <br><span>{{ decimalPlace(convert_currency($base_currency, $client_currency, $paid), currency($client_currency)) }}</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+									 @if (!$salesReturns->isEmpty())
+                                        <tr>
+                                        <td>{{ _lang('Devoluciónes') }}</td>
+                                        <td class="text-right">
+                                            <span>{{ decimalPlace($salesReturnstotal, $currency) }}</span>
+                                        </td>
+                                    </tr>   
+                                    @endif
+                                   @if ($invoice->status != 'Paid')
+                                        <tr>
+                                            <td>{{ _lang('Amount Due')}}</td>
+                                            <td class="text-right">
+                                                @php
+                                                    $amount_due = $invoice->grand_total - $paid - ($salesReturnstotal ?? 0);
+                                                @endphp
+                                                <span style="{{ $amount_due < 0 ? 'color: #ff0000; font-weight: bold;' : '' }}">
+                                                    {{ decimalPlace($amount_due, $currency) }}
+                                                </span>
+                                                @if ($client_currency != $base_currency)
+                                                    <br>
+                                                    @php
+                                                        $converted_amount_due = convert_currency(
+                                                            $base_currency,
+                                                            $client_currency,
+                                                            $amount_due,
+                                                        );
+                                                    @endphp
+                                                    <span style="{{ $converted_amount_due < 0 ? 'color: #ff0000; font-weight: bold;' : '' }}">
+                                                        {{ decimalPlace($converted_amount_due, currency($client_currency)) . "----" }}
+                                                    </span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endif
             </tbody>
         </table>
      </div>
      <div class="clearfix"></div>
+	 
+	  <div class="clearfix"></div>
 
-     @if( ! $transactions->isEmpty() )
-        <div>
-            <table class="table table-bordered" id="invoice-payment-history-table">
-                <thead class="base_color">
-                    <tr>
-                       <td colspan="5" class="text-center"><b>{{ _lang('Payment History') }}</b></td>
-                    </tr>
-                    <tr>
-                        <th>{{ _lang('Date') }}</th>
-                        <th>{{ _lang('Account') }}</th>
-                        <th class="text-right">{{ _lang('Amount') }}</th>
-                        <th class="text-right">{{ _lang('Base Amount') }}</th>
-                        <th>{{ _lang('Payment Method') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($transactions as $transaction)
-                        <tr id="transaction-{{ $transaction->id }}">
-                            <td>{{ date($date_format, strtotime($transaction->trans_date)) }}</td>
-                            <td>{{ $transaction->account->account_title.' - '.$transaction->account->account_currency }}</td>
-                            <td class="text-right">{!! strip_tags(decimalPlace($transaction->amount, get_currency_symbol($transaction->account->account_currency))) !!}</td>
-                            <td class="text-right">{!! strip_tags(decimalPlace($transaction->base_amount, $currency)) !!}</td>
-                            
-                            <td>{{ $transaction->payment_method->name == 'Abono cc'? 'Saldo a Favor Cliente': $transaction->payment_method->name}}</td>
+                        @if (!$transactions->isEmpty())
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="invoice-payment-history-table">
+                                    <thead class="base_color">
+                                        <tr>
+                                            <td colspan="5" class="text-center"><b>{{ _lang('Payment History') }}</b>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>{{ _lang('Date') }}</th>
+                                            <th>{{ _lang('Account') }}</th>
+                                            <th class="text-right">{{ _lang('Amount') }}</th>
+                                            <th class="text-right">{{ _lang('Tasa') }}</th>
+                                            <th>{{ _lang('Payment Method') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($transactions as $transaction)
+                                            <tr id="transaction-{{ $transaction->id }}">
+                                                <td>{{ date($date_format, strtotime($transaction->trans_date)) }}</td>
+                                                <td>{{ $transaction->account->account_title . ' - ' . $transaction->account->account_currency }}
+                                                </td>
+                                                <td class="text-right">
+                                                    {{ decimalPlace($transaction->amount, currency($transaction->account->account_currency)) }}
+                                                </td>
+                                                <td class="text-right">
+                                                    {{ decimalPlace($transaction->tasa, currency($transaction->account->account_currency)) }}
+                                                </td>
+                                                <td>{{ $transaction->payment_method->name == 'Abono cc'? 'Saldo a Favor Cliente': $transaction->payment_method->name}}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                        @if (!$salesReturns->isEmpty())
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="invoice-payment-history-table">
+                                    <thead class="base_color">
+                                        <tr>
+                                            <td colspan="4" class="text-center"><b>{{ _lang('Historial devoluciones') }}</b></td>
+                                        </tr>
+                                        <tr>
+                                            <th>{{ _lang('Nro') }}</th>
+                                            <th>{{ _lang('Date') }}</th>
+                                            <th>{{ _lang('Observaciones') }}</th>
+                                            <th>{{ _lang('Productos') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @php $total=0; @endphp
+                                        @foreach ($salesReturns as $dev)
+                                            <tr id="transaction-{{ $dev->id }}">
+                                                <td>{{ $dev->id }}</td>
+                                                <td>{{ date($date_format, strtotime($dev->return_date)) }}</td>
+                                                <td>{{ $dev->note }}</td>
+                                                <td>
+                                                    @php
+                                                    $total+=$dev->grand_total;
+                                                    $html = '';
+                                                    if (!empty($dev->sales_return_items)) {
+                                                        foreach ($dev->sales_return_items as $pieza) {
+                                                            $html .=  '('. (($pieza->company_id == 1) ? 'PM-' : 'PC-') . $pieza->product_id . ") "   .  ($pieza->product->item->item_name  ?? '') . '<br>';
+                                                        }
+                                                    }
+                                                    echo $html;
+                                                    @endphp
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
 
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-     @endif
+    
      {{-- @if($invoice->note  != '') --}}
         {{-- @endif --}}
 
@@ -332,11 +417,12 @@ if ($pagos->type == 'income') {
             </div>
         </div>
      @endif
-     @if(get_company_field($invoice->company_id,'invoice_footer') != '')
-        <div>
-            <div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id,'invoice_footer')) !!}</div>
-        </div>
-     @endif
+     <div>
+								<div class="invoice-note">Nota: Saldo parcial , solo valido con resumen de cuenta corriente</div>
+							  @if (get_company_field($invoice->company_id, 'invoice_footer') != '')
+                                <div class="invoice-note">{!! xss_clean(get_company_field($invoice->company_id, 'invoice_footer')) !!}</div>
+							  @endif
+                            </div>
      </div>
 </body>
 </html>

@@ -35,7 +35,7 @@ public function show()
 		 $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();	
 		 
 		 
-	 	 $ordenes = OrdenDespacho::select('*')->whereIn('company_id', $company_id)
+	 /*	 $ordenes = OrdenDespacho::select('*')->whereIn('company_id', $company_id)
 		 //->where('invoice_id', '6850')
 		 //->whereIn('company_id', $company_id)
 		 ->orderBy('created_at', 'desc')
@@ -47,7 +47,25 @@ public function show()
 		->whereColumn('ordenes_desarme.id_venta', 'ordenes_despacho.invoice_id')
 		//->where('ordenes_desarme.id_venta', 'ordenes_despacho.invoice_id')
 		->whereRaw("(ordenes_desarme.`estado` != 'completado' OR ordenes_desarme.`estado` is NULL)")
-		->limit(1), 'items_pendientes');
+		->limit(1), 'items_pendientes');*/
+		
+		$ordenes = OrdenDespacho::select('ordenes_despacho.*') 
+    ->whereIn('company_id', $company_id)
+    ->orderBy('created_at', 'desc')
+    ->selectSub(function ($query) {
+        $query->selectRaw("GROUP_CONCAT(CONCAT('(', products.id, ') ', items.item_name))")
+            ->from('ordenes_desarme')
+            ->join('products', 'products.id', '=', 'ordenes_desarme.product_id')
+            ->join('items', 'items.id', '=', 'products.item_id')
+            ->join('invoices', 'invoices.id', '=', 'ordenes_desarme.id_venta')
+            ->where('invoices.status', '!=', 'Canceled')
+            ->whereColumn('ordenes_desarme.id_venta', 'ordenes_despacho.invoice_id')
+            ->where(function ($sub) {
+                $sub->where('ordenes_desarme.estado', '!=', 'completado')
+                    ->orWhereNull('ordenes_desarme.estado');
+            });
+    }, 'items_pendientes');
+
 		 
 		return DataTables::eloquent($ordenes)
 		  ->addColumn('checkbox', function ($orden) {
@@ -269,7 +287,7 @@ public function show()
                 return $orden->observaciones ?? '';
             })
             ->addColumn('acciones_cotizacion', function ($orden) {
-                return $orden->cotizacion->acciones ?? 'Sin información';
+                return $orden->cotizacion->acciones ?? '';
             })
             ->addColumn('guia', function ($orden) {
                 if (!empty($orden->foto_guia) && file_exists(public_path('uploads/ordenes/' . $orden->foto_guia))) {

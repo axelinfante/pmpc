@@ -1061,7 +1061,8 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
         $validator = Validator::make($request->all(), [
 			'dominio' => 'nullable|unique:cars',
-			'siniestro' => 'nullable|unique:cars'
+			'siniestro' => 'nullable|unique:cars',
+			'imagen_recepcion.*'          => ['mimes:jpg,jpeg,png,gif,svg']
             //'name' => 'required',
             //'client_id' => 'required',
             //'billing_type' => 'required',
@@ -1193,7 +1194,13 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $project->observacion_gerente_operario = $request->input('observacion_gerente_operario)');
             }
             //video
-            if ($request->file('video', null)) {
+       
+	   /*if ($request->file('video', null)) {
+                $nombre = $this->uploadVideo($request);
+                $project->video = $nombre;
+            }*/
+			
+			if ($request->file('video', null)) {
                 $nombre = $this->uploadVideo($request);
                 $project->video = $nombre;
             }
@@ -1213,13 +1220,28 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $idRol = Role::where('name', 'Retiros')->first()->id;
                 Notification::send(User::where('role_id', $idRol)->get(), new RetiroVehiculoUpdated($project));
             }
-            if (!empty($request->file('imagen'))) {
+            /*if (!empty($request->file('imagen'))) {
+                $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
+            }*/
+			
+			if (!empty($request->file('imagen'))) {
+				$path = public_path('uploads/vehiculos');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 
-            if (!empty($request->file('imagen_recepcion'))) {
+            /*if (!empty($request->file('imagen_recepcion'))) {
+                $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
+            }*/
+			
+			
+			 if (!empty($request->file('imagen_recepcion'))) {
+				$path = public_path('uploads/vehiculos');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
+			
+			
 
             $piezasAusentes = $request->input('piezasAu', false);
 
@@ -1485,7 +1507,10 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             //->where('company_id', company_id())
             ->first();
         //dd($car);
-
+			 //$this->crearCheckPoint($car);
+			 //dd();
+			
+			
         if ($car->company_id != auth()->user()->company_id && strtolower(auth()->user()->role->name) == 'actualización de estados') {
             if ($request->ajax()) {
                 return new Response('<h5 class="text-center red">' . _lang('No puede hacer cambios de otras compañías !') . '</h5>');
@@ -2226,7 +2251,60 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
         return response()->json($marca_modelo);
     }
-    public function crearCheckPoint($car)
+
+	
+	  public function crearCheckPoint($car)
+    {
+		
+	try {
+			$now = Carbon::now()->toDateTimeString();
+			$userId = Auth::id() ?? 1; 
+			$ids = "1,2,5,10,11,12,13,14";
+			//$idsArray = explode(',', $ids);
+			DB::statement("
+				INSERT INTO vehiculos_checkpoints (
+					vehiculo_id, 
+					checkpoint_id, 
+					start_date, 
+					end_date, 
+					observaciones, 
+					user_id, 
+					status, 
+					status_date, 
+					created_at, 
+					updated_at
+				)
+				SELECT 
+					:vehiculo_id AS vehiculo_id,
+					c.id AS checkpoint_id,
+					NULL AS start_date,
+					NULL AS end_date,
+					'' AS observaciones,
+					:user_id AS user_id,
+					'pendiente' AS status,
+					:status_date AS status_date,
+					:created_at AS created_at,
+					:updated_at AS updated_at
+				FROM checkpoints c
+				WHERE c.id in ($ids)
+			", [
+				'vehiculo_id' => $car->id,
+				'user_id'     => $userId,
+				'status_date' => $now,
+				'created_at'  => $now,
+				'updated_at'  => $now
+			]);
+			
+
+			Log::info("¡Inicialización masiva de checkpoints en 'pendiente' completada!");
+				} catch (\Exception $e) {
+					//dd($e->getMessage());
+					Log::error('Error updating car status for car ID ' . $car->id . ': ' . $e->getMessage());
+				}
+			}
+	
+	
+ /*   public function crearCheckPoint($car)
     {
         // Fetch all checkpoints
         $checkpoints = Checkpoint::all();
@@ -2357,7 +2435,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             Log::error('Error updating car status for car ID ' . $car->id . ': ' . $e->getMessage());
         }
     }
-
+*/
     public function updateCheckPoint($car)
     {
         // Fetch all checkpoints
