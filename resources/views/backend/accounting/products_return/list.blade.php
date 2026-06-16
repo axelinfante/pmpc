@@ -35,6 +35,7 @@
                                 <th>{{ _lang('Numero de Venta') }}</th>
                                 <th>{{ _lang('Client') }}</th>
                                 <!-- <th>{{ _lang('Numero del Producto') }}</th> -->
+                                 <th>{{ _lang('Numero Interno') }}</th> 
                                 <th>{{ _lang('Nombre del Producto') }}</th>
                                 {{-- <th class="text-right d-none">{{ _lang('Cantidad') }}</th> --}}
                                 <th>{{ _lang('Motivo') }}</th>
@@ -83,6 +84,7 @@
 						{ data: 'invoice_id', name: 'invoice_id' },
 						{ data: 'client', name: 'client' },
 						// { data: 'product_id', name: 'product_id' },
+                        { data: 'internal_reference', name: 'internal_reference' },
 						{ data: 'product_name', name: 'product_name' },
 						//{ data: 'quantity', name: 'quantity', className: 'd-none' },
 						{ data: 'note', name: 'note' },
