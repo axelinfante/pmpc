@@ -2,10 +2,10 @@
     'id',                   // ID único del Dropzone (ej: dropzone-video)
     'name' => 'imagen',                 // Nombre del campo que recibirá Laravel (ej: video_principal)
     'label' => 'Galeria de Imagenes',                // Texto de la etiqueta superior
-	'url',                  // <-- 1. DECLARA LA PROPIEDAD AQUÍ
+    'url',                  // Ruta para procesar el dropzone
     'type' => 'images',     // Tipo de carga: 'video' o 'images'
     'message' => 'Arrastra tus archivos aquí o haz clic', // Mensaje de la zona
-    'maxFiles' => 20,       // Límite de archivos
+    'maxFiles' => 20,       // Límite de archivos. Si es 1, actúa como "Simple Video"
     'maxSize' => 20,         // Tamaño máximo en MB
     'serverFiles' => []     // Archivos precargados desde el servidor (Edición)
 ])
@@ -32,12 +32,14 @@
         border-color: #0d6efd;
         background-color: #e9ecef;
     }
+    /* Estilo para Un Solo Video (Formato horizontal extendido) */
     .dropzone-drag-area.zone-single-video { 
         height: auto; 
         aspect-ratio: 21 / 9; 
         align-items: center; 
         justify-content: center; 
     }
+    /* Estilo para Múltiples elementos (Formato Cuadrícula/Galería) */
     .dropzone-drag-area.zone-gallery { 
         min-height: 140px; 
         height: auto; 
@@ -64,6 +66,7 @@
         border-radius: 8px; 
         overflow: hidden; 
     }
+    /* Si es video único, la miniatura cubre toda la zona de arrastre */
     .zone-single-video .dz-preview { 
         width: 100%; 
         height: 100%; 
@@ -136,9 +139,8 @@
 <div class="form-group mb-4">
     <label class="form-label text-muted opacity-75 fw-medium">{{ $label }}</label>
     
-    <!-- Contenedor dinámico Dropzone -->
     <div id="{{ $id }}" 
-         class="dropzone-drag-area {{ $type === 'video' ? 'zone-single-video' : 'zone-gallery' }}"
+         class="dropzone-drag-area {{ ($type === 'video' && (int)$maxFiles === 1) ? 'zone-single-video' : 'zone-gallery' }}"
          data-name="{{ $name }}"
          data-type="{{ $type }}"
          data-max-files="{{ $maxFiles }}"
@@ -154,7 +156,6 @@
         </div>
     </div>
 
-    <!-- Inputs ocultos para rastrear borrados en modo edición -->
     <div id="removed-container-{{ $id }}"></div>
 </div>
 
@@ -164,84 +165,114 @@
 @endonce
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    let removedFiles = [];
-    
-    // Plantillas de previsualización según el tipo
-    const previewTemplate = @json($type) === 'video' ? `
-        <div class="dz-preview dz-file-preview">
-            <div class="dz-photo"><video class="dz-video-thumbnail" muted autoplay loop playsinline></video></div>
-            <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
-            <div class="dz-error-message"><span data-dz-errormessage></span></div>
-        </div>` : `
-        <div class="dz-preview dz-file-preview">
-            <div class="dz-photo"><img data-dz-thumbnail class="dz-thumbnail" /></div>
-            <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
-            <div class="dz-error-message"><span data-dz-errormessage></span></div>
-        </div>`;
-
-    const dzInstance = new Dropzone("#{{ $id }}", {
-        //url: $("#expense").attr('action'),
-		url: "{{ $url }}", // ruta para procesar el dropzone
-        paramName: "{{ $name }}",
-        acceptedFiles: @json($type) === 'video' ? "video/mp4, video/webm, video/quicktime" : "image/jpeg, image/png, image/webp",
-        maxFilesize: {{ $maxSize }},
-        maxFiles: {{ $maxFiles }},
-        uploadMultiple: @json($type) === 'video' ? false : true,
-        parallelUploads: {{ $maxFiles }},
-        autoProcessQueue: false,
-        previewTemplate: previewTemplate,
-        headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
-        init: function() {
-            const self = this;
-
-            this.on('addedfile', function(file) {
-                // Si es video de un solo archivo, reemplazar el anterior
-                if (@json($type) === 'video' && self.files.length > 1) { 
-                    self.removeFile(self.files[0]); 
-                }
-                
-                // Renderizar miniatura local si es video
-                if (@json($type) === 'video' && file.type.match('video.*') && !file.fromServer) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => { $(file.previewElement).find('.dz-video-thumbnail').attr('src', e.target.result); };
-                    reader.readAsDataURL(file);
-                }
-                $('#{{ $id }}').removeClass('is-invalid');
-            });
-
-            this.on('removedfile', function(file) {
-                if (typeof file.status == 'undefined' || file.status === 'success') {
-                    removedFiles.push(file.name);
-                    let htmlInputs = '';
-                    removedFiles.forEach(name => {
-                        // Enviar el array de eliminados con el prefijo "removed_" seguido del paramName
-                        const isArray = @json($type) === 'video' ? '' : '[]';
-                        htmlInputs += `<input type="hidden" name="removed_{{ $name }}${isArray}" value="${name}" />`;
-                    });
-                    $("#removed-container-{{ $id }}").html(htmlInputs);
-                }
-            });
-
-            // Cargar archivos del servidor si existen
-            const sFiles = {!! json_encode($serverFiles) !!};
-            if(sFiles && sFiles.length > 0) {
-                sFiles.forEach(v => {
-                    var mock = { name: v.name, size: v.filesize, accepted: true, fromServer: true };
-                    self.emit("addedfile", mock);
-                    if(@json($type) === 'video') {
-                        $(mock.previewElement).find('.dz-video-thumbnail').attr('src', v.path);
-                    } else {
-                        self.emit("thumbnail", mock, v.path);
-                    }
-                    self.emit("complete", mock);
-                    self.files.push(mock);
-                });
-            }
+(function() {
+    function initDropzone_{{ Str::slug($id, '_') }}() {
+        if (typeof Dropzone === 'undefined') {
+            setTimeout(initDropzone_{{ Str::slug($id, '_') }}, 50);
+            return;
         }
+
+        const el = document.getElementById("{{ $id }}");
+        if (!el) return;
+        if (el.dropzoneInstance) return;
+
+        let removedFiles = [];
+        const componentType = @js($type ?? 'images');
+        const maxFilesAllowed = parseInt("{{ $maxFiles }}");
+        
+        const previewTemplate = (componentType === 'video' && maxFilesAllowed === 1) ? `
+            <div class="dz-preview dz-file-preview">
+                <div class="dz-photo"><video class="dz-video-thumbnail" muted autoplay loop playsinline></video></div>
+                <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
+                <div class="dz-error-message"><span data-dz-errormessage></span></div>
+            </div>` : (componentType === 'video' ? `
+            <div class="dz-preview dz-file-preview">
+                <div class="dz-photo"><video class="dz-video-thumbnail" muted autoplay loop playsinline></video></div>
+                <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
+                <div class="dz-error-message"><span data-dz-errormessage></span></div>
+            </div>` : `
+            <div class="dz-preview dz-file-preview">
+                <div class="dz-photo"><img data-dz-thumbnail class="dz-thumbnail" /></div>
+                <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
+                <div class="dz-error-message"><span data-dz-errormessage></span></div>
+            </div>`);
+
+        const dzInstance = new Dropzone("#{{ $id }}", {
+            url: "{{ $url }}", 
+            paramName: "{{ $name }}",
+            acceptedFiles: componentType === 'video' ? "video/mp4, video/webm, video/quicktime" : "image/jpeg, image/png, image/webp",
+            maxFilesize: {{ $maxSize }},
+            maxFiles: {{ $maxFiles }},
+            uploadMultiple: maxFilesAllowed === 1 ? false : true, 
+            parallelUploads: {{ $maxFiles }},
+            autoProcessQueue: false,
+            previewTemplate: previewTemplate,
+            headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+            init: function() {
+                const self = this;
+
+                this.on('addedfile', function(file) {
+                    // MANTENER SIMPLE VIDEO: Si está configurado para un solo archivo, limpia el anterior
+                    if (maxFilesAllowed === 1 && self.files.length > 1) { 
+                        self.removeFile(self.files[0]); 
+                    }
+                    
+                    // Renderizar miniatura local si es video
+                    if (componentType === 'video' && file.type.match('video.*') && !file.fromServer) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => { $(file.previewElement).find('.dz-video-thumbnail').attr('src', e.target.result); };
+                        reader.readAsDataURL(file);
+                    }
+                    $('#{{ $id }}').removeClass('is-invalid');
+                });
+
+                this.on('removedfile', function(file) {
+                    if (typeof file.status == 'undefined' || file.status === 'success') {
+                        removedFiles.push(file.name);
+                        let htmlInputs = '';
+                        removedFiles.forEach(name => {
+                            const isArray = maxFilesAllowed === 1 ? '' : '[]';
+                            htmlInputs += `<input type="hidden" name="removed_{{ $name }}${isArray}" value="${name}" />`;
+                        });
+                        $("#removed-container-{{ $id }}").html(htmlInputs);
+                    }
+                });
+
+                // Cargar archivos del servidor si existen
+                const sFiles = {!! json_encode($serverFiles ?? []) !!};
+                if(sFiles && sFiles.length > 0) {
+                    sFiles.forEach(v => {
+                        var mock = { name: v.name, size: v.filesize, accepted: true, fromServer: true };
+                        self.emit("addedfile", mock);
+                        if(componentType === 'video') {
+                            $(mock.previewElement).find('.dz-video-thumbnail').attr('src', v.path);
+                        } else {
+                            self.emit("thumbnail", mock, v.path);
+                        }
+                        self.emit("complete", mock);
+                        self.files.push(mock);
+                    });
+                }
+            }
+        });
+
+        el.dropzoneInstance = dzInstance;
+    }
+
+    // Disparadores de eventos
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initDropzone_{{ Str::slug($id, '_') }});
+    } else {
+        initDropzone_{{ Str::slug($id, '_') }}();
+    }
+
+    $(document).on('shown.bs.modal', function () {
+        initDropzone_{{ Str::slug($id, '_') }}();
     });
 
-    // Guardar la instancia globalmente en el elemento HTML para recuperarla al enviar el formulario
-    document.getElementById("{{ $id }}").dropzoneInstance = dzInstance;
-});
+    if (window.Livewire) {
+        document.addEventListener("livewire:navigated", () => { initDropzone_{{ Str::slug($id, '_') }}(); });
+        Livewire.hook('morph.updated', () => { initDropzone_{{ Str::slug($id, '_') }}(); });
+    }
+})();
 </script>
