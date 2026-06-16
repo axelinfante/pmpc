@@ -80,7 +80,7 @@
 
 
 					 <div class="col mb-2">
-                     	 <a class="btn btn-primary btn-xs ajax-modal" data-title="{{ _lang('Add New Car') }}"
+                     	 <a class="btn btn-primary btn-xs ajax-modal" data-reload="false" data-title="{{ _lang('Add New Car') }}"
 							href="{{ route('vehiculo.create') }}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 	                     </div>
 						 <input type="checkbox" id="regitro_activo" class="toggleCheckbox" />

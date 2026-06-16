@@ -2223,4 +2223,19 @@ public function buscar(Request $request): JsonResponse
 				]);
 }
 
+public function printQR_multi(Request $request)
+			{
+				$ids = $request->input('idsSeleccionados'); 
+				$ids =  explode(",", $ids);
+				if (empty($ids) || !is_array($ids)) {
+					return response()->json([
+						'success' => false,
+						'message' => 'No se recibieron identificadores válidos.'
+					], 400);
+				}
+
+				$productos = Product::whereIn('id', $ids)->get();
+				return view('backend.accounting.product.etiquetaQr_mul', compact('productos'))->render();
+			}
+
 }

@@ -358,7 +358,7 @@
                                 <table class="table table-bordered" id="invoice-payment-history-table">
                                     <thead class="base_color">
                                         <tr>
-                                            <td colspan="6" class="text-center"><b>{{ _lang('Historial devoluciones') }}</b>
+                                            <td colspan="4" class="text-center"><b>{{ _lang('Historial devoluciones') }}</b>
                                             </td>
                                         </tr>
                                         <tr>
@@ -382,7 +382,7 @@
                                                     $html = '';
                                                     if (!empty($dev->sales_return_items)) {
                                                         foreach ($dev->sales_return_items as $pieza) {
-                                                            $html .= (($pieza->company_id == 1) ? 'PM-' : 'PC-') . $pieza->product_id . ") "   .  $pieza->item->item_name . '<br>';
+                                                            $html .=  '('. (($pieza->company_id == 1) ? 'PM-' : 'PC-') . $pieza->product_id . ") "   .  $pieza->product->item->item_name . '<br>';
                                                         }
                                                     }
                                                     echo $html;

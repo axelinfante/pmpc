@@ -45,8 +45,9 @@
 @endphp
 
 
-<form method="post" id="myForm"  class="ajax-submitxx" action="{{ route('vehiculo.store') }}" enctype="multipart/form-data">
+<form method="post" class="ajax-submit" action="{{ route('vehiculo.store') }}" enctype="multipart/form-data">
     {{ csrf_field() }}
+
     <div class="row">
     <div class="col-md-12 bg-warning"  >ASIGNACION DE VEHICULO</div>
     <div class="col-md-3">
@@ -400,7 +401,7 @@
             </div>
         </div>
 
-        <!--<div class="col-md-12 border rounded">
+        <div class="col-md-12 border rounded">
             <div class="form-group">
                 <label for="imagen">Fotos 04D </label>
                 <input {{-- @if (!$receptor) {{ $option }} @endif --}} type="file" class="form-control" id="imagen_recepcion[]"
@@ -408,19 +409,7 @@
             </div>
 
        
-        </div>-->
-		
-								<div class="col-md-12">
-									<x-dropzone-input 
-										id="dropzone-vehiculos" 
-										name="imagen_recepcion"
-										url="{{ url('vehiculo.store') }}"
-										:serverFiles="$recepcionFiles ?? []"
-										label="Galeria de Imagenes 04D"
-										message="Imágenes de 04D"
-									/>
-								</div>
-
+        </div>
 
         <div class="col-md-12">
             <div class="form-group">
@@ -516,41 +505,18 @@
                 <input type="text" class="form-control" name="crp_nro" value="{{ old('crp_nro') }}">
             </div>
         </div>
-       <!-- <div class="col-md-12">
+        <div class="col-md-12">
             <div class="form-group">
                 <label class="control-label">{{ _lang('Video') }}</label>
                 <input type="file" class="form-control" accept="video/*" name="video[]" multiple="multiple" />
             </div>
-        </div>-->
-		
-		<div class="col-md-12">
-									<x-dropzone-input 
-										id="dropzone-videos" 
-										url="{{ url('vehiculo.store') }}"
-										:serverFiles="$videosFiles ?? []"
-										type="video"
-										name="video"
-										maxFiles=5
-									/>
-			</div>
+        </div>
 
-<!--        <div class="col-md-12 mb-3">
+        <div class="col-md-12 mb-3">
             <label for="imagen">Fotos</label>
             <input type="file" class="form-control" accept="image/*" id="imagen[]" name="imagen[]"
                 multiple="">
-        </div>-->
-		
-		<div class="col-md-12">
-									<x-dropzone-input 
-										id="dropzone-fotos" 
-										url="{{ url('vehiculo.store') }}"
-										:serverFiles="$imagenFiles ?? []"
-										label="Galeria de Imagenes"
-										message="Imágenes"
-									/>
-			</div>
-		
-		
+        </div>
         <div class="form-group">
             <label class="control-label">Notificar carga de imagenes <input type="checkbox" name="carga_de_imagen"
                     value="1"></label>
@@ -604,84 +570,6 @@
             source: availableTags
         });
     });
-	
-	
-	$('#myForm').on('submit', function(e) {			  
-    e.preventDefault();
-	var current_modal = $(this).closest('.modal');
-	  var elem = $(this);
-	$('#myForm').find(".print-error-msg").find("ul").empty();
-    $('#myForm').find(".print-error-msg").css('display','none');
-    $(':input[type="submit"]').prop('disabled', true);
-	
-	let masterFormData = new FormData(this);
-    const formMethod = $(this).find('input[name="_method"]').val() || 'POST';
-    masterFormData.append("_method", formMethod);
-	
-	$('.dropzone-drag-area').each(function() {
-        const elementId = $(this).attr('id');
-        const paramName = $(this).data('name');
-        const type = $(this).data('type');
-        const dz = document.getElementById(elementId).dropzoneInstance;
-        if (dz) {
-            let queuedFiles = dz.getQueuedFiles();
-            if (queuedFiles.length > 0) {
-                /*if (type === 'video') {
-                     masterFormData.append(paramName, queuedFiles[0]); 
-                } else {*/
-                    queuedFiles.forEach(file => {
-                     masterFormData.append(`${paramName}[]`, file);
-                    });
-                //}
-            }
-        }
-    });
-	
-	
-	
-	 $.ajax({
-        url: $(this).attr("action"),
-        method: 'POST',
-        data: masterFormData,
-         processData: false,
-            contentType: false,
-			dataType: 'json',
-            cache: false,
-        headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
-        success: function(response) {
-            if(response.result == "success"){
-							$(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
-							$(current_modal).find(".alert-danger").addClass('d-none');
-							 elem[0].reset(); 
-							 $(current_modal).modal('hide');
-                       }else{
-						   
-						    //$("#main_modal .alert-danger").html("");
-							$(current_modal).find(".alert-danger").html("");
-							if (Array.isArray(response['message'])) {
-							if (typeof reload !== 'undefined' && reload != false) {
-								jQuery.each(response['message'], function(i, val) {
-								   $("#main_modal .alert-danger").append("<p class='m-0'>" + val + "</p>");
-								});
-								$("#main_modal .alert-secondary").addClass('d-none');
-								$("#main_modal .alert-danger").removeClass('d-none');
-							} else {
-								jQuery.each(response['message'], function(i, val) {
-								   $(current_modal).find(".alert-danger").append("<p class='m-0'>" + val + "</p>");
-								});
-								$(current_modal).find(".alert-secondary").addClass('d-none');
-								$(current_modal).find(".alert-danger").removeClass('d-none');
-							}
-                      }
-					   } 
-                            setTimeout(function(){  $(':input[type="submit"]').prop('disabled', false); }, 5000); // Habilitar después de 5 segundos
-        },
-        error: function(xhr) {
-            //alert("Error al procesar los componentes multimedia.");
-        }
-    });
-  });	
-	
     $(document).ready(function() {
         let marca = $('#marca');
         let modelo = $('#modelo');
