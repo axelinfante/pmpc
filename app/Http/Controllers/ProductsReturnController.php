@@ -413,6 +413,14 @@ class ProductsReturnController extends Controller
  				return $html;*/
           //  return $ProductReturn->producto->item->item_name."--" ?? '';
         })
+		->editColumn('internal_reference', function ($ProductReturn) {
+		return $ProductReturn->producto->nro_interno ?? ''; 
+	})
+		->filterColumn('internal_reference', function ($query, $keyword) {
+    $query->whereHas('producto', function ($subQuery) use ($keyword) {
+        $subQuery->where('nro_interno', 'like', "%{$keyword}%");
+    });
+})
         ->editColumn('invoice_id', function ($ProductReturn) {
             return $ProductReturn->invoice->invoice_number ?? $ProductReturn->invoice_id;
         })
@@ -537,7 +545,7 @@ class ProductsReturnController extends Controller
             }
             return '';
         })
-		 ->rawColumns(['action','product_name','status','note'])
+		 ->rawColumns(['action','product_name','status','note', 'internal_reference'])
         ->make(true);
 }
 
