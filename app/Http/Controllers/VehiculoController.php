@@ -1061,7 +1061,8 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
         $validator = Validator::make($request->all(), [
 			'dominio' => 'nullable|unique:cars',
-			'siniestro' => 'nullable|unique:cars'
+			'siniestro' => 'nullable|unique:cars',
+			'imagen_recepcion.*'          => ['mimes:jpg,jpeg,png,gif,svg']
             //'name' => 'required',
             //'client_id' => 'required',
             //'billing_type' => 'required',
@@ -1193,7 +1194,13 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $project->observacion_gerente_operario = $request->input('observacion_gerente_operario)');
             }
             //video
-            if ($request->file('video', null)) {
+       
+	   /*if ($request->file('video', null)) {
+                $nombre = $this->uploadVideo($request);
+                $project->video = $nombre;
+            }*/
+			
+			if ($request->file('video', null)) {
                 $nombre = $this->uploadVideo($request);
                 $project->video = $nombre;
             }
@@ -1213,13 +1220,28 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $idRol = Role::where('name', 'Retiros')->first()->id;
                 Notification::send(User::where('role_id', $idRol)->get(), new RetiroVehiculoUpdated($project));
             }
-            if (!empty($request->file('imagen'))) {
+            /*if (!empty($request->file('imagen'))) {
+                $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
+            }*/
+			
+			if (!empty($request->file('imagen'))) {
+				$path = public_path('uploads/vehiculos');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 
-            if (!empty($request->file('imagen_recepcion'))) {
+            /*if (!empty($request->file('imagen_recepcion'))) {
+                $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
+            }*/
+			
+			
+			 if (!empty($request->file('imagen_recepcion'))) {
+				$path = public_path('uploads/vehiculos');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
+			
+			
 
             $piezasAusentes = $request->input('piezasAu', false);
 
