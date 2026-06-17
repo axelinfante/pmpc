@@ -1694,6 +1694,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             $project->fecha_entrega_asegurado_cia = $request->input('fecha_entrega_asegurado_cia');
             $project->idLugar_entrega = $request->input('lugar_entregas');
             $project->idEstado = $request->input('estado');
+			$project->color = $request->input('color');
 
             $video = $request->file('video', false);
             if (!empty($video[0])) {
