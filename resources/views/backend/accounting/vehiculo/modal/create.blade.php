@@ -530,6 +530,7 @@
 										:serverFiles="$videosFiles ?? []"
 										type="video"
 										name="video"
+										label="Galeria de Videos"
 										maxFiles=5
 									/>
 			</div>
