@@ -17,6 +17,7 @@
 			 <div class="form-group">
                                     <label class="control-label">{{ _lang('Nº interno') }}</label>
                                     <select id="nro_interno" name="nro_interno" required class="form-control select2">
+										<option value="">Seleccionar</option>
                                         @foreach ($nro_interno_datos as $interno_row)
                                                         <option value="{{ $interno_row->id }}">{{ nroInternoAlias($interno_row->company_id,$interno_row->tipo_vehiculo,$interno_row->id) }}</option>
                                         @endforeach
@@ -107,7 +108,7 @@
                                             <th >Id_Producto</th>
                                             <th >Estado</th>
                                             <th >Stock</th>
-											<th class="notexport">Accion</th>
+											<th class="notexport">Accion <input type="checkbox" id="qr_master" class="ml-1"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -172,17 +173,61 @@ $(document).ready(function() {
         excel: false,
         print: false
 		},
-		/*customButtons: [{
-                   text: 'Filtrar por: ' +
-                      '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
-                      '<option value="predefinido">Predefinidos</option>' +
-                      '<option value="activos">Activos</option>' +
-                      '</select>',
-                className: 'botones-custom',
-                action: function ( e, dt, node, config ) {
+		customButtons: [
+            {
+                text: '<i class="fas fa-check-square"></i> Multiples Qr',
+                className: 'btn-success', 
+                attr: {
+                    id: 'btn_obtener_datos'
+                },
+                action: function (e, dt, node, config) {
+						var qr_seleccionados = [];
+						_table.$('input.chk-accion:checked').each(function () {
+							var rowData = _table.row($(this).closest('tr')).data();
+							var idTarget = rowData.item_id || rowData[0]; 
+							if (idTarget) {
+								qr_seleccionados.push(rowData.product_id);
+							}
+						});	
+						
+
+						if (qr_seleccionados.length === 0) {
+							alert('Debe seleccionar al menos un valor');
+							return; 
 						}
-					}
-				],*/
+						//console.log("IDs listos para procesar:", qr_seleccionados);
+						
+					var formData = new FormData();
+					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                    formData.append('idsSeleccionados', qr_seleccionados);
+					$.ajax({
+					url: "{{ route('print-qr-mult') }}",						
+					type: "POST",
+					data: formData,
+					processData: false, 
+					contentType: false, 
+					beforeSend: function() {
+                    if (typeof inicioLoading === 'function') inicioLoading();
+					},
+					success: function(response) {
+                    if (typeof response === 'string' || response.html) {
+                        var htmlContenido = response.html ? response.html : response;
+						$('#main_modal .modal-body').html(htmlContenido);
+                        $('#main_modal').modal('show'); 
+                    } 
+                },
+                error: function(xhr) {
+                    console.error("Error al procesar la impresión múltiple:", xhr);
+                    alert('Ocurrió un error al intentar procesar los códigos QR.');
+                },
+                complete: function() {
+                    if (typeof closeLoading === 'function') closeLoading();
+                }
+
+				});
+			  }
+			}	
+		],
 		columnFilters: [
         'none', 
         'input',
@@ -191,6 +236,28 @@ $(document).ready(function() {
         'input',
         'none'
 		],  
+		"columnDefs": [
+    {
+        "targets": 6, 
+        "searchable": false,
+        "orderable": false,
+        "className": 'text-center',
+        "render": function (data, type, row, meta) {
+            
+            if (data && data.trim() !== '') {
+                
+                var rowId = row.id || row[0] || meta.row;
+
+                return '<div class="d-flex align-items-center justify-content-center">' +
+                           '<input type="checkbox" class="chk-accion mr-2" value="' + rowId + '">' +
+                           '<div>' + data + '</div>' +
+                       '</div>';
+            }
+            
+            return ''; 
+        }
+    }
+],
         columns: [
             { data: 'selection', name: 'selection', orderable: false },
             { data: 'item_name', name: 'item_name' },
@@ -201,41 +268,6 @@ $(document).ready(function() {
             { data: 'action', name: 'action', orderable: false, searchable: false },
         ],
     });	
-	
-				/*var _table=$('#tabla_detalle_busqueda').DataTable({
-                processing: true,
-                serverSide: true,
-				destroy: true,
-				width: "auto",
-				autoWidth: false,
-				 ordering: false,
-				//dom: 'Bfrtip',
-				orderCellsTop: true,
-				lengthMenu: [[ 25, 50, 200, 500 ], [25, 50, 200, 500]],
-				///modifier: { selected: true },
-				ajax: ({
-				url : '{{ route('products.table_detalle') }}',
-				method: "POST",
-				data: function (d) {
-						d._token =   "{{ csrf_token() }}";	
-					
-					if($('select[name=nro_interno]').val() != ''){
-						d.nro_interno = $('select[name=nro_interno]').val();
-					}
-                
-				},
-			 error: function (request, status, error) {
-				 console.log(error);
-			 }
-		}),
-                columns: [
-                    { data: 'selection', name: 'selection',  orderable: false   },
-                    { data: 'item_name', name: 'item_name' },
-                    { data: 'id_producto', name: 'id_producto' },
-                    { data: 'stock', name: 'stock' },
-                    { data: 'action', name: 'action' }
-                ]
-            });*/
 		
 
 			$('#seleccionar-todos').on('click', function() {
@@ -388,13 +420,11 @@ $(document).ready(function() {
 			
         }
 				
-				
-				
-				
-				
-				
-				
-				
+			
+		
+			$('#qr_master').on('click', function() {
+				$('.chk-accion').prop('checked', $(this).prop('checked'));
+			});
 				
 			   }); 
 			   
