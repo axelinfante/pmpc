@@ -375,6 +375,17 @@ class VehiculoController extends Controller
         ];*/
 
         $tipo_baja = $this->tipo_baja;
+		
+		$filterData = [];
+			foreach ($tipo_baja as $id => $text) {
+				$filterData[] = [
+					'id'   => $id, // O puedes usar $text si en la DB guardas el string en vez del ID numérico
+					'text' => $text
+				];
+			}
+		
+		
+		
         $responsable_entregas = $this->responsable_entregas;
         $responsable_retiros = User::where('company_id', auth()->user()->company_id)->wherehas('role', function ($string) {
             $string->where('name', 'Transportista')->where('company_id', auth()->user()->company_id);
@@ -383,12 +394,26 @@ class VehiculoController extends Controller
 
         // dd($responsable_retiros);
 
-        //lugar de entregas y estado
-        $lugar_entregas = Lugar_entregas::all();
+		$lugar_entregas = Lugar_entregas::all();
+		$lugar_entregas_data = $lugar_entregas->map(function ($item) {
+		return [
+				'id'   => $item->id,    
+				'text' => $item->nombre, // Asegúrate de que la columna se llame 'nombre' en tu tabla
+			];
+		});
 
         $tipo_vehiculo = $this->TipoVehiculo();
 
         $estados = Estado::select('*')->where('Activo', "Si")->orderBy('estado', 'asc')->get();
+		
+		$estados_data = $estados->map(function ($item) {
+					return [
+						'id'   => $item->id,    
+						'text' => $item->estado,
+					];
+				});
+		
+		
         //Estado::all();
         return compact([
             'estados',
@@ -403,7 +428,10 @@ class VehiculoController extends Controller
             'marcas',
             'modelos',
             'tramitadoresAll',
-            'tipo_vehiculo'
+            'tipo_vehiculo',
+			'filterData',
+			'lugar_entregas_data',
+			'estados_data'
         ]);
     }
 
@@ -1666,6 +1694,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             $project->fecha_entrega_asegurado_cia = $request->input('fecha_entrega_asegurado_cia');
             $project->idLugar_entrega = $request->input('lugar_entregas');
             $project->idEstado = $request->input('estado');
+			$project->color = $request->input('color');
 
             $video = $request->file('video', false);
             if (!empty($video[0])) {
@@ -3801,9 +3830,6 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                     $q->where('name', 'like', "%{$keyword}%");
                 });
             })
-
-
-
             ->editColumn('id', function ($car) {
                 return '<a href="' . action('VehiculoController@show', $car->id) . '" class="btn-xs ajax-modal" data-title=" Multimedia">' . nroInternoAlias($car->company_id, $car->tipo_vehiculo, $car->id) .  '</a>';
             })

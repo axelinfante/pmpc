@@ -1895,6 +1895,7 @@ class ProductController extends Controller
 							});
 					});
 				})
+				->orderBy('item_name', 'asc')
 				->get();
 	
 	
