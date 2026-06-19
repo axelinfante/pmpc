@@ -138,7 +138,7 @@ class OrdenDesarmeController extends Controller
                 }
                 $str->where(function ($row) {
                     // $row-> where('idEstado',6)->orwhere('idEstado',5)->orwhere('idEstado',8);
-                    //$row->where('idEstado', '!=', 1);
+                    $row->where('idEstado', '!=', 1);
                 });
             });
         //dd(strtolower(auth()->user()->role->name) == 'vendedor');
@@ -818,7 +818,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                         $str->where('company_id', auth()->user()->company_id);
                     }
                     $str->where(function ($row) {
-                       // $row->where('idEstado', '!=', 1);
+                        $row->where('idEstado', '!=', 1);
                     });
                 });
             if (strtolower(auth()->user()->role->name) == 'vendedor') {
@@ -1064,7 +1064,7 @@ $ordenes = Orden_desarme::with([
 			}
 			
 			if (!$isHistorial) {
-				//$q->where('idEstado', '!=', 1);
+				$q->where('idEstado', '!=', 1);
 			}
 		});
 
@@ -1342,7 +1342,6 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 						 return '<span>' . $orden->puesto . '</span>';
 					}*/
 					
-					
 					$filteredCompany = $opciones->filter(function ($opcion) use ($orden) {
 						return $opcion->company_id == $orden->venta->company_id;
 					});
@@ -1590,7 +1589,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 }
                 $str->where(function ($row) use ($isHistorial) {
                     if (!$isHistorial){
-                       // $row->where('idEstado', '!=', 1);
+                        $row->where('idEstado', '!=', 1);
 					}
                 });
             });
