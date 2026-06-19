@@ -144,7 +144,7 @@ class SupplierController extends Controller
 			'supplier_name' => 'required|max:191',
             'company_name' => 'nullable|max:191',
             'vat_number' => 'nullable|max:191',
-			'contact_email' => [
+			'email' => [
                 'required',
                 'email',
                 Rule::unique('suppliers')->where('company_id',company_id())->ignore($id),
