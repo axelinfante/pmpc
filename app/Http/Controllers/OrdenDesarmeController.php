@@ -1589,8 +1589,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                         $str->where('company_id', auth()->user()->company_id);
                 }
                 $str->where(function ($row) use ($isHistorial) {
-                    if (!$isHistorial)
+                    if (!$isHistorial){
                        // $row->where('idEstado', '!=', 1);
+					}
                 });
             });
         if (strtolower(auth()->user()->role->name) == 'vendedor') {
