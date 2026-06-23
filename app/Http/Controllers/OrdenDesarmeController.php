@@ -1342,7 +1342,6 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 						 return '<span>' . $orden->puesto . '</span>';
 					}*/
 					
-					
 					$filteredCompany = $opciones->filter(function ($opcion) use ($orden) {
 						return $opcion->company_id == $orden->venta->company_id;
 					});
@@ -1589,8 +1588,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                         $str->where('company_id', auth()->user()->company_id);
                 }
                 $str->where(function ($row) use ($isHistorial) {
-                    if (!$isHistorial)
+                    if (!$isHistorial){
                         $row->where('idEstado', '!=', 1);
+					}
                 });
             });
         if (strtolower(auth()->user()->role->name) == 'vendedor') {
