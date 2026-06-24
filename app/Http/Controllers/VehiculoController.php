@@ -57,6 +57,7 @@ use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Log;
 
+use App\Orden_desarme;
 use App\Notifications\PagosCarCreated;
 use App\Notifications\PagosCarChangePriority;
 use App\Notifications\PagosCarChangeStatus;
@@ -1537,8 +1538,53 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
         //dd($car);
 			 //$this->crearCheckPoint($car);
 			 //dd();
+			 
+			 $recepcionFiles = [];	
+		if ($car && $car->img_recepcion) {
+			$recepcionFiles = $car->img_recepcion->where('img')->map(function ($file) {
+				$path = 'uploads/vehiculos/';
+				$datos_imagen=buscarImagen($path.$file->img, true);
+				return [
+					//'id'       => $file->id,
+					'name'     => $file->img,
+					'filesize' => $datos_imagen['size'], //file_exists($path) ? filesize($path) : ($file->peso ?? 0), 
+					'path'      => $datos_imagen['url'] //asset('storage/' . $file->path)
+				];
+			})->values()->toArray();
+		}
+
+			$recepcionVideos = [];
+			if ($car && $car->video) {
+				$videoArray = array_filter(explode(';', $car->video));
+
+				foreach ($videoArray as $videoName) {
+					$pathBusqueda = "uploads/vehiculos/" . $videoName;
+
+					$datosArchivo = pathArchivoGeneral($pathBusqueda, true);
+
+					$recepcionVideos[] = [
+						'name'     => $videoName,
+						'filesize' => $datosArchivo['size'], 
+						'path'     => $datosArchivo['url']   
+					];
+				}
+			}
 			
-			
+		 $imagenFiles = [];	
+		if ($car && $car->img) {
+			$imagenFiles = $car->img->where('img')->map(function ($file) {
+				$path = 'uploads/vehiculos/';
+				$datos_imagen=buscarImagen($path.$file->img, true);
+				return [
+					//'id'       => $file->id,
+					'name'     => $file->img,
+					'filesize' => $datos_imagen['size'], //file_exists($path) ? filesize($path) : ($file->peso ?? 0), 
+					'path'      => $datos_imagen['url'] //asset('storage/' . $file->path)
+				];
+			})->values()->toArray();
+		}
+		 
+		 	
         if ($car->company_id != auth()->user()->company_id && strtolower(auth()->user()->role->name) == 'actualización de estados') {
             if ($request->ajax()) {
                 return new Response('<h5 class="text-center red">' . _lang('No puede hacer cambios de otras compañías !') . '</h5>');
@@ -1549,6 +1595,10 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
         $comp = Company::all();
         $datos['cias'] = $comp;
+        $datos['recepcionFiles'] = $recepcionFiles;
+        $datos['recepcionVideos'] = $recepcionVideos;
+        $datos['imagenFiles'] = $imagenFiles;
+
         if (!$request->ajax()) {
             return view('backend.accounting.vehiculo.edit', compact('car', 'id'))->with($datos);
         } else {
@@ -1566,17 +1616,53 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
      * @param  int $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+	 
+	 public function update(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            //        'name' => 'required',
-            //        'client_id' => 'required',
-            //        'billing_type' => 'required',
-            //        'status' => 'required',
-            //        'fixed_rate' => 'required_if:billing_type,fixed',
-            //        'hourly_rate' => 'required_if:billing_type,hourly',
-            //        'start_date' => 'required',
-        ]);
+	    $reglas = [
+        'removed_imagen_recepcion' => 'nullable|array',
+        'imagen_recepcion'         => 'nullable|array',
+        'imagen_recepcion.*'       => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+        'removed_imagen'           => 'nullable|array',
+        'imagen'                   => 'nullable|array',
+        'imagen.*'                 => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+		'removed_video'           => 'nullable|array',
+        'video'                   => 'nullable|array',
+        'video.*'                 => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/webm|max:51200',
+		];
+		
+		
+    $validator = Validator::make($request->all(), $reglas);
+
+			if ($request->input('estado') == 1) {
+				$validator->after(function ($validator) use ($id) {
+
+					$ordenesPendientes = Orden_desarme::with('item')
+						->where('idCar', $id) 
+						->where(function($query) {
+							$query->whereNotIn('estado', ['completado', 'anulada'])
+								  ->orWhereNull('estado');
+						})
+						->where(function ($mainQuery) {
+							$mainQuery->whereHas('venta', function ($q) {
+								$q->where('status', '!=', 'Canceled');
+							})->orDoesntHave('venta');
+						})
+						->get();
+						
+					if ($ordenesPendientes->isNotEmpty()) {
+						$listaPiezas = $ordenesPendientes->map(function ($orden) {
+							return $orden->item->item_name ?? "Pieza #{$orden->pieza}";
+						})->implode(', ');
+
+						$validator->errors()->add(
+							'estado', 
+							"El vehículo seleccionado tiene órdenes de desarme pendientes para las siguientes piezas: [{$listaPiezas}]. Debe finalizarlas antes de cambiar de estatus Compactado."
+						);
+					}
+				});
+			}
+        
 
         if ($validator->fails()) {
             if ($request->ajax()) {
@@ -1588,23 +1674,6 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             }
         }
 
-        // if (strtolower(auth()->user()->role->name) == 'tramitador') {
-
-        //     $project = Cars::where('id', $id)
-        //         //->where('company_id', $request->input('company'))
-        //         ->first();
-        //     //dd(route('vehiculo.edit', 2));
-        //     $project->company_id = $request->input('company');
-        //     $project->siniestro = $request->input('siniestro');
-        //     $project->dominio = $request->input('dominio');
-        //     $project->idMarca_modelo = $request->input('marca_modelo');
-        //     $project->save();
-
-        //     $avisarTramit = $request->input('avisar_tramitador', false);
-
-
-        // }
-        // else 
         $project = Cars::where('id', $id)->first();
 
 
@@ -1620,42 +1689,20 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
         $estadoInicial = $project->idEstado;
 
-        //      // Verificar si 'dominio' ya existe
-        //      $dominio = $request->input('dominio');
-        //      if (Cars::where('dominio', $dominio)->where('id','!=',$id)->exists()) {
-
-        //        if (!$request->ajax()) {
-        //            return redirect()->route('vehiculo.edit', $id)->with('erros', 'Nro de dominio ya existe')->withInput();
-        //        } else {
-        //            return response()->json(['result' => 'error', 'action' => 'update', 'message' =>'Nro de dominio ya existe', 'data' => '', 'table' => '#projects_table']);
-
-        //        }
-        //    }
-
-
         if (strtolower(auth()->user()->role->name) == 'retiros') {
-            //dd(route('vehiculo.edit', 2));
-            // $project->fecha_limite_retiro = $request->input('fecha_limite_retiro');
             $project->idResponsable_retiro = $request->input('retira');
             $project->idLugar_entrega = $request->input('lugar_entregas');
-            //   $project->fecha_ingreso = $request->input('fecha_ingreso');
             $project->observacion_retiro = $request->input('observacion_retiro');
-            //   $project->fecha_confirmacion_contacto = $request->input('fecha_confirmacion');
             $project->lugar_retiro = $request->input('lugar_retiro');
 
             $project->localidad = $request->input('localidad');
             $project->provincia = $request->input('provincia');
-            // dd($request->filled('fecha_retiro'));
             if ($request->filled('fecha_retiro')) {
 
                 $currentFechaRetiro = Carbon::parse($project->fecha_retiro);
                 $newFechaRetiro = Carbon::parse($request->input('fecha_retiro'));
                 $project->fecha_retiro = $request->input('fecha_retiro');
-                //  dd( ($currentFechaRetiro->toDateString() !== $newFechaRetiro->toDateString()) );
                 if ($currentFechaRetiro->toDateString() !== $newFechaRetiro->toDateString()) {
-                    // if (!$currentFechaRetiro->eq($newFechaRetiro)) {
-                    //$project->fecha_limite_retiro = $newFechaLimiteRetiro;
-
                     if ($project->idTramitador)
                         Notification::send(User::find($project->idTramitador), new RetiroVehiculoUpdated($project));
                 }
@@ -1663,31 +1710,25 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
 
             $project->save();
-
-
-            // $avisarTramit = $request->input('avisar_tramitador', false);
-
-            // if ($avisarTramit) {
-            // }
-
-            //eliminar las imagenes seleccionadas
-            $arrImgDelete = $request->input('imgDelete', false);
-            if ($arrImgDelete && isset($arrImgDelete[0])) {
-                foreach ($arrImgDelete as $imgdelete) {
-                    $img = Imagen::where('id', $imgdelete)->first();
-
-                    unlink(public_path('uploads/vehiculos/' . $img->img));
-                    Imagen::where('id', $imgdelete)->delete();
-                }
-            }
-
-            if (!empty($request->file('imagen'))) {
+			
+			if ($request->has('removed_imagen')) {
+				$removedImages = Imagen::whereIn('img', $request->removed_imagen)->get();
+				foreach ($removedImages as $imagen) {
+					if (file_exists(public_path('uploads/vehiculos/' . $imagen->img))) {
+						unlink(public_path('uploads/vehiculos/' . $imagen->img));
+					}
+					$imagen->delete();
+				}
+			}
+			
+			 if (!empty($request->file('imagen'))) {
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
+			
+			
+			
         } else if (strtolower(auth()->user()->role->name) == 'receptor') {
-            // $project = Cars::where('id', $id)->first();
-
-            //            $project->fecha_recepcion = $request->input('fecha_documento');
+        
             $project->fecha_ingreso = $request->input('fecha_ingreso');
             $project->kilometraje = $request->input('kilometraje');
             $project->motor_en_marcha = $request->input('motor_en_marcha');
@@ -1696,50 +1737,43 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             $project->idEstado = $request->input('estado');
 			$project->color = $request->input('color');
 
-            $video = $request->file('video', false);
-            if (!empty($video[0])) {
-                $videos = explode(';', $project->video);
-                foreach ($videos as $v) {
-                    $this->deleteVideo($v);
-                }
 
-                $nombre = $this->uploadVideo($request);
-                $project->video = $nombre;
-            }
-            $project->piezas_defectuosas = trim($request->input('piezas_defectuosa'));
+			$videosActuales = $project->video ? array_filter(explode(';', $project->video)) : [];
+			if ($request->has('removed_video')) {
+				foreach ((array)$request->input('removed_video') as $videoName) {
+					$videoName = basename($videoName);
+					$this->deleteVideo($videoName);
+					$videosActuales = array_diff($videosActuales, [$videoName]);
+				}
+			}
+			
+			if ($request->hasFile('video')) {
+				$nombreVideoNuevo = $this->uploadVideo($request);
+				if (!empty($nombreVideoNuevo)) {
+					$nuevosVideosArray = array_filter(explode(';', $nombreVideoNuevo));
+					$videosActuales = array_merge($videosActuales, $nuevosVideosArray);
+				}
+			}
+			$project->video = !empty($videosActuales) ? implode(';', array_unique($videosActuales)) : null;
+			
+			$project->piezas_defectuosas = trim($request->input('piezas_defectuosa'));
 
             $project->save();
 
 
-            $arrImgDelete = $request->input('imgDelete', false);
-            if ($arrImgDelete && isset($arrImgDelete[0])) {
-                foreach ($arrImgDelete as $imgdelete) {
-                    $img = Imagen::where('id', $imgdelete)->first();
-
-                    unlink(public_path('uploads/vehiculos/' . $img->img));
-                    Imagen::where('id', $imgdelete)->delete();
-                }
-            }
-
-            if (!empty($request->file('imagen'))) {
+			if ($request->has('removed_imagen')) {
+				$removedImages = Imagen::whereIn('img', $request->removed_imagen)->get();
+				foreach ($removedImages as $imagen) {
+					if (file_exists(public_path('uploads/vehiculos/' . $imagen->img))) {
+						unlink(public_path('uploads/vehiculos/' . $imagen->img));
+					}
+					$imagen->delete();
+				}
+			}
+			
+			 if (!empty($request->file('imagen'))) {
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
-
-
-            // //eliminar las imagenes seleccionadas
-            // $arrImgDelete = $request->input('imgDeleteRecepcion', false);
-            // if ($arrImgDelete && isset($arrImgDelete[0])) {
-            //     foreach ($arrImgDelete as $imgdelete) {
-            //         $img = Imagen::where('id', $imgdelete)->first();
-
-            //         unlink(public_path('uploads/vehiculos/' . $img->img));
-            //         Imagen::where('id', $imgdelete)->delete();
-            //     }
-            // }
-
-            // if (!empty($request->file('imagen_recepcion'))) {
-            //     $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
-            // }
 
             $piezasAusentes = $request->input('piezasAu', false);
             Pieza_ausente::where('id_car', $id)->delete();
@@ -1842,17 +1876,12 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
 
             $avisarRetiros = $request->input('coordinar_retiro');
-            // if ($avisarRetiros) {
-            //     $idRol = Role::where('name', 'Retiros')->first()->id;
-            //     Notification::send(User::where('role_id', $idRol)->get(), new RetiroVehiculoUpdated($project));
-            // }
-
+           
             $project->coordinar_retiro = $request->input('coordinar_retiro');
 
             $newFechaLimiteRetiro = Carbon::parse($request->input('fecha_limite_retiro'));
 
             if ($currentFechaLimiteRetiro->toDateString() !== $newFechaLimiteRetiro->toDateString()) {
-                //  if (!$currentFechaLimiteRetiro->eq($newFechaLimiteRetiro)) {
                 $project->fecha_limite_retiro = $newFechaLimiteRetiro;
                 $avisarRetiros = $request->input('coordinar_retiro');
                 if ($avisarRetiros) {
@@ -1865,15 +1894,13 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $newFechaRetiro = Carbon::parse($request->input('fecha_retiro'));
                 $project->fecha_retiro = $request->input('fecha_retiro');
                 if ($currentFechaRetiro->toDateString() !== $newFechaRetiro->toDateString()) {
-                    //  if (!$currentFechaRetiro->eq($newFechaRetiro)) {
-                    //$project->fecha_limite_retiro = $newFechaLimiteRetiro;
                     Notification::send(User::find($project->idTramitador), new RetiroVehiculoUpdated($project));
                 }
             }
 
             //video
             //eliminar video anterior y subir el nuevo
-            $video = $request->file('video', false);
+           /* $video = $request->file('video', false);
             if (!empty($video[0])) {
 
                 $videos = explode(';', $project->video);
@@ -1885,10 +1912,29 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
 
                 $project->video = $nombre;
-            }
+            }*/
+			
+			
+			$videosActuales = $project->video ? array_filter(explode(';', $project->video)) : [];
+			if ($request->has('removed_video')) {
+				foreach ((array)$request->input('removed_video') as $videoName) {
+					$videoName = basename($videoName);
+					$this->deleteVideo($videoName);
+					$videosActuales = array_diff($videosActuales, [$videoName]);
+				}
+			}
+			
+			if ($request->hasFile('video')) {
+				$nombreVideoNuevo = $this->uploadVideo($request);
+				if (!empty($nombreVideoNuevo)) {
+					$nuevosVideosArray = array_filter(explode(';', $nombreVideoNuevo));
+					$videosActuales = array_merge($videosActuales, $nuevosVideosArray);
+				}
+			}
+			$project->video = !empty($videosActuales) ? implode(';', array_unique($videosActuales)) : null;
+			
 
             if (strtolower(auth()->user()->role->name) == 'gerencial' || strtolower(auth()->user()->role->name) == 'gerente de operarios' || strtolower(auth()->user()->role->name) == 'operario') {
-                // dd($request->input('observacion_gerente_operario'));
                 $project->observacion_gerente_operario = $request->input('observacion_gerente_operario');
             }
 
@@ -1896,39 +1942,35 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 
             $project->save();
 
-            //eliminar las imagenes seleccionadas
-            $arrImgDelete = $request->input('imgDeleteRecepcion', false);
-            if ($arrImgDelete && isset($arrImgDelete[0])) {
-                foreach ($arrImgDelete as $imgdelete) {
-                    $img = Imagen::where('id', $imgdelete)->first();
-
-                    unlink(public_path('uploads/vehiculos/' . $img->img));
-                    Imagen::where('id', $imgdelete)->delete();
-                }
-            }
-
-            if (!empty($request->file('imagen_recepcion'))) {
+			if ($request->has('removed_imagen_recepcion')) {
+				$removedImages = Imagen::whereIn('img', $request->removed_imagen_recepcion)->get();
+				foreach ($removedImages as $imagen) {
+					if (file_exists(public_path('uploads/vehiculos/' . $imagen->img))) {
+						unlink(public_path('uploads/vehiculos/' . $imagen->img));
+					}
+					$imagen->delete();
+				}
+			}
+			
+			 if (!empty($request->file('imagen_recepcion'))) {
+				$path = public_path('uploads/vehiculos');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 
 
-            //eliminar las imagenes seleccionadas
-            $arrImgDelete = $request->input('imgDelete', false);
-            if ($arrImgDelete && isset($arrImgDelete[0])) {
-                foreach ($arrImgDelete as $imgdelete) {
-                    $img = Imagen::where('id', $imgdelete)->first();
 
-                    $filePath = public_path('uploads/vehiculos/' . $img->img);
-                    if (file_exists($filePath)) {
-                        unlink($filePath);
-                    }
-
-                    // unlink(public_path('uploads/vehiculos/' . $img->img));
-                    Imagen::where('id', $imgdelete)->delete();
-                }
-            }
-
-            if (!empty($request->file('imagen'))) {
+		if ($request->has('removed_imagen')) {
+				$removedImages = Imagen::whereIn('img', $request->removed_imagen)->get();
+				foreach ($removedImages as $imagen) {
+					if (file_exists(public_path('uploads/vehiculos/' . $imagen->img))) {
+						unlink(public_path('uploads/vehiculos/' . $imagen->img));
+					}
+					$imagen->delete();
+				}
+			}
+			
+			 if (!empty($request->file('imagen'))) {
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 
@@ -1993,6 +2035,8 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             return response()->json(['result' => 'success', 'action' => 'update', 'message' => _lang('Updated Sucessfully'), 'data' => $project, 'table' => '#vehiculo_table']);
         }
     }
+	 
+    
 
     private function get_last_interno()
     {

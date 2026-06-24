@@ -2039,11 +2039,98 @@ return DataTables::of($products)
                     ->withInput();
             }
         }
+		
+		
 
 
   DB::beginTransaction();
         try {
-			 $ids = $request->idsSeleccionados;//is_array($request->idsSeleccionados) ? $request->idsSeleccionados : [$request->input('idsSeleccionados')];
+			
+			
+		$ids = $request->idsSeleccionados;
+		$nro_interno = $request->input('nro_interno', 0);
+		$car = Cars::find($nro_interno);
+
+		$productosCreadosIds = [];
+
+if (isset($car)) {
+    $estado = $request->input('estado', 'despacho');
+    $marca_modelo = $car->idMarca_modelo;
+    $operario = Puesto::where('predeterminada', '1')->where('company_id', ($car->company_id ?? company_id()))->first();
+    
+    $idsString = is_array($ids) ? implode(',', $ids) : $ids;
+
+    if ($estado == 'despacho') {
+        $marca_modelo_valor = !empty($car->idMarca_modelo) ? $car->idMarca_modelo : 'NULL';
+        
+     
+        $now = now();
+
+        $sql = "INSERT INTO products (item_id, nro_interno, stock, description, product_price, tax_method, estado, company_id, idDeposito, ubicacion, carga_rapida, user_id, mercado_libre, created_at, marca_modelo)
+                SELECT items.id, {$nro_interno}, 1, '" . $request->input('description', '') . "', 0, 'exclusive', '" . $estado . "', " . $car->company_id . ", " . $request->input('idDeposito', 'NULL') . ", '" . $request->input('ubicacion', '') . "', " . $request->input('carga_rapida', 0) . ", " . auth()->user()->id . ", 0, '{$now}', {$marca_modelo_valor} AS marcamodelo 
+                FROM items
+                WHERE id IN($idsString)";
+        
+        DB::statement($sql);
+
+
+        $productosCreadosIds = DB::table('products')
+            ->where('nro_interno', $nro_interno)
+            ->where('created_at', $now)
+            ->whereIn('item_id', is_array($ids) ? $ids : explode(',', $ids))
+            ->pluck('id')
+            ->toArray();
+
+    } else {
+
+        $idsArray = is_array($ids) ? $ids : explode(",", $ids);
+        $items = Item::whereIn('id', $idsArray)->get();
+
+        foreach ($items as $item) {
+            $product = new Product();
+            $product->item_id = $item->id;
+            $product->car_id = null;
+            $product->marca_modelo = $marca_modelo;
+            $product->product_price = 0;
+            $product->nro_interno = $nro_interno;
+            $product->tax_method = 'exclusive';
+            $product->description = $request->input('description', '');
+            $product->stock = 1;
+            $product->estado = $request->input('estado') ?? "desarme-stock";
+            $product->company_id = $car->company_id ?? company_id();
+            $product->mercado_libre = 0;
+            $product->idDeposito = $request->input('idDeposito') ?? null;
+            $product->ubicacion = $request->input('ubicacion') ?? '';
+            $product->user_id = auth()->user()->id;
+            $product->save();
+
+            $productosCreadosIds[] = $product->id;
+             
+            $orden_desarme = new Orden_desarme();
+            $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+            $orden_desarme->prioridad = "normal";
+            $orden_desarme->interno = ($product->idCar ?? $product->nro_interno);
+            $orden_desarme->marca_modelo = $product->marca_modelo;
+            $orden_desarme->pieza = $item->id;
+            $orden_desarme->product_id = $product->id;
+            $orden_desarme->procesar = 1;
+            $orden_desarme->idCadete_operario = $operario->user_id ?? 0;
+            $orden_desarme->save();
+        }
+    }   
+    
+    DB::commit();
+}
+
+$stringIdsCreados = implode(',', $productosCreadosIds);
+
+return response()->json([
+    'result' => 'success', 
+    'message' => _lang('Updated successfully'),
+    'ids_creados' => $stringIdsCreados 
+]);
+			
+			/* $ids = $request->idsSeleccionados;//is_array($request->idsSeleccionados) ? $request->idsSeleccionados : [$request->input('idsSeleccionados')];
 			 
 			 //dd($ids);
 			 //$idsArray = is_array($ids) ? $ids : explode(',', $ids);
@@ -2103,7 +2190,8 @@ return DataTables::of($products)
 			 
 			 
 			 
-			return response()->json(['result' => 'success', 'message' => _lang('Updated sucessfully')]);
+			return response()->json(['result' => 'success', 'message' => _lang('Updated sucessfully')]);*/
+			
         } catch (Throwable $e) {
             DB::rollBack();
              dd($e->getMessage());

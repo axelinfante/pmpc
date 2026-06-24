@@ -1,14 +1,15 @@
 @props([
-    'id',                   // ID único del Dropzone (ej: dropzone-video)
-    'name' => 'imagen',                 // Nombre del campo que recibirá Laravel (ej: video_principal)
-    'label' => 'Galeria de Imagenes',                // Texto de la etiqueta superior
-    'url',                  // Ruta para procesar el dropzone
-    'type' => 'images',     // Tipo de carga: 'video' o 'images'
+    'id',                                   // ID único del Dropzone (ej: dropzone-video)
+    'name' => 'imagen',                     // Nombre del campo que recibirá Laravel (ej: video_principal)
+    'label' => 'Galeria de Imagenes',       // Texto de la etiqueta superior
+    'url',                                  // Ruta para procesar el dropzone
+    'type' => 'images',                     // Tipo de carga: 'video' o 'images'
     'message' => 'Arrastra tus archivos aquí o haz clic', // Mensaje de la zona
-    'maxFiles' => 20,       // Límite de archivos. Si es 1, actúa como "Simple Video"
-    'maxSize' => 20,         // Tamaño máximo en MB
-    'serverFiles' => []     // Archivos precargados desde el servidor (Edición)
+    'maxFiles' => 20,                       // Límite de archivos. Si es 1, actúa como "Simple Video"
+    'maxSize' => 20,                         // Tamaño máximo en MB
+    'serverFiles' => []                     // Archivos precargados desde el servidor (Edición)
 ])
+
 {{-- El bloque @once asegura que el CSS se inyecte una sola vez --}}
 @once
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.2/dropzone.min.css" integrity="sha512-jU/7UFiaW5UBGODEopEqnbIAHOI8fO6T99m7Tsmqs2gkdujByJfkCbbfPSN4Wlqlb9TGnsuC0YgUgWkRBK7B9A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -180,12 +181,7 @@
         const componentType = @js($type ?? 'images');
         const maxFilesAllowed = parseInt("{{ $maxFiles }}");
         
-        const previewTemplate = (componentType === 'video' && maxFilesAllowed === 1) ? `
-            <div class="dz-preview dz-file-preview">
-                <div class="dz-photo"><video class="dz-video-thumbnail" muted autoplay loop playsinline></video></div>
-                <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
-                <div class="dz-error-message"><span data-dz-errormessage></span></div>
-            </div>` : (componentType === 'video' ? `
+        const previewTemplate = (componentType === 'video') ? `
             <div class="dz-preview dz-file-preview">
                 <div class="dz-photo"><video class="dz-video-thumbnail" muted autoplay loop playsinline></video></div>
                 <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
@@ -195,7 +191,7 @@
                 <div class="dz-photo"><img data-dz-thumbnail class="dz-thumbnail" /></div>
                 <div class="dz-delete" data-dz-remove><svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div>
                 <div class="dz-error-message"><span data-dz-errormessage></span></div>
-            </div>`);
+            </div>`;
 
         const dzInstance = new Dropzone("#{{ $id }}", {
             url: "{{ $url }}", 
@@ -217,10 +213,14 @@
                         self.removeFile(self.files[0]); 
                     }
                     
-                    // Renderizar miniatura local si es video
-                    if (componentType === 'video' && file.type.match('video.*') && !file.fromServer) {
+                    // Renderizar miniatura local si es video subido por usuario
+                    if (componentType === 'video' && file.type && file.type.match('video.*') && !file.fromServer) {
                         const reader = new FileReader();
-                        reader.onload = (e) => { $(file.previewElement).find('.dz-video-thumbnail').attr('src', e.target.result); };
+                        reader.onload = (e) => { 
+                            if (file.previewElement) {
+                                $(file.previewElement).find('.dz-video-thumbnail').attr('src', e.target.result); 
+                            }
+                        };
                         reader.readAsDataURL(file);
                     }
                     $('#{{ $id }}').removeClass('is-invalid');
@@ -238,17 +238,26 @@
                     }
                 });
 
-                // Cargar archivos del servidor si existen
-                const sFiles = {!! json_encode($serverFiles ?? []) !!};
+                // Cargar archivos del servidor si existen (Soporta $serverFiles y $dropzoneFiles de forma cruzada)
+                const sFiles = {!! json_encode($serverFiles ?? $dropzoneFiles ?? []) !!};
                 if(sFiles && sFiles.length > 0) {
                     sFiles.forEach(v => {
                         var mock = { name: v.name, size: v.filesize, accepted: true, fromServer: true };
+                        
                         self.emit("addedfile", mock);
+                        
                         if(componentType === 'video') {
-                            $(mock.previewElement).find('.dz-video-thumbnail').attr('src', v.path);
+                            if (mock.previewElement) {
+                                const videoElement = mock.previewElement.querySelector('.dz-video-thumbnail');
+                                if (videoElement) {
+                                    videoElement.src = v.path;
+                                    videoElement.load(); // Activa el buffering de streams pesados o locales de Laravel
+                                }
+                            }
                         } else {
                             self.emit("thumbnail", mock, v.path);
                         }
+                        
                         self.emit("complete", mock);
                         self.files.push(mock);
                     });

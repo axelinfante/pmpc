@@ -44,7 +44,7 @@
 
    // dd(!$retiros && !$gerencial);
 @endphp
-<form method="post" class="ajax-submit" autocomplete="off" action="{{ action('VehiculoController@update', $id) }}"
+<form method="post" id="myForm" class="ajax-submitxx" autocomplete="off" action="{{ action('VehiculoController@update', $id) }}"
     enctype="multipart/form-data">
     {{ csrf_field() }}
     <input name="_method" type="hidden" value="PATCH">
@@ -474,7 +474,18 @@
             </div>
         </div>
 
-        @include('backend.accounting.tramitador.modal.imagenes04D');
+        {{-- @include('backend.accounting.tramitador.modal.imagenes04D'); --}}
+		
+		<div class="col-md-12">
+									<x-dropzone-input 
+										id="dropzone-vehiculos" 
+										name="imagen_recepcion"
+										url="{{ url('vehiculo.store') }}"
+										:serverFiles="$recepcionFiles ?? []"
+										label="Galeria de Imagenes 04D"
+										message="Imágenes de 04D"
+									/>
+								</div>
 
          <div class="col-md-12 {{ $class }}">
             <div class="form-group">
@@ -587,49 +598,48 @@
                     class="form-control" name="kilometraje" value="{{ old('kilometraje', $car->kilometraje) }}">
             </div>
         </div>
- <div class="col-md-12">
+ <!--<div class="col-md-12">
             <div class="form-group">
                 <label class="control-label">{{ _lang('Video') }}</label>
                 <input @if (!$receptor) {{ $option }} @endif type="file"
                     class="form-control" accept="video/*" name="video[]" multiple="multiple" />
             </div>
-        </div>
+        </div>-->
+		
+			<div class="col-md-12">
+									<x-dropzone-input 
+										id="dropzone-videos" 
+										url="{{ url('vehiculo.store') }}"
+										:serverFiles="$recepcionVideos ?? []"
+										type="video"
+										name="video"
+										label="Galeria de Videos"
+										maxFiles=5
+									/>
+			</div>
       
-            <div class="col-md-12 mb-3">
+            <!--<div class="col-md-12 mb-3">
                 <label for="imagen">Fotos</label>
                 <input {{-- @if (!$receptor) {{ $option }} @endif --}} type="file" class="form-control" id="imagen[]" name="imagen[]"
                     multiple="multiple">
-            </div>
+            </div>-->
+			
+			<div class="col-md-12">
+									<x-dropzone-input 
+										id="dropzone-fotos" 
+										url="{{ url('vehiculo.store') }}"
+										:serverFiles="$imagenFiles ?? []"
+										label="Galeria de Imagenes"
+										message="Imágenes"
+									/>
+			</div>
+		
 
             <div class="col-md-12 mb-3">
             <div class="form-group">
                 <label class="control-label">Notificar carga de imágenes <input type="checkbox" id="cargImg"
                         name="carga_de_imagen" value="1"></label>
             </div>
-
-            @forelse($car->img as $img)
-                <div class="card mx-3" style="width: 18rem;">
-                    <img class="card-img-top img-fluid" src="{{ marcaAgua(asset('public/uploads/vehiculos/'. $img->img),$car->company_id,'/vehiculos/'.$img->img) }}"
-                        alt="Card image cap">
-                    <div class="card-body">
-                        {{-- <h5 class="card-title">Card title</h5> --}}
-                        {{-- <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p> --}}
-                        {{-- <a href="#" class="btn btn-primary">Go somewhere</a> --}}
-                    </div>
-
-                    <div class="card-footer">
-                        <div class="form-check">
-                            <input {{-- @if (!$receptor) {{ $option }} @endif --}} type="checkbox" class="form-check-input" name="imgDelete[]"
-                                value="{{ $img->id }}">
-                            <label class="form-check-label">
-                                Eliminar
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <p>No hay imágenes disponibles.</p>
-            @endforelse
         </div>
 
     </div> <!--FINAL row-->
@@ -768,6 +778,83 @@
             source: availableTags
         });
     });
+	
+	$('#myForm').on('submit', function(e) {			  
+    e.preventDefault();
+	var current_modal = $(this).closest('.modal');
+	  var elem = $(this);
+	$('#myForm').find(".print-error-msg").find("ul").empty();
+    $('#myForm').find(".print-error-msg").css('display','none');
+    $(':input[type="submit"]').prop('disabled', true);
+	
+	let masterFormData = new FormData(this);
+    const formMethod = $(this).find('input[name="_method"]').val() || 'POST';
+    masterFormData.append("_method", formMethod);
+	
+	$('.dropzone-drag-area').each(function() {
+        const elementId = $(this).attr('id');
+        const paramName = $(this).data('name');
+        const type = $(this).data('type');
+        const dz = document.getElementById(elementId).dropzoneInstance;
+        if (dz) {
+            let queuedFiles = dz.getQueuedFiles();
+            if (queuedFiles.length > 0) {
+                /*if (type === 'video') {
+                     masterFormData.append(paramName, queuedFiles[0]); 
+                } else {*/
+                    queuedFiles.forEach(file => {
+                     masterFormData.append(`${paramName}[]`, file);
+                    });
+                //}
+            }
+        }
+    });
+	
+	
+	
+	 $.ajax({
+        url: $(this).attr("action"),
+        method: 'POST',
+        data: masterFormData,
+         processData: false,
+            contentType: false,
+			dataType: 'json',
+            cache: false,
+        headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+        success: function(response) {
+            if(response.result == "success"){
+							$(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
+							$(current_modal).find(".alert-danger").addClass('d-none');
+							 elem[0].reset(); 
+							 $(current_modal).modal('hide');
+                       }else{
+						   
+						    //$("#main_modal .alert-danger").html("");
+							$(current_modal).find(".alert-danger").html("");
+							if (Array.isArray(response['message'])) {
+							if (typeof reload !== 'undefined' && reload != false) {
+								jQuery.each(response['message'], function(i, val) {
+								   $("#main_modal .alert-danger").append("<p class='m-0'>" + val + "</p>");
+								});
+								$("#main_modal .alert-secondary").addClass('d-none');
+								$("#main_modal .alert-danger").removeClass('d-none');
+							} else {
+								jQuery.each(response['message'], function(i, val) {
+								   $(current_modal).find(".alert-danger").append("<p class='m-0'>" + val + "</p>");
+								});
+								$(current_modal).find(".alert-secondary").addClass('d-none');
+								$(current_modal).find(".alert-danger").removeClass('d-none');
+							}
+                      }
+					   } 
+                            setTimeout(function(){  $(':input[type="submit"]').prop('disabled', false); }, 5000); // Habilitar después de 5 segundos
+        },
+        error: function(xhr) {
+            //alert("Error al procesar los componentes multimedia.");
+        }
+    });
+  });	
+	
     $(document).ready(function() {
         let marca = $('#marca');
         let modelo = $('#modelo');
