@@ -136,10 +136,10 @@ class OrdenDesarmeController extends Controller
                     //dd(auth()->user()->company_id);
                     $str->where('company_id', auth()->user()->company_id);
                 }
-                $str->where(function ($row) {
+                /*$str->where(function ($row) {
                     // $row-> where('idEstado',6)->orwhere('idEstado',5)->orwhere('idEstado',8);
                     $row->where('idEstado', '!=', 1);
-                });
+                });*/
             });
         //dd(strtolower(auth()->user()->role->name) == 'vendedor');
         if (strtolower(auth()->user()->role->name) == 'vendedor') {
@@ -817,9 +817,9 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                     if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete') {
                         $str->where('company_id', auth()->user()->company_id);
                     }
-                    $str->where(function ($row) {
+                    /*$str->where(function ($row) {
                         $row->where('idEstado', '!=', 1);
-                    });
+                    });*/
                 });
             if (strtolower(auth()->user()->role->name) == 'vendedor') {
 
@@ -1063,9 +1063,9 @@ $ordenes = Orden_desarme::with([
 				$q->whereIn('company_id', (array)$company_id); // Asegura que sea un array
 			}
 			
-			if (!$isHistorial) {
+			/*if (!$isHistorial) {
 				$q->where('idEstado', '!=', 1);
-			}
+			}*/
 		});
 
 		$ordenes->where(function ($mainQuery) use ($role) {
@@ -1587,11 +1587,11 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                     if (!$isHistorial)
                         $str->where('company_id', auth()->user()->company_id);
                 }
-                $str->where(function ($row) use ($isHistorial) {
+               /* $str->where(function ($row) use ($isHistorial) {
                     if (!$isHistorial){
                         $row->where('idEstado', '!=', 1);
 					}
-                });
+                });*/
             });
         if (strtolower(auth()->user()->role->name) == 'vendedor') {
             $ordenes->whereHas('venta', function ($str) {
