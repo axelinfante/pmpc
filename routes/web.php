@@ -1111,6 +1111,12 @@ Route::group(["middleware" => ["install"]], function () {
                 "orden-despacho/{id}",
                 "OrdenDespachoController@update",
             )->name("orden-despacho.update");
+            Route::get('compactacion', 'CompactacionController@index')->name('compactacion.index');
+            Route::get('compactacion-data', 'CompactacionController@get_data')->name('compactacion.data');
+            Route::post('compactacion/update-fecha', 'CompactacionController@updateFechaCompactadora')->name('compactacion.update-fecha');
+
+
+
         });
 
         Route::group(["middleware" => ["client"]], function () {

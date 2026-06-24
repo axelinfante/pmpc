@@ -439,6 +439,11 @@ $usuariosAutorizados = [26,169];
                     <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
                 </li>
 		@endcan	
+        @can('compactacion.index') 
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('compactacion.index') }}">{{ _lang('Vehículos Compactados') }}</a>
+            </li>
+        @endcan
 		<li> {{-- REPORTES --}}
 			<a href="javascript: void(0);"><i class="ti-bar-chart"></i><span>{{ _lang('Reportes') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 			<ul class="nav-second-level" aria-expanded="false">
