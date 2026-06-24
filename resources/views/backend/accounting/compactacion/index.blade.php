@@ -33,7 +33,7 @@ $(document).ready(function() {
         ajax: {
             url: "{{ route('compactacion.data') }}",
         },
-		columnFilters: ['input', 'input', 'input', 'input', 'input'],
+		columnFilters: ['input', 'input', 'input', { defaultText: 'N/A' }, 'daterangepicker'],
             columns: [
                 {data: 'interno', name: 'interno'},
                 {data: 'marca', name: 'marca'},

@@ -29,13 +29,14 @@
 
 @section('js-script')
 <script>
+//columnFilters: ['input','daterangepicker',,,,,,'none'],
 $(document).ready(function() {
     var table = $("#data-table").appTable({
 		title: "piezas_destruir",
         ajax: {
             url: "{{ route('piezas_destruir.data') }}",
         },
-		columnFilters: ['input', 'input', 'input', 'input', 'input'], 
+		columnFilters: ['daterangepicker', 'input', 'input', 'input', { defaultText: 'N/A' }], 
         columns: [
             {data: 'return_date', name: 'return_date'},
             {data: 'product_name', name: 'product_name'},

@@ -14,14 +14,20 @@ class CompactacionController extends Controller
 
     public function get_data(Request $request)
 {
-    $query = HistorialStateCar::select('historial_state_cars.*', 'estados.estado as nombre_estado')
-        ->join('estados', 'historial_state_cars.id_new_state', '=', 'estados.id')
-        ->with([
-            'vehiculo.marca_modelo.marca',
-            'vehiculo.marca_modelo.modelo'
-        ])
-        ->where('id_new_state', 1) 
-        ->orderBy('historial_state_cars.fecha', 'desc');
+	$company_id = company_id_arr();
+
+	$query = HistorialStateCar::select('historial_state_cars.*', 'estados.estado as nombre_estado')
+		->join('estados', 'historial_state_cars.id_new_state', '=', 'estados.id')
+		->with([
+			'vehiculo',
+			'vehiculo.marca_modelo.marca',
+			'vehiculo.marca_modelo.modelo'
+		])
+		->where('id_new_state', 1) 
+		->whereHas('vehiculo', function($q) use ($company_id) {
+			$q->whereIn('company_id', $company_id); 
+		})
+		->orderBy('historial_state_cars.fecha', 'desc');
 
     return DataTables::of($query)
         ->editColumn('interno', function ($row) {
@@ -37,7 +43,7 @@ class CompactacionController extends Controller
             return $row->nombre_estado ?? ''; 
         })
         ->editColumn('fecha_cambio', function ($row) {
-            return $row->fecha ? \Carbon\Carbon::parse($row->fecha)->format('d-m-Y') : null;
+            return $row->fecha ? \Carbon\Carbon::parse($row->fecha)->format('d/m/Y') : null;
         })
         ->filterColumn('marca', function ($query, $keyword) {
             $query->whereHas('vehiculo.marca_modelo.marca', function ($sub) use ($keyword) {
@@ -52,6 +58,13 @@ class CompactacionController extends Controller
         ->filterColumn('estado', function ($query, $keyword) {
             $query->where('estados.estado', 'like', "%{$keyword}%");
         })
+		->filterColumn('fecha_cambio', function ($query, $keyword) {
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha', '>=', $date_range[0])
+                            ->whereDate('fecha', '<=', $date_range[1]);
+                    }
+			})
         ->rawColumns(['interno', 'estado']) 
         ->make(true);
 }

@@ -397,7 +397,7 @@ class ProductsReturnController extends Controller
     return Datatables::eloquent($ProductReturn)
 	->editColumn('return_date', function ($ProductReturn) {
 		return $ProductReturn->return_date 
-			? \Carbon\Carbon::parse($ProductReturn->return_date)->format('d-m-Y') 
+			? \Carbon\Carbon::parse($ProductReturn->return_date)->format('d/m/Y') 
 			: null;
 	})
         ->editColumn('product_name', function ($ProductReturn) {
@@ -422,7 +422,13 @@ class ProductsReturnController extends Controller
     });
 })
         ->editColumn('invoice_id', function ($ProductReturn) {
-            return $ProductReturn->invoice->invoice_number ?? $ProductReturn->invoice_id;
+			 $in = 'VEN-';
+                if ($ProductReturn->invoice->company_id == 1) {
+                    $in .= 'PM-';
+                } else if ($ProductReturn->invoice->company_id == 2) {
+                    $in .= 'PC-';
+                }
+            return "$in" . $ProductReturn->invoice->invoice_number ?? $ProductReturn->invoice_id;
         })
         ->editColumn('client', function ($ProductReturn) {
             return $ProductReturn->invoice->client->contact_name ?? '';
