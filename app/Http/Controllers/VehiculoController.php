@@ -1634,7 +1634,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 		
     $validator = Validator::make($request->all(), $reglas);
 
-			if ($request->input('estado') == 1) {
+			/*if ($request->input('estado') == 1) {
 				$validator->after(function ($validator) use ($id) {
 
 					$ordenesPendientes = Orden_desarme::with('item')
@@ -1661,7 +1661,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 						);
 					}
 				});
-			}
+			}*/
         
 
         if ($validator->fails()) {
@@ -4030,6 +4030,9 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 return isset($car->properties['fecha_pago_cia']) ? date($date_format, strtotime($car->properties['fecha_pago_cia'])) : null;
                 //   return $car->properties['fecha_pago_cia'] ?? '';
             })
+            ->addColumn('motor_nro', function ($car) {
+                return $car->motor_nro;
+            })
             ->addColumn('action', function ($car) {
                 if ($car->company_id == 1) {
                     $in = 'PM-';
@@ -4084,7 +4087,7 @@ data-title="' . _lang('Historial') . '" data-fullscreen="true" class="btn btn-wa
             ->setRowId(function ($car) {
                 return "row_" . $car->id;
             })
-            ->rawColumns(['action', 'pieza_no_disponible', 'estado', 'members.name', 'status', 'id', 'lugar_entrega'])
+            ->rawColumns(['action', 'pieza_no_disponible', 'estado', 'members.name', 'status', 'id', 'lugar_entrega', 'motor_nro'])
             ->make(true);
     }
 
