@@ -2604,5 +2604,52 @@ if (!function_exists('actualizar_config_correlativo')) {
 		return crearSelect($name, $formasEntrega,$selectedValue,$incluirTodos,$selectTodos,$required,$id_alias);
 	}
 }	
+
+if (!function_exists('pathArchivoGeneral')) {
+    function pathArchivoGeneral($nombreArchivo, $devolverSize = false)
+    {
+        $resultado = [
+            'url'   => asset("public/images/no-img.jpg"),
+            'size'  => 0,
+            'disco' => null
+        ];
+
+        if (blank($nombreArchivo)) {
+            return $devolverSize ? $resultado : $resultado['url'];
+        }
+
+        $soloNombre = basename($nombreArchivo); 
+        $discos = ['vehiculo', 'raiz_publica', 'gcs'];
+        
+        foreach ($discos as $disco) {
+            try {
+                if ($disco === 'vehiculo') {
+                    $tmp_path = $soloNombre; 
+                } elseif ($disco === 'gcs') {
+                    $tmp_path = "/vehiculos/{$soloNombre}";
+                } else {
+                    $tmp_path = $nombreArchivo;
+                }
+                if (Storage::disk($disco)->exists($tmp_path)) {
+                    if ($disco === 'vehiculo') {
+                        $resultado['url'] = route('carVideo', $soloNombre ?? 'default'); 
+                    } else {
+                        $resultado['url'] = Storage::disk($disco)->url($tmp_path);
+                    }
+                    //$resultado['url']   = Storage::disk($disco)->url($tmp_path);
+                    $resultado['size']  = Storage::disk($disco)->size($tmp_path); 
+                    $resultado['disco'] = $disco;
+                    
+                    break; 
+                }
+            } catch (\Exception $e) {
+                report($e);
+                continue; 
+            }
+        }
+
+        return $devolverSize ? $resultado : $resultado['url'];
+    }
+}
 		
 		

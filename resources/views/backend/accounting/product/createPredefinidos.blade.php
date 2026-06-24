@@ -196,8 +196,8 @@ $(document).ready(function() {
 							return; 
 						}
 						//console.log("IDs listos para procesar:", qr_seleccionados);
-						
-					var formData = new FormData();
+						impresion_multiple(qr_seleccionados);
+					/*var formData = new FormData();
 					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
                     formData.append('idsSeleccionados', qr_seleccionados);
 					$.ajax({
@@ -224,7 +224,9 @@ $(document).ready(function() {
                     if (typeof closeLoading === 'function') closeLoading();
                 }
 
-				});
+				});*/
+				
+				
 			  }
 			}	
 		],
@@ -333,7 +335,9 @@ $(document).ready(function() {
 									alert('Debe seleccionar un valor');
 								 return;
 								}
-					 var formData = new FormData(this);
+					
+
+					var formData = new FormData(this);
 					 formData.append('idsSeleccionados', ids);
 					$.ajax({
 						type: 'POST',
@@ -343,7 +347,13 @@ $(document).ready(function() {
 						contentType: false, 
 						success: function(response) {
 						if(response.result == "success"){
-									_table.draw();
+									/*_table.draw();
+									impresion_multiple(ids);*/
+									setTimeout(function() {
+										_table.draw();
+										impresion_multiple(response.ids_creados);
+									}, 2000); 
+									
 							}else{
 								//$('#formulario_create').find(".print-error-msg").find("ul").html('');
 								$('#formulario_create').find(".print-error-msg").css('display','block');
@@ -360,6 +370,8 @@ $(document).ready(function() {
 							});
 						}
 					});
+					
+					
 				});
 				
 				
@@ -449,8 +461,47 @@ $(document).ready(function() {
        
     const data = await response.json();
     closeLoading();
-        
     }	   
+	
+		function impresion_multiple(ids){
+			if (ids.length==0)
+								{
+									alert('Debe seleccionar un valor');
+								 return;
+								}
+
+				var formData = new FormData();
+					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                    formData.append('idsSeleccionados', ids);
+					$.ajax({
+					url: "{{ route('print-qr-mult') }}",						
+					type: "POST",
+					data: formData,
+					processData: false, 
+					contentType: false, 
+					beforeSend: function() {
+                    if (typeof inicioLoading === 'function') inicioLoading();
+					},
+					success: function(response) {
+                    if (typeof response === 'string' || response.html) {
+                        var htmlContenido = response.html ? response.html : response;
+						$('#main_modal .modal-body').html(htmlContenido);
+                        $('#main_modal').modal('show'); 
+                    } 
+                },
+                error: function(xhr) {
+                    console.error("Error al procesar la impresión múltiple:", xhr);
+                    alert('Ocurrió un error al intentar procesar los códigos QR.');
+                },
+                complete: function() {
+                    if (typeof closeLoading === 'function') closeLoading();
+                }
+
+				});								
+								
+			//alert(ids)
+		}	
+		
 
 	</script>
 @endsection

@@ -1075,7 +1075,7 @@ $ordenes = Orden_desarme::with([
 				if ($role === 'vendedor' && auth()->check()) {
 					$q->where('user_id', auth()->id());
 				}
-			})->orDoesntHave('venta'); // <- Esto permite incluir las órdenes que no tienen venta
+			})->orDoesntHave('venta');
 		});
 
 		if (in_array($role, ['operario', 'cadete']) && !$isHistorial) {

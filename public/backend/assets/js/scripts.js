@@ -889,6 +889,7 @@
 		 var data_value = $(this).data('value');
 		 //var table_reload = $(this).data('table_reload');
 		 var current_modal = $(this).closest('.modal');
+		 $(current_modal).find(".alert-danger").html("");
 		 
 		 var elem = $(this);
 		 $(elem).find("button[type=submit]").prop("disabled",true);
@@ -981,6 +982,7 @@
 		 var link = $(this).attr("action");
 		 var reload = $(this).data('reload');
 		 var current_modal = $(this).closest('.modal');
+		 $(current_modal).find(".alert-danger").html("");
 		 
 		 var elem = $(this);
 		 $(elem).find("button[type=submit]").prop("disabled",true);
@@ -2263,6 +2265,7 @@ function showRole(elem){
 		 var link = $(this).attr("action");
 		 var reload = $(this).data('reload');
 		 var current_modal = $(this).closest('.modal');
+		 $(current_modal).find(".alert-danger").html("");
 		 
 		 var elem = $(this);
 		 $(elem).find("button[type=submit]").prop("disabled",true);
