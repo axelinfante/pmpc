@@ -591,7 +591,7 @@
                 url: "{{ route('modelosByMarca') . '/' }}" + marca.val(),
                 dataType: 'json',
                 success: function(res) {
-                    console.log(res);
+                    //console.log(res);
                     let html = `<option value="">{{ _lang('Select One') }}</option>`;
                     res.map(r => {
                         if (modelo.val() == r.idModelo) {
@@ -609,7 +609,7 @@
 
                     let modeloAjax = result.find(r => r.idModelo == modelo.val() && r.idMarca == marca
                         .val());
-                    console.log(result);
+                    //console.log(result);
 
                     modelo.html(html);
 
@@ -625,7 +625,7 @@
                     url: "{{ route('modelosByMarca') . '/' }}" + marca.val(),
                     dataType: 'json',
                     success: function(res) {
-                        console.log(res);
+                       // console.log(res);
                         let html = `<option value="">{{ _lang('Select One') }}</option>`;
                         res.map(r => {
                             html +=

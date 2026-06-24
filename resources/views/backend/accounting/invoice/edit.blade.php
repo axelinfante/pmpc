@@ -290,8 +290,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 									<label class="control-label">{{ _lang('Producto en vehiculo') }}</label>
 
 									<select class="form-control" data-value="products.id" data-display="items.item_name"
-											data-table="products" data-where="9" data-option = "{{isset($idCar) ? "products
-										.car_id = $idCar": ''}}" name="product" id="product">
+											data-table="products" data-where="9" data-option = "{{isset($idCar) ? "products.nro_interno = $idCar": ''}}" name="product" id="product">
 										<option value="">{{ _lang('Producto') }}</option>
 
 									</select>
@@ -665,7 +664,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
         $('#product').prop('data-idCar',car.val());
 
 
-        product.data('option','products.car_id = '+ car.val());
+        product.data('option','products.nro_interno = '+ car.val());
 
         var display2 = "";
         if( typeof  product.data('display2') !== "undefined" ){
@@ -694,7 +693,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
     }
     car.change(function() {
 
-        product.prop('data-option','products.car_id = ' + $(this).val());
+        product.prop('data-option','products.nro_interno = ' + $(this).val());
        // console.log(product.prop('data-option'));
         //product.select2({});
 
@@ -716,7 +715,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
                 '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
-                '&option= products.car_id = ' + $(this).val(),
+                '&option= products.nro_interno = ' + $(this).val(),
                 processResults: function (data) {
 
                     return {
