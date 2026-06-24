@@ -1634,7 +1634,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 		
     $validator = Validator::make($request->all(), $reglas);
 
-			if ($request->input('estado') == 1) {
+			/*if ($request->input('estado') == 1) {
 				$validator->after(function ($validator) use ($id) {
 
 					$ordenesPendientes = Orden_desarme::with('item')
@@ -1661,7 +1661,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 						);
 					}
 				});
-			}
+			}*/
         
 
         if ($validator->fails()) {
