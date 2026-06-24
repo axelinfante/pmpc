@@ -237,7 +237,12 @@
 				<li class="nav-item">
                     <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
 				</li>
-			@endcan		
+			@endcan	
+			@can('compactacion.index') 
+				<li class="nav-item">
+					<a class="nav-link" href="{{ route('compactacion.index') }}">{{ _lang('Vehículos Compactados') }}</a>
+				</li>
+			@endcan	
 		</li>
     </ul>
 </li>

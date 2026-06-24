@@ -77,7 +77,7 @@
 								}
 							},
 						},
-					columnFilters: ['input','daterangepicker',,,,,'none'],
+					columnFilters: ['input','daterangepicker',,,,,,'none'],
 					columns: [
 						{ data: 'return_number', name: 'return_number' },
 						{ data: 'return_date', name: 'return_date' },
