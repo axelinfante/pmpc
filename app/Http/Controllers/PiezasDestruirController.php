@@ -17,22 +17,31 @@ class PiezasDestruirController extends Controller
 
     public function get_data(Request $request)
     {
+		$company_id = company_id_arr();
         $query = ProductReturn::select('products_returns.*')
             ->with(['producto.item', 'company', 'invoice.client'])
+			->whereIn('company_id', $company_id)
             ->where('status', 'descompuesto')
             ->orderBy('created_at', 'desc');
 
         return DataTables::of($query)
             ->editColumn('return_date', function ($row) {
                 return $row->return_date 
-                    ? \Carbon\Carbon::parse($row->return_date)->format('d-m-Y') 
+                    ? \Carbon\Carbon::parse($row->return_date)->format('d/m/Y') 
                     : null;
             })
             ->editColumn('product_name', function ($row) {
                 return "(".($row->producto->id ?? ''). ") " . ($row->producto->item->item_name ?? '');
             })
             ->editColumn('invoice_id', function ($row) {
-                return $row->invoice->invoice_number ?? $row->invoice_id;
+					 $in = 'VEN-';
+                if ($row->invoice->company_id == 1) {
+                    $in .= 'PM-';
+                } else if ($row->invoice->company_id == 2) {
+                    $in .= 'PC-';
+                }
+            return "$in" . $row->invoice->invoice_number ?? $row->invoice_id;
+                //return $row->invoice->invoice_number ?? $row->invoice_id;
             })
             ->editColumn('client', function ($row) {
                 return $row->invoice->client->contact_name ?? '';
@@ -63,9 +72,16 @@ class PiezasDestruirController extends Controller
                     })->orWhere('invoice_id', 'like', "%{$keyword}%");
                 });
             })
-            ->filterColumn('return_date', function ($query, $keyword) {
+			->filterColumn('return_date', function ($query, $keyword) {
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('return_date', '>=', $date_range[0])
+                            ->whereDate('return_date', '<=', $date_range[1]);
+                    }
+			})
+/*            ->filterColumn('return_date', function ($query, $keyword) {
                 $query->whereRaw("DATE_FORMAT(return_date, '%d-%m-%Y') like ?", ["%{$keyword}%"]);
-            })
+            })*/
 
             ->filterColumn('status', function ($query, $keyword) {
                 $query->where('status', 'like', "%{$keyword}%");
