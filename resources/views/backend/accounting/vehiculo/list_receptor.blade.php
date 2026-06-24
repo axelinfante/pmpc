@@ -56,7 +56,8 @@
 					    <tr>
 							<th  class="text-center notexport">{{ _lang('Action') }}</th>
 							<th >{{ _lang('Nro interno') }}</th>
-							<th >{{ _lang('Dominio')}}
+							<th >{{ _lang('Dominio')}}</th>
+							<th>{{ _lang('Nro Motor')}}</th>
 							<th >{{ _lang('Tipo Baja')}}</th>
 							<th >{{ _lang('Estado')}}</th>	
 							<th >{{ _lang('Retira')}}</th>
@@ -101,12 +102,12 @@
 				console.log(request.responseText);
 			 }
 		}),
-		columnFilters: [,,'vacio',{type: 'select',data: @json($filterData)},{type: 'select',data:@json($estados_data)},,,,,
-		{type: 'select',data: @json($lugar_entregas_data)}], 
+		columnFilters: [,, , , {type: 'select',data: @json($filterData)}, {type: 'select',data: @json($estados_data)}, , , , , {type: 'select',data: @json($lugar_entregas_data)}],
         "columns" : [
             { data : "action", name : "action", searcheable : false },
 			{  data : 'id', name : 'id' },
 			{  data : 'dominio', name : 'dominio' },
+			{ data : 'motor_nro', name : 'motor_nro' },
 			{  data : 'tipo_baja', name : 'tipo_baja' },
 			{  data : 'estado', name : 'estado', searcheable : false},
             {  data : 'responsable_retiro', name : 'responsable_retiro' },
