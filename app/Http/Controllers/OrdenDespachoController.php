@@ -190,24 +190,24 @@ public function show()
                 $nombre = $orden->cotizacion->client->contact_name ?? '';
 
                 if ($nombre == '') {
-                    return '<span class="text-muted">Sin datos de cliente</span>';
+                    return '';
                 }
 
                 $email     = $orden->cotizacion->client->contact_email ?? '';
                 $telefono  = $orden->cotizacion->client->contact_phone ?? '';
                 $direccion = $orden->cotizacion->client->address ?? '';
                 $cuit_dni  = $orden->cotizacion->client->dni_cuit ?? '';
-                $nombre_env    = $orden->cotizacion->client->nombre_env ?? '-';
-                $apellidos_env = $orden->cotizacion->client->apellidos_env ?? '-';
-                $dni_env       = $orden->cotizacion->client->dni_env ?? '-';
-                $calle_env     = $orden->cotizacion->client->calle_env ?? '-';
-                $numero_env    = $orden->cotizacion->client->numero_env ?? '-';
-                $piso_env      = $orden->cotizacion->client->piso_env ?? '-';
-                $depto_env     = $orden->cotizacion->client->depto_env ?? '-';
-                $cp_env        = $orden->cotizacion->client->cp_env ?? '-';
-                $localidad_env = $orden->cotizacion->client->localidad_env ?? '-';
-                $pcia_env      = $orden->cotizacion->client->pcia_env ?? '-';
-                $tel_env       = $orden->cotizacion->client->tel_env ?? '-';
+                $nombre_env    = $orden->cotizacion->client->nombre_env ?? '';
+                $apellidos_env = $orden->cotizacion->client->apellidos_env ?? '';
+                $dni_env       = $orden->cotizacion->client->dni_env ?? '';
+                $calle_env     = $orden->cotizacion->client->calle_env ?? '';
+                $numero_env    = $orden->cotizacion->client->numero_env ?? '';
+                $piso_env      = $orden->cotizacion->client->piso_env ?? '';
+                $depto_env     = $orden->cotizacion->client->depto_env ?? '';
+                $cp_env        = $orden->cotizacion->client->cp_env ?? '';
+                $localidad_env = $orden->cotizacion->client->localidad_env ?? '';
+                $pcia_env      = $orden->cotizacion->client->pcia_env ?? '';
+                $tel_env       = $orden->cotizacion->client->tel_env ?? '';
 
                 /* <tr>
                       <td>Nombre</td>
@@ -231,13 +231,8 @@ public function show()
                     </tr> */
 
                
-                $tabla_cliente = '<table class="table table-striped" style="min-width: 320px; margin: 0;">
+                $tabla_cliente = '<table class="table" style="min-width: 320px; margin: 0;">
                   <thead>
-                     <tr>
-                       <th colspan="2">
-                            <h5>Datos de Entrega</h5>
-                       </th>
-                     </tr>
                   </thead>
                   <tbody>
                         <tr><td>Nombre</td><td><b>'.$nombre_env.' '.$apellidos_env.'</b></td></tr>
