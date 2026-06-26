@@ -191,6 +191,17 @@ class ContactController extends Controller
 			'state' 		=> 'nullable|max:50',
 			'zip' 			=> 'nullable|max:20',
 			'contact_image' => 'nullable|image||max:5120',
+			'nombre_env'    => 'required|max:60',
+			'apellidos_env' => 'nullable|max:60',
+			'dni_env'       => 'required|max:60',
+			'calle_env'     => 'required|max:100',
+			'numero_env'    => 'nullable|max:30',
+			'piso_env'      => 'nullable|max:30',
+			'depto_env'     => 'nullable|max:30',
+			'cp_env'        => 'nullable|max:30',
+			'localidad_env' => 'nullable|max:30',
+			'pcia_env'      => 'nullable|max:30',
+			'tel_env'       => 'nullable|max:30',
 			'group_id' 		=> 'required',
 			//'name' => 'required_if:client_login,on|max:191', //User Login Attribute
 			//'email' => 'required_if:client_login,on|email|unique:users|max:191', //User Login Attribute
@@ -258,6 +269,17 @@ class ContactController extends Controller
 		if ($client) {
 			$contact->user_id = $client->id;
 		}
+		$contact->nombre_env = $request->input('nombre_env');
+		$contact->apellidos_env = $request->input('apellidos_env');
+		$contact->dni_env = $request->input('dni_env');
+		$contact->calle_env = $request->input('calle_env');
+		$contact->numero_env = $request->input('numero_env');
+		$contact->piso_env = $request->input('piso_env');
+		$contact->depto_env = $request->input('depto_env');
+		$contact->cp_env = $request->input('cp_env');
+		$contact->localidad_env = $request->input('localidad_env');
+		$contact->pcia_env = $request->input('pcia_env');
+		$contact->tel_env = $request->input('tel_env');
 		$contact->group_id = $request->input('group_id');
 		$contact->company_id = company_id();
 		$contact->contact_image = $contact_image;
@@ -464,6 +486,17 @@ class ContactController extends Controller
 			'city' => 'nullable|max:50',
 			'state' => 'nullable|max:50',
 			'zip' => 'nullable|max:20',
+			'nombre_env'    => 'required|max:60',
+			'apellidos_env' => 'nullable|max:60',
+			'dni_env'       => 'required|max:60',
+			'calle_env'     => 'required|max:100',
+			'numero_env'    => 'nullable|max:30',
+			'piso_env'      => 'nullable|max:30',
+			'depto_env'     => 'nullable|max:30',
+			'cp_env'        => 'nullable|max:30',
+			'localidad_env' => 'nullable|max:30',
+			'pcia_env'      => 'nullable|max:30',
+			'tel_env'       => 'nullable|max:30',
 			'contact_image' => 'nullable|image||max:5120',
 			'group_id' => 'required',
 
@@ -529,6 +562,17 @@ class ContactController extends Controller
 		if ($client) {
 			$contact->user_id = $client->id;
 		}
+		$contact->nombre_env = $request->input('nombre_env');
+		$contact->apellidos_env = $request->input('apellidos_env');
+		$contact->dni_env = $request->input('dni_env');
+		$contact->calle_env = $request->input('calle_env');
+		$contact->numero_env = $request->input('numero_env');
+		$contact->piso_env = $request->input('piso_env');
+		$contact->depto_env = $request->input('depto_env');
+		$contact->cp_env = $request->input('cp_env');
+		$contact->localidad_env = $request->input('localidad_env');
+		$contact->pcia_env = $request->input('pcia_env');
+		$contact->tel_env = $request->input('tel_env');
 		$contact->company_id = company_id();
 		if ($request->hasfile('contact_image')) {
 			$contact->contact_image = $contact_image;

@@ -146,6 +146,89 @@
 							 </div>
 							</div>
 
+
+							<div class="col-md-12">
+								<h4 class="mt-4 mb-3">{{ _lang('Datos de envío') }}</h4>
+								<hr>
+							</div>
+
+							<div class="col-md-4">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Nombre Envío') }}</label>
+									<input type="text" class="form-control" name="nombre_env" value="{{ $contact->nombre_env ?? '' }}" required>
+								</div>
+							</div>
+
+							<div class="col-md-4">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Apellidos Envío') }}</label>
+									<input type="text" class="form-control" name="apellidos_env" value="{{ $contact->apellidos_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-4">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('DNI Envío') }}</label>
+									<input type="text" class="form-control" name="dni_env" value="{{ $contact->dni_env ?? '' }}" required>
+								</div>
+							</div>
+
+							<div class="col-md-6">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Calle Envío') }}</label>
+									<input type="text" class="form-control" name="calle_env" value="{{ $contact->calle_env ?? '' }}" required>
+								</div>
+							</div>
+
+							<div class="col-md-2">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Número') }}</label>
+									<input type="text" class="form-control" name="numero_env" value="{{ $contact->numero_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-2">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Piso') }}</label>
+									<input type="text" class="form-control" name="piso_env" value="{{ $contact->piso_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-2">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Depto') }}</label>
+									<input type="text" class="form-control" name="depto_env" value="{{ $contact->depto_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-4">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('CP Envío') }}</label>
+									<input type="text" class="form-control" name="cp_env" value="{{ $contact->cp_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-4">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Localidad') }}</label>
+									<input type="text" class="form-control" name="localidad_env" value="{{ $contact->localidad_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-4">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Provincia') }}</label>
+									<input type="text" class="form-control" name="pcia_env" value="{{ $contact->pcia_env ?? '' }}">
+								</div>
+							</div>
+
+							<div class="col-md-6">
+								<div class="form-group">
+									<label class="control-label">{{ _lang('Teléfono Envío') }}</label>
+									<input type="text" class="form-control" name="tel_env" value="{{ $contact->tel_env ?? '' }}">
+								</div>
+							</div>
+
 							{{--<div class="col-md-12">--}}
 							 {{--<div class="form-group">--}}
 								{{--<label class="control-label">{{ _lang('Facebook') }}</label>						--}}
