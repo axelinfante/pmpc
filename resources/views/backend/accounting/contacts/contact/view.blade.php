@@ -234,6 +234,48 @@
                                     </tr> --}}
                                 </tbody>
                             </table> 
+
+                            <table class="table table-striped mt-4">
+                                <thead>
+                                    <th colspan="2">
+                                        <h5>{{ _lang('Datos de envío') }}</h5>
+                                    </th>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{ _lang('Nombre') }}</td>
+                                        <td><b>{{ $contact->nombre_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Apellidos') }}</td>
+                                        <td><b>{{ $contact->apellidos_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('DNI') }}</td>
+                                        <td><b>{{ $contact->dni_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Dirección') }}</td>
+                                        <td><b>{{ $contact->calle_env }} {{ $contact->numero_env }} {{ $contact->piso_env }} {{ $contact->depto_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('CP') }}</td>
+                                        <td><b>{{ $contact->cp_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Localidad') }}</td>
+                                        <td><b>{{ $contact->localidad_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Provincia') }}</td>
+                                        <td><b>{{ $contact->pcia_env }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ _lang('Teléfono') }}</td>
+                                        <td><b>{{ $contact->tel_env }}</b></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

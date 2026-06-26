@@ -190,25 +190,26 @@ public function show()
                 $nombre = $orden->cotizacion->client->contact_name ?? '';
 
                 if ($nombre == '') {
-                    return '<span class="text-muted">Sin datos de cliente</span>';
+                    return '';
                 }
 
                 $email     = $orden->cotizacion->client->contact_email ?? '';
                 $telefono  = $orden->cotizacion->client->contact_phone ?? '';
                 $direccion = $orden->cotizacion->client->address ?? '';
                 $cuit_dni  = $orden->cotizacion->client->dni_cuit ?? '';
+                $nombre_env    = $orden->cotizacion->client->nombre_env ?? '';
+                $apellidos_env = $orden->cotizacion->client->apellidos_env ?? '';
+                $dni_env       = $orden->cotizacion->client->dni_env ?? '';
+                $calle_env     = $orden->cotizacion->client->calle_env ?? '';
+                $numero_env    = $orden->cotizacion->client->numero_env ?? '';
+                $piso_env      = $orden->cotizacion->client->piso_env ?? '';
+                $depto_env     = $orden->cotizacion->client->depto_env ?? '';
+                $cp_env        = $orden->cotizacion->client->cp_env ?? '';
+                $localidad_env = $orden->cotizacion->client->localidad_env ?? '';
+                $pcia_env      = $orden->cotizacion->client->pcia_env ?? '';
+                $tel_env       = $orden->cotizacion->client->tel_env ?? '';
 
-               
-                $tabla_cliente = '<table class="table table-striped" style="min-width: 320px; margin: 0;">
-                  <thead>
-                     <tr>
-                       <th colspan="2">
-                            <h5>General Information</h5>
-                       </th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
+                /* <tr>
                       <td>Nombre</td>
                       <td><b>'.$nombre.'</b></td>
                     </tr>
@@ -227,7 +228,23 @@ public function show()
                     <tr>
                       <td>CUIT - DNI</td>
                       <td><b>'.$cuit_dni.'</b></td>
-                    </tr>   
+                    </tr> */
+
+               
+                $tabla_cliente = '<table class="table" style="min-width: 320px; margin: 0;">
+                  <thead>
+                  </thead>
+                  <tbody>
+                        <tr><td>Nombre</td><td><b>'.$nombre_env.' '.$apellidos_env.'</b></td></tr>
+                    <tr><td>DNI</td><td><b>'.$dni_env.'</b></td></tr>
+                    <tr><td>Calle</td><td><b>'.$calle_env.'</b></td></tr>
+                    <tr><td>Número</td><td><b>'.$numero_env.'</b></td></tr>
+                    <tr><td>Piso</td><td><b>'.$piso_env.'</b></td></tr>
+                    <tr><td>Departamento</td><td><b>'.$depto_env.'</b></td></tr>
+                    <tr><td>Código Postal</td><td><b>'.$cp_env.'</b></td></tr>
+                    <tr><td>Localidad</td><td><b>'.$localidad_env.'</b></td></tr>
+                    <tr><td>Provincia</td><td><b>'.$pcia_env.'</b></td></tr>
+                    <tr><td>Teléfono Envío</td><td><b>'.$tel_env.'</b></td></tr>
                   </tbody>
                 </table>';
 
