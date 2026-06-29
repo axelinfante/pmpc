@@ -3089,6 +3089,24 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
 
                 return $html;
             })
+           ->addColumn('pieza_reservadas', function ($car) {
+            $html = '';
+
+            $reservas = DB::select("
+                SELECT qi.quotation_id, i.item_name
+                FROM quotation_items qi
+                INNER JOIN items i ON i.id = qi.item_id
+                INNER JOIN products p ON p.id = qi.product_id
+                WHERE p.nro_interno = ?", [$car->id]);
+
+            if (isset($reservas)) {
+                foreach ($reservas as $reserva) {
+                    $html .= $reserva->item_name . '<br>';
+                }
+            }
+
+            return $html;
+        })
 
             ->addColumn('action', function ($car) {
                 if ($car->company_id == 1) {
@@ -3125,7 +3143,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->setRowId(function ($car) {
                 return "row_" . $car->id;
             })
-            ->rawColumns(['action', 'pieza_no_disponible', 'pieza_vendidas', 'estado', 'members.name', 'status', 'id'])
+            ->rawColumns(['action', 'pieza_no_disponible', 'pieza_vendidas', 'estado', 'members.name', 'status', 'id', 'pieza_reservadas'])
             ->make(true);
     }
 

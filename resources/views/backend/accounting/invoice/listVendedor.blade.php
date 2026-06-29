@@ -217,6 +217,7 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
                                 {{--                            <th >{{ _lang('En cotizaciones') }}</th> --}}
                                 <th>{{ _lang('Piezas ausentes') }}</th>
                                 <th>{{ _lang('Vendidas') }}</th>
+                                <th>{{ _lang('Piezas Reservadas') }}</th>
                                 <th>{{ _lang('Piezas Defectuosas') }}</th>
                                 <th>{{ _lang('kilometraje') }}</th>
 
@@ -254,8 +255,6 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
 
             $('#vehiculo thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //Obtenemos el nombre de la columna
-                // Reemplazamos el contenido de la celda con un control de búsqueda (input) con el título 
-                //de la columna como marcador de posición (placeholder)
                if (i == 14) {
                     $(this).hide();
                     return;
@@ -489,6 +488,11 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
                         data: 'pieza_vendidas',
                         name: 'pieza_vendidas',
                         searcheable: false
+                    },
+                    { 
+                        data: 'pieza_reservadas', 
+                        name: 'pieza_reservadas', 
+                        searcheable: false 
                     },
                     {
                         data: 'piezas_defectuosas',
