@@ -3092,13 +3092,15 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
            ->addColumn('pieza_reservadas', function ($car) {
             $html = '';
 
-            $reservas = DB::select("
+           /* $reservas = DB::select("
                 SELECT qi.quotation_id, i.item_name
                 FROM quotation_items qi
                 INNER JOIN items i ON i.id = qi.item_id
                 INNER JOIN products p ON p.id = qi.product_id
-                WHERE p.nro_interno = ?", [$car->id]);
-
+                WHERE p.nro_interno = ?", [$car->id]);*/
+				
+			$reservas = DB::select(" SELECT t3.item_name,t1.id,t1.car_id,t1.quotation_number FROM quotations t1 INNER JOIN 		quotation_items t2 on t2.quotation_id=t1.id LEFT JOIN items t3 ON t3.id = t2.item_id
+            WHERE t1.car_id IN (?)", [$car->id]);
             if (isset($reservas)) {
                 foreach ($reservas as $reserva) {
                     $html .= $reserva->item_name . '<br>';
