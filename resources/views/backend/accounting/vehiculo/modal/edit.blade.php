@@ -787,6 +787,10 @@
     $('#myForm').find(".print-error-msg").css('display','none');
     $(':input[type="submit"]').prop('disabled', true);
 	
+	if (typeof tinymce !== 'undefined') {
+        tinymce.triggerSave();
+    }
+	
 	let masterFormData = new FormData(this);
     const formMethod = $(this).find('input[name="_method"]').val() || 'POST';
     masterFormData.append("_method", formMethod);
