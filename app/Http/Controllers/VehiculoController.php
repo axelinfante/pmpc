@@ -4031,7 +4031,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 //   return $car->properties['fecha_pago_cia'] ?? '';
             })
             ->addColumn('motor_nro', function ($car) {
-                return $car->motor_nro;
+                return $car->motor_nro ?? '';
             })
             ->addColumn('action', function ($car) {
                 if ($car->company_id == 1) {
