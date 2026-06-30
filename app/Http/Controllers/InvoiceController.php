@@ -353,6 +353,9 @@ class InvoiceController extends Controller
         //*************************
         $desarmarValue = $product->estado ?? '';  //$request->desarmar_id[$i] ?? null;
         $estado_old=$desarmarValue;
+		//$desarmarValue = (($product->company_id  == 1) && ($desarmarValue == 'desarme')) ? 'directo' : $estado_old;
+		$desarmarValue = ($desarmarValue == 'desarme') ? 'directo' : $estado_old;
+
         if ($desarmarValue == 'desarme' && $product->nro_interno > 0 ) {
                         $orden_desarme = new Orden_desarme();
                         $orden_desarme->id_venta = $invoice->id;
@@ -388,6 +391,35 @@ class InvoiceController extends Controller
         */  
         }elseif($desarmarValue == 'directo'){
             // retiro directo
+			
+						$orden_desarme = new Orden_desarme();
+                        $orden_desarme->id_venta = $invoice->id;
+                        $orden_desarme->fecha_venta = $invoice->invoice_date;
+                        //$orden_desarme->idCar = $product->idCar ?? null;
+                        $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+                        $orden_desarme->prioridad = "normal";
+                        $orden_desarme->interno = $company . ($product->idCar ?? $product->nro_interno);
+                        $orden_desarme->marca_modelo = $product->marca_modelo;
+                        $orden_desarme->pieza = $product->item->id; //$product->id;
+                        $orden_desarme->product_id = $product->id ?? 0;
+                        // Aqui colocae orden procesada y asignarla al operario segun la compañia
+                        $orden_desarme->procesar = 1;
+                        /*$operario = User::wherehas('role', function ($q) {
+                            $q->where('name', 'Operario');
+                        })->where('company_id', $product->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->id;*/
+                        $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
+                        $orden_desarme->save();
+            
+						$orden_despacho = new OrdenDespacho();
+						$orden_despacho->invoice_id = $invoice->id;
+						$orden_despacho->invoiceitem_id = $invoiceItem->id;
+						$orden_despacho->description = $product->description;
+						$orden_despacho->quantity = 1;
+						$orden_despacho->company_id = $product->company_id;
+						$orden_despacho->estatus = 'pendiente';
+						$orden_despacho->save();
             
         }else{
                 $orden_despacho = new OrdenDespacho();

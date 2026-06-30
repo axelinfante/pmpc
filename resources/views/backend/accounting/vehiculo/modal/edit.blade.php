@@ -988,6 +988,12 @@
         })
 
         $('.select2').select2();
+		
+		$('#main_modal').on('hidden.bs.modal', function () {
+    if (typeof tinymce !== 'undefined') {
+        tinymce.remove(); 
+    }
+});
 
         // var maxField = 10; // Numero maximo de campos
         // var addButton = $('.add_button');
