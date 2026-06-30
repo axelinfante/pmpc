@@ -353,6 +353,9 @@ class InvoiceController extends Controller
         //*************************
         $desarmarValue = $product->estado ?? '';  //$request->desarmar_id[$i] ?? null;
         $estado_old=$desarmarValue;
+		//$desarmarValue = (($product->company_id  == 1) && ($desarmarValue == 'desarme')) ? 'directo' : $estado_old;
+		$desarmarValue = ($desarmarValue == 'desarme') ? 'directo' : $estado_old;
+
         if ($desarmarValue == 'desarme' && $product->nro_interno > 0 ) {
                         $orden_desarme = new Orden_desarme();
                         $orden_desarme->id_venta = $invoice->id;
@@ -388,6 +391,35 @@ class InvoiceController extends Controller
         */  
         }elseif($desarmarValue == 'directo'){
             // retiro directo
+			
+						$orden_desarme = new Orden_desarme();
+                        $orden_desarme->id_venta = $invoice->id;
+                        $orden_desarme->fecha_venta = $invoice->invoice_date;
+                        //$orden_desarme->idCar = $product->idCar ?? null;
+                        $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+                        $orden_desarme->prioridad = "normal";
+                        $orden_desarme->interno = $company . ($product->idCar ?? $product->nro_interno);
+                        $orden_desarme->marca_modelo = $product->marca_modelo;
+                        $orden_desarme->pieza = $product->item->id; //$product->id;
+                        $orden_desarme->product_id = $product->id ?? 0;
+                        // Aqui colocae orden procesada y asignarla al operario segun la compañia
+                        $orden_desarme->procesar = 1;
+                        /*$operario = User::wherehas('role', function ($q) {
+                            $q->where('name', 'Operario');
+                        })->where('company_id', $product->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->id;*/
+                        $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
+                        $orden_desarme->save();
+            
+						$orden_despacho = new OrdenDespacho();
+						$orden_despacho->invoice_id = $invoice->id;
+						$orden_despacho->invoiceitem_id = $invoiceItem->id;
+						$orden_despacho->description = $product->description;
+						$orden_despacho->quantity = 1;
+						$orden_despacho->company_id = $product->company_id;
+						$orden_despacho->estatus = 'pendiente';
+						$orden_despacho->save();
             
         }else{
                 $orden_despacho = new OrdenDespacho();
@@ -3089,6 +3121,26 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
 
                 return $html;
             })
+           ->addColumn('pieza_reservadas', function ($car) {
+            $html = '';
+
+           /* $reservas = DB::select("
+                SELECT qi.quotation_id, i.item_name
+                FROM quotation_items qi
+                INNER JOIN items i ON i.id = qi.item_id
+                INNER JOIN products p ON p.id = qi.product_id
+                WHERE p.nro_interno = ?", [$car->id]);*/
+				
+			$reservas = DB::select(" SELECT t3.item_name,t1.id,t1.car_id,t1.quotation_number FROM quotations t1 INNER JOIN 		quotation_items t2 on t2.quotation_id=t1.id LEFT JOIN items t3 ON t3.id = t2.item_id
+            WHERE t1.car_id IN (?)", [$car->id]);
+            if (isset($reservas)) {
+                foreach ($reservas as $reserva) {
+                    $html .= $reserva->item_name . '<br>';
+                }
+            }
+
+            return $html;
+        })
 
             ->addColumn('action', function ($car) {
                 if ($car->company_id == 1) {
@@ -3125,7 +3177,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->setRowId(function ($car) {
                 return "row_" . $car->id;
             })
-            ->rawColumns(['action', 'pieza_no_disponible', 'pieza_vendidas', 'estado', 'members.name', 'status', 'id'])
+            ->rawColumns(['action', 'pieza_no_disponible', 'pieza_vendidas', 'estado', 'members.name', 'status', 'id', 'pieza_reservadas'])
             ->make(true);
     }
 
