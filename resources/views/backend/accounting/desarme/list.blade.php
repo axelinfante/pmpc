@@ -17,6 +17,22 @@
                 <span class="d-none panel-title">{{ _lang('Orden de desarme') }}</span>
 
                 <div class="card-body">
+				
+				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+    <span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
+    
+    <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Parcial</span>
+    <span class="text-muted small">&rarr;</span>
+    
+    <span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Completado</span>
+    <span class="text-muted small">&rarr;</span>
+    
+    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: white;">Cancelado</span>
+    <span class="text-muted small">&rarr;</span>
+    
+    <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Sin Estado</span>
+</div>
+				
                     @php $currency = currency() @endphp
                     <table id="orden-desarme-table" class="table table-bordered">
                         <thead>
@@ -273,7 +289,7 @@
                 searching: true,
                 orderCellsTop: true,
                 fixedHeader: true,
-				lengthMenu: [[ 10, 25, 50, 200 ], [10, 25,50, 200]],
+				lengthMenu: [[25, 50, 100, 250], [25, 50, 100, 250]],
                 ajax: {
                     url: '{{ url('orden-desarme/get_table_data') }}',
                     method: "POST",
@@ -427,8 +443,8 @@
                         data: "ubicacion",
                         name: "ubicacion"
                     }, {
-                        data: "estado",
-                        name: "estado"
+                        data: "estado_veh",
+                        name: "estado_veh"
                     }, {
                         data: "obs_desarme_busqueda",
                         name: "obs_desarme_busqueda"
@@ -516,8 +532,40 @@
                                 $.fn.dataTable.ext.search.pop(); // Remueve la función de filtrado para no interferir con otros filtros
 								*/
                             });
-                                            
-                            }else{
+                            } else if (colIdx == 6) {
+								$(cell).html('<input type="text" id="fecha_venta" name="fecha_venta" class="form-control filtrov" placeholder="Rango de fechas..." autocomplete="off" />');
+
+								var $inputFecha = $('#fecha_venta', cell);
+
+								$inputFecha.daterangepicker({
+									autoUpdateInput: false,
+									opens: 'left',
+									locale: {
+										format: 'YYYY-MM-DD',
+										cancelLabel: 'Limpiar',
+										applyLabel: 'Aplicar',
+										fromLabel: 'Desde',
+										toLabel: 'Hasta',
+										customRangeLabel: 'Personalizado',
+										daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+										monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+									}
+								});
+							   $inputFecha.on('apply.daterangepicker', function(ev, picker) {
+									let dateRango = picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD');
+									$(this).val(dateRango);
+									api.column(colIdx).search(dateRango).draw();
+								});
+
+								$inputFecha.on('cancel.daterangepicker', function(ev, picker) {
+									$(this).val('');
+									api.column(colIdx).search('').draw();
+								});
+
+								$inputFecha.on('keydown', function(e) {
+									e.preventDefault();
+								});
+}else{
                                 $(cell).html('<input class ="filtrov" style="width:100%" type="text" placeholder="' +
                                 title + '" />');
                             }
@@ -787,6 +835,59 @@
 	$('#myDataTable').DataTable({
 		
 	});		
+	
+	$('#orden-desarme-table').on('processing.dt', function (e, settings, processing) {
+    if (processing) {
+       	inicioLoading();
+    } else {
+        closeLoading();
+    }
+});
+
+ $('.dataTables_filter input')
+    .unbind('keypress keyup input')
+    .bind('keyup input', function (e) {
+		 var code = e.keyCode || e.which;
+		 if ($(this).val().length >= 3 && code === 13) {
+			table.search(this.value).draw();
+		}
+		
+    });
+	
+		
+	$('#main_modal').on('hidden.bs.modal', function () {
+			$('#orden-desarme-table').DataTable().ajax.reload(null, false);
+		});
+		 
+	
+	/*$('#fecha_venta').daterangepicker({
+			autoUpdateInput: false,
+			locale: {
+				format: 'YYYY-MM-DD',
+				cancelLabel: 'Clear'
+			}
+		});
+
+		
+		$('#fecha_venta').on('change', function(e) {
+			let val = $(this).val();
+			table.columns(6).search(val ? val : '', true, false );
+			table.draw();
+		});
+	
+	
+		$('#fecha_venta').on('apply.daterangepicker', function(ev, picker) {
+				let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+					$(this).val(daterango);
+					table.columns(6).search(daterango);
+					table.draw();
+			});
+
+			$('#fecha_venta').on('cancel.daterangepicker', function(ev, picker) {
+				//$(this).val('');
+				$('#fecha_venta').val(null).trigger('change');	
+		});
+	*/
 			
 
         });

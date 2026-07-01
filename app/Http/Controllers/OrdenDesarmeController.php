@@ -1095,69 +1095,6 @@ $ordenes = Orden_desarme::with([
 
 
         return DataTables::eloquent($ordenes)
-            ->filter(function ($query) use ($request) {
-                if ($request->has('id')) {
-                    if ($request->post('id'))
-                        $query->where('id', $request->post('id'));
-                }
-            })
-            ->filterColumn('ubicacion', function ($query, $keyword) {
-                $query->orwhereHas('lugares', function ($str) use ($keyword) {
-                    $str->where('nombre', 'like', "%{$keyword}%");
-                });
-            })
-			 ->filterColumn('puesto', function ($query, $keyword) {
-				  $query->where('puesto', "$keyword");
-            })
-			->filterColumn('interno', function ($query, $keyword) {
-				  $query->where('idCar', "$keyword");
-            })
-			->filterColumn('lugar_venta', function ($query, $keyword) {
-				  $query->where('lugar_venta', 'like', "%{$keyword}%");
-            })
-			->filterColumn('venta', function ($query, $keyword) {
-					$query->whereHas('venta', function ($str) use ($keyword) {
-                    $str->where('invoice_number', 'like', "%{$keyword}%");
-                });
-            })
-			 ->filterColumn('fecha_venta', function ($query, $keyword) {
-				   $query->whereRaw("DATE_FORMAT(fecha_venta,'%d/%m/%Y') LIKE ?", ["%$keyword%"]);
-                   // $query->whereDate('fecha_venta', $keyword);
-            })
-			 ->filterColumn('cliente', function ($query, $keyword) {
-				 $query->whereHas('venta.client', function ($str) use ($keyword) {
-						$str->where('contact_name', 'like', "%{$keyword}%");
-				  });
-            })
-			
-            ->filterColumn('marca_modelo', function ($query, $keyword) {
-              $query->orwhereHas('producto.marcaModelo', function ($str) use ($keyword) {
-                    $str->whereHas('marca', function ($str) use ($keyword) {
-                        $str->where('marca', 'like', "%{$keyword}%");
-                    });
-                    $str->orwhereHas('modelo', function ($str) use ($keyword) {
-                        $str->where('modelo', 'like', "%{$keyword}%");
-                    });
-                });
-            })
-			->filterColumn('pieza', function ($query, $keyword) {
-				$query->orwhereHas('producto', function ($str) use ($keyword) {
-                         $str->where('products.id', 'like', "%{$keyword}%");
-						$str->orwhereHas('item', function ($str) use ($keyword) {
-							$str->where('items.item_name', 'like', "%{$keyword}%");
-						});
-				});
-            })
-			->filterColumn('vendedor', function ($query, $keyword) {
-                $query->orwhereHas('venta.vendedor', function ($str) use ($keyword) {
-                        $str->where('name', 'like', "%{$keyword}%");
-                    });
-            })
-			->filterColumn('ubicacion', function ($query, $keyword) {
-                $query->orwhereHas('car.lugar_entrega', function ($str) use ($keyword) {
-                        $str->where('nombre', 'like', "%{$keyword}%");
-                    });
-            })
             ->editColumn('procesar', function ($orden) {
                 $selected = $orden->procesar == 1 ? 'selected' : '';
                 $disable = '';
@@ -1182,8 +1119,7 @@ $ordenes = Orden_desarme::with([
                 return $orden->prioridad;
             })*/
             ->editColumn('cotizacion', function ($orden) {
-
-                return $orden->cotizacion->quotation_number ?? null;
+                return ($orden->cotizacion->quotation_number ?? null);
             })
             ->editColumn('venta', function ($orden) {
 
@@ -1238,7 +1174,7 @@ $ordenes = Orden_desarme::with([
             ->editColumn('ubicacion', function ($orden) {
                 return $orden->car->lugar_entrega->nombre ?? '';
             })
-            ->editColumn('estado', function ($orden) {
+            ->editColumn('estado_veh', function ($orden) {
                 return $orden->car->estado->estado ?? 'Sin Estado';
             })
            ->editColumn('autorizo', function ($orden) {
@@ -1318,7 +1254,7 @@ $ordenes = Orden_desarme::with([
                 return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
 
                     . '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" 
-data-title="' . _lang('Update Vehicle') . '" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
+data-title="' . _lang('Update Vehicle') . '" data-reload="false" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
 
                     . csrf_field()
                     . '<input name="_method" type="hidden" value="DELETE">'
@@ -1360,6 +1296,85 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 } else {
                     return '<span>' . $orden->puesto . '</span>';
                 }
+            })
+			->filterColumn('puesto', function ($query, $keyword) {
+				  $query->where('puesto', 'like', "%{$keyword}%");
+            })
+			->filterColumn('interno', function ($query, $keyword) {
+                $query->whereHas('car', function ($q) use ($keyword) {
+                    $q->where('id', 'LIKE', "%{$keyword}%");
+					});
+			})
+			 ->filterColumn('ubicacion', function ($query, $keyword) {
+                $query->orwhereHas('lugares', function ($str) use ($keyword) {
+                    $str->where('nombre', 'like', "%{$keyword}%");
+                });
+            })		
+			/*->filter(function ($query) use ($request) {
+                if ($request->has('id')) {
+                    if ($request->post('id'))
+                        $query->where('id', $request->post('id'));
+                }
+            })*/
+			->filterColumn('lugar_venta', function ($query, $keyword) {
+				  $query->where('lugar_venta', 'like', "%{$keyword}%");
+            })
+			->filterColumn('venta', function ($query, $keyword) {
+					$query->whereHas('venta', function ($str) use ($keyword) {
+                    $str->where('invoice_number', 'like', "%{$keyword}%");
+                });
+            })
+			 /*->filterColumn('fecha_venta', function ($query, $keyword) {
+				   $query->whereRaw("DATE_FORMAT(fecha_venta,'%d/%m/%Y') LIKE ?", ["%$keyword%"]);
+                   // $query->whereDate('fecha_venta', $keyword);
+            })*/
+			
+			 ->filterColumn('fecha_venta', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha_venta', '>=', $date_range[0])
+                            ->whereDate('fecha_venta', '<=', $date_range[1]);
+                    }
+                })
+			
+			 ->filterColumn('cliente', function ($query, $keyword) {
+				 $query->whereHas('venta.client', function ($str) use ($keyword) {
+						$str->where('contact_name', 'like', "%{$keyword}%");
+				  });
+            })
+			
+            ->filterColumn('marca_modelo', function ($query, $keyword) {
+              $query->orwhereHas('producto.marcaModelo', function ($str) use ($keyword) {
+                    $str->whereHas('marca', function ($str) use ($keyword) {
+                        $str->where('marca', 'like', "%{$keyword}%");
+                    });
+                    $str->orwhereHas('modelo', function ($str) use ($keyword) {
+                        $str->where('modelo', 'like', "%{$keyword}%");
+                    });
+                });
+            })
+			->filterColumn('pieza', function ($query, $keyword) {
+				$query->orwhereHas('producto', function ($str) use ($keyword) {
+                         $str->where('products.id', 'like', "%{$keyword}%");
+						$str->orwhereHas('item', function ($str) use ($keyword) {
+							$str->where('items.item_name', 'like', "%{$keyword}%");
+						});
+				});
+            })
+			->filterColumn('vendedor', function ($query, $keyword) {
+                $query->orwhereHas('venta.vendedor', function ($str) use ($keyword) {
+                        $str->where('name', 'like', "%{$keyword}%");
+                    });
+            })
+			->filterColumn('ubicacion', function ($query, $keyword) {
+                $query->orwhereHas('car.lugar_entrega', function ($str) use ($keyword) {
+                        $str->where('nombre', 'like', "%{$keyword}%");
+                    });
+            })
+			->filterColumn('estado_veh', function ($query, $keyword) {
+                $query->orwhereHas('car.estado', function ($str) use ($keyword) {
+                        $str->where('estado', 'like', "%{$keyword}%");
+                    });
             })
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;
