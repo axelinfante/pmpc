@@ -12,6 +12,20 @@
             <div class="card mt-2">
                 <span class="d-none panel-title">{{ _lang('Consulta de Orden de desarme') }}</span>
                 <div class="card-body">
+				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+    <span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
+    
+    <span class="badge rounded-pill text-dark px-2.5 py-1 fw-bold" style="background-color: #FFFACD;">Parcial</span>
+    <span class="text-muted small">&rarr;</span>
+    
+    <span class="badge rounded-pill text-dark px-2.5 py-1 fw-bold" style="background-color: #98FB98;">Completado</span>
+    <span class="text-muted small">&rarr;</span>
+    
+    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: #ffffff;">Cancelado</span>
+    <span class="text-muted small">&rarr;</span>
+    
+    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #F08080; color: #ffffff;">Sin Estado</span>
+</div>
                     <div class="table-responsive" style="padding: 10px;">
                     <table id="orden-desarme-table" class="table table-bordered" style="width: 100%;">
                         <thead>
