@@ -2080,7 +2080,16 @@ class InvoiceController extends Controller
 
     public function list_comision()
     {
-        if (strtolower(auth()->user()->role->name) == 'vendedor') {
+        if (strtolower(auth()->user()->role->name) == 'Gerencial') {
+			$total_monto = Comision::where('isPaid', null)->sum('monto');
+
+            $total_monto_pagado = Comision::where('isPaid', 1)->sum('monto');
+			
+		}else{
+			$total_monto = Comision::where('id_vendedor', auth()->id())->where('isPaid', null)->get()->sum('monto');
+           $total_monto_pagado = Comision::where('id_vendedor', auth()->id())->where('isPaid', 1)->get()->sum('monto');
+		}
+        /*if (strtolower(auth()->user()->role->name) == 'vendedor') {
             //$comisiones = Comision::where('id_vendedor',auth()->id())->get();
             $total_monto = Comision::where('id_vendedor', auth()->id())->where('isPaid', null)->get()->sum('monto');
 
@@ -2090,7 +2099,7 @@ class InvoiceController extends Controller
             $total_monto = Comision::where('isPaid', null)->sum('monto');
 
             $total_monto_pagado = Comision::where('isPaid', 1)->sum('monto');
-        }
+        }*/
 
         $rol = Role::where('name', 'Vendedor')->first()->id;
 
