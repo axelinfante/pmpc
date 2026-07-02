@@ -170,7 +170,7 @@ $(document).ready(function() {
         }),
 		visibleButtons: {
         reset: true,
-        excel: false,
+        excel: true,
         print: false
 		},
 		customButtons: [

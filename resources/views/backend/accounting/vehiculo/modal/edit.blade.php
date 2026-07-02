@@ -787,6 +787,10 @@
     $('#myForm').find(".print-error-msg").css('display','none');
     $(':input[type="submit"]').prop('disabled', true);
 	
+	if (typeof tinymce !== 'undefined') {
+        tinymce.triggerSave();
+    }
+	
 	let masterFormData = new FormData(this);
     const formMethod = $(this).find('input[name="_method"]').val() || 'POST';
     masterFormData.append("_method", formMethod);
@@ -984,6 +988,12 @@
         })
 
         $('.select2').select2();
+		
+		$('#main_modal').on('hidden.bs.modal', function () {
+    if (typeof tinymce !== 'undefined') {
+        tinymce.remove(); 
+    }
+});
 
         // var maxField = 10; // Numero maximo de campos
         // var addButton = $('.add_button');

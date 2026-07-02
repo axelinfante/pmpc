@@ -119,6 +119,7 @@
                 orderCellsTop: true,
                 fixedHeader: true,
                 stateSave: true,
+				lengthMenu: [[25, 50, 100, 250], [25, 50, 100, 250]],
                 stateLoadCallback: function(settings) {
                     var state = JSON.parse(localStorage.getItem(
                         '{{ url('orden-despacho/get_table_data') }}'));
@@ -139,7 +140,7 @@
                         d.id = "{{ $id ?? null }}";
                     }
                 },
-                dom: 'Bfrtip',
+                dom: 'Bfrltip',
                 columns: [{
                         data: 'checkbox',
                         name: 'checkbox',

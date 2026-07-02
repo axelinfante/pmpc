@@ -609,6 +609,11 @@
 	
 	$('#myForm').on('submit', function(e) {			  
     e.preventDefault();
+	
+	if (typeof tinymce !== 'undefined') {
+        tinymce.triggerSave();
+    }
+	
 	var current_modal = $(this).closest('.modal');
 	  var elem = $(this);
 	$('#myForm').find(".print-error-msg").find("ul").empty();
@@ -849,6 +854,13 @@
         }
     });
     return false;
+});
+
+
+$('#main_modal').on('hidden.bs.modal', function () {
+    if (typeof tinymce !== 'undefined') {
+        tinymce.remove(); 
+    }
 });
 
 
