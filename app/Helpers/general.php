@@ -2321,6 +2321,7 @@ if (!function_exists('filepondUpload')) {
                 //$image->toWebp(70)->save($path . '/' . $filename);
 				
 				Image::make($uploaded_file)
+                    ->orientate()
                     ->encode('webp', 90)
                     ->save($path . '/' . $filename);
             } else {
@@ -2350,6 +2351,7 @@ if (!function_exists('filepondUploadRequest')) {
 				$absolute_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative_path);
                 // Procesar con Intervention Image
                 \Image::make($file)
+                    ->orientate()
                     ->encode('webp', 90)
                     ->save($absolute_path);
                  //   ->save($path . '/' . $filename);
@@ -2506,12 +2508,21 @@ if (!function_exists('video_lazy'))
 
 if ( ! function_exists('img_lazy'))
 {
-function img_lazy($src = '')
+function img_lazy($src = '', $id = null)
 	{
 		$imagen_opcional = asset("public/images/lazyload/loader.gif");  
-	
+        $id_final=($id) ? 'id="img-'.$id.'"' : '';    
 		$url=buscarImagen($src);
-		$image ='<img class="card-img-top img-fluid lozad" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'" alt="">';
+		$image ='<img '.$id_final.' class="card-img-top img-preview img-fluid lozad" data-rotation="0" data-src="'.$url.'" data-srcset="'.$imagen_opcional.'" alt="">';
+        if ($id){
+        $image .= '<div class="mt-2">
+            <button type="button" 
+                    class="btn btn-warning btn-sm"
+                    onclick="rotateImage(document.getElementById(\'img-' . $id . '\'))">
+                <i class="ti-rotate-right"></i> Rotar 90°
+            </button>
+        </div>';
+        }
 		return $image;
 	}
 }

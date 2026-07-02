@@ -23,7 +23,7 @@
 						<!--<img src="{{asset('public/uploads/products/'.$img->img)}}" alt="">-->
 						<!--<img class="card-img-top img-fluid" src="{{ buscarImagen('uploads/products/' . $img->img) }}" alt="">-->
 						@php
-										echo img_lazy('uploads/products/' . $img->img);
+										echo img_lazy('uploads/products/' . $img->img,$img->id);
 						@endphp
 					</div>
 				</div>
@@ -33,3 +33,13 @@
 		</div>
 	</div>
 </div>				
+
+<script>
+function rotateImage(img) {
+    let rotation = parseInt(img.getAttribute('data-rotation')) || 0;
+    rotation = (rotation + 90) % 360;
+    
+    img.style.transform = `rotate(${rotation}deg)`;
+    img.setAttribute('data-rotation', rotation);
+}
+</script>
