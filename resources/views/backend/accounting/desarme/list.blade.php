@@ -395,13 +395,13 @@
 					}
 				},*/
 				{
-                    text: 'Confirmacion de despacho',
+                    text: 'Confirmacion de desarme',
 			        className: 'btn btn-xs ajax-modal',
-					titleAttr: 'Confirmacion de despacho',
+					titleAttr: 'Confirmacion de desarme',
 					//enabled: false,
 					 attr: {
-						title: "Confirmación de despacho",
-						id: "despacho-button",
+						title: "Confirmación de desarme",
+						id: "desarme-button",
 						"data-reload": "false" // <--- Agregado de forma fija aquí
 					},
 					init: function (dt, node, config) {
