@@ -401,8 +401,71 @@
 							
 							
 							}else{
+								
+								var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
+								
+								if (colIdx == 3) {
+								//if (tipoInput=='date'){
+									$(cell).html('<input type="text" id="fecha_venta" name="fecha_venta" class="form-control filtrov" placeholder="Rango de fechas..." autocomplete="off" />');
+
+								var $inputFecha = $('#fecha_venta', cell);
+
+								$inputFecha.daterangepicker({
+									autoUpdateInput: false,
+									opens: 'left',
+									locale: {
+										format: 'YYYY-MM-DD',
+										cancelLabel: 'Limpiar',
+										applyLabel: 'Aplicar',
+										fromLabel: 'Desde',
+										toLabel: 'Hasta',
+										customRangeLabel: 'Personalizado',
+										daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+										monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+									}
+								});
+							   $inputFecha.on('apply.daterangepicker', function(ev, picker) {
+									let dateRango = picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD');
+									$(this).val(dateRango);
+									api.column(colIdx).search(dateRango).draw();
+								});
+
+								$inputFecha.on('cancel.daterangepicker', function(ev, picker) {
+									$(this).val('');
+									api.column(colIdx).search('').draw();
+								});
+
+								$inputFecha.on('keydown', function(e) {
+									e.preventDefault();
+								});
+									
+								}else{
+									$(cell).html(
+                                '<input class="filtros" style="width:100%" type="' + tipoInput +
+                                '" placeholder="' + title + '" />'
+                            );
+
+                            $('input', cell).each(function() {
+                                let cursorPosition = 0;
+
+                                $(this).off('change')
+                                    .on('change', function(e) {
+                                        $(this).attr('title', $(this).val());
+                                        let regexr = '({search})';
+                                        cursorPosition = this.selectionStart;
+
+                                     //if (e.keyCode == 13) { 
+									  api.column(colIdx).search(
+											this.value
+									  ).draw();
+									  
+									  
+                                    });
+                            });
+							};
+								}
 							
-                            var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
+                            /*var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
 
                             $(cell).html(
                                 '<input class="filtros" style="width:100%" type="' + tipoInput +
@@ -426,7 +489,7 @@
 									  
                                     });
                             });
-							};
+							};*/
                         } else {
                             $(cell).html('');
                         }

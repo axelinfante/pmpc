@@ -449,7 +449,8 @@ Route::group(["middleware" => ["install"]], function () {
                 "ordendesarme/update-puesto",
                 "OrdenDesarmeController@updatePuesto",
             )->name("update-puesto");
-
+			Route::get("orden-desarme/generar-ordenesdesarme/{ids}","OrdenDesarmeController@generateOrdenMaxLote",)->name("orden-desarme.generar-lote-max");
+			Route::post("orden-desarme/confirmaciones","OrdenDesarmeController@confirmacionesMAX")->name("orden-desarme.confirmaciones");
             //marca modelo
             Route::get(
                 "marcamodelo/modelo/{idMarca?}",

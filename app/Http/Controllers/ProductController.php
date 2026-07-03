@@ -31,7 +31,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use App\Orden_desarme;
 use App\Puesto;
-
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
 use ZipArchive;
 use File;
@@ -330,6 +331,9 @@ class ProductController extends Controller
                     }
                      return $data->nro_oblea;
                 })
+					->setRowClass(function ($product) {
+						return $product->estado === 'Defectuoso Comercializable' ? 'table-danger' : '';
+				})
 				->rawColumns(['mercado_libre','action','deposito','reparaciones'])
 				->tojson();
         }
@@ -729,7 +733,8 @@ class ProductController extends Controller
         $auto = Cars::where('id', $idCar)->with('marca_modelo')->first();
         //$cars = Cars::All()->whereIn('company_id', $company_id);
 
-        $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+        $company_id = company_id();//empty(session('cia')) ? company_id_arr() : company_id_arr();
+//        $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
         $nro_interno_datos = Cars::All()->whereIn('company_id', $company_id);
         $items = Item::where('activo', "Si")->orderBy('item_name', 'ASC')->get();
 
@@ -1869,7 +1874,8 @@ class ProductController extends Controller
 					'items.allCar',
 					'items.activo',
 					'products.estado',
-					'invoices.invoice_number'
+					'invoices.invoice_number',
+					'users.name as vendedor'
 				)
 				->leftJoin('products', function($join) use ($request) {
 					$join->on('products.item_id', '=', 'items.id')
@@ -1880,6 +1886,9 @@ class ProductController extends Controller
 					})
 				->leftJoin('invoices', function($join) {
 					$join->on('invoices.id', '=', 'invoice_items.invoice_id');
+				})
+				->leftJoin('users', function($join) {
+					$join->on('invoices.user_id', '=', 'users.id');
 				})
 				->where(function($query) {
 					$query->where('items.item_type', 'product')
@@ -1898,53 +1907,6 @@ class ProductController extends Controller
 				->orderBy('item_name', 'asc')
 				->get();
 	
-	
-			
-		/*$products = Item::select(
-        'products.id as product_id', 
-        'items.id as item_id',       
-        'products.stock', 
-        'products.nro_oblea',
-        'items.item_name',
-        'items.allCar',
-        'items.activo',
-        'products.estado'
-    )
-    ->leftJoin('products', function($join) use ($request) {
-        $join->on('products.item_id', '=', 'items.id')
-             ->where('products.nro_interno', $request->nro_interno); 
-    })
-    ->where(function($query) use ($request) {
-        // Filtro de tipo base obligatorio
-        $query->where('items.item_type', 'product');
-		 $query->where('items.activo', 'Si')
-               ->where('items.allCar', 1);
-
-        // Filtros dinámicos según el Request
-        if ($request->has('filtrado')) {
-            switch ($request->get('filtrado')) {
-                case 'predefinido':
-                    $query->where('items.activo', 'Si')
-                          ->where('items.allCar', 1);
-                    break;
-                case 'activos':
-                    $query->where('items.activo', 'Si')
-                          ->where(function($q) {
-                              $q->where('items.allCar', 0)
-                                ->orWhereNull('items.allCar');
-                          });
-                    break;
-                case 'inactivos':
-                    $query->where('items.activo', 'No');
-                    break;
-            }
-        } else {
-            // Comportamiento por defecto (si no viene parámetro 'filtrado')
-            $query->where('items.activo', 'Si');
-        }
-    })
-    ->get(); */
-
 
 return DataTables::of($products)
     ->addIndexColumn()
@@ -1988,6 +1950,9 @@ return DataTables::of($products)
 				->addColumn('stock', function ($row)  {
                     return $row->stock ?? '';
                 })
+				/* ->editColumn('vendedor', function ($row) {
+					return $row->invoice->vendedor->name ?? '' ;
+				})*/
 				->addColumn('action', function ($row) {
 					if (!$row->product_id){
 						return "";
@@ -2072,7 +2037,30 @@ if (isset($car)) {
                 WHERE id IN($idsString)";
         
         DB::statement($sql);
+//---------------------
+				$productosCreados = Product::where('user_id', auth()->id())
+				->where('created_at', $now)
+				->whereIn('item_id', explode(',', $idsString))
+				->get();
 
+    if ($productosCreados->isNotEmpty()) {
+        $auditModel = $productosCreados->first();
+        $auditModel->auditEvent = 'created';
+        $auditModel->isCustomEvent = true;
+        $auditModel->auditCustomOld = [];
+        $auditModel->auditCustomNew = [
+            'bulk_insert'     => true,
+            'total_inserted'  => $productosCreados->count(),
+            'inserted_ids'    => $productosCreados->pluck('id')->toArray(),
+            'item_ids_source' => explode(',', $idsString),
+            'description'     => $request->input('description', ''),
+            'idDeposito'      => $request->input('idDeposito'),
+            'nro_interno'     => $nro_interno,
+        ];
+        Event::dispatch(AuditCustom::class, [$auditModel]);
+
+	}
+//-----------------
 
         $productosCreadosIds = DB::table('products')
             ->where('nro_interno', $nro_interno)
