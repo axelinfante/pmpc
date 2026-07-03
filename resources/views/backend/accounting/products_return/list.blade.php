@@ -21,6 +21,7 @@
                                 <option value="procesada">Procesadas</option>
                                 <option selected value="reparar">Defectuoso a reparar</option>
                                 <option value="descompuesto">Defectuoso a destruir</option>
+                                <option value="comercializable">Defectuoso comercializable</option>
                             </select>
                         </div>
                     </div>
@@ -34,12 +35,14 @@
                                 <th>{{ _lang('Fecha') }}</th>
                                 <th>{{ _lang('Numero de Venta') }}</th>
                                 <th>{{ _lang('Client') }}</th>
+                                <th>{{ _lang('Vendedor') }}</th>
                                 <!-- <th>{{ _lang('Numero del Producto') }}</th> -->
                                  <th>{{ _lang('Numero Interno') }}</th> 
                                 <th>{{ _lang('Nombre del Producto') }}</th>
                                 {{-- <th class="text-right d-none">{{ _lang('Cantidad') }}</th> --}}
                                 <th>{{ _lang('Motivo') }}</th>
                                 <th>{{ _lang('Estatus') }}</th>
+                                <th>{{ _lang('Ubicacion') }}</th>
                                 <th class="text-center notexport">{{ _lang('Action') }}</th>
                             </tr>
                         </thead>
@@ -83,12 +86,14 @@
 						{ data: 'return_date', name: 'return_date' },
 						{ data: 'invoice_id', name: 'invoice_id' },
 						{ data: 'client', name: 'client' },
+						{ data: 'vendedor', name: 'vendedor' },
 						// { data: 'product_id', name: 'product_id' },
                         { data: 'internal_reference', name: 'internal_reference' },
 						{ data: 'product_name', name: 'product_name' },
 						//{ data: 'quantity', name: 'quantity', className: 'd-none' },
 						{ data: 'note', name: 'note' },
 						{ data: 'status', name: 'status' },
+						{ data: 'ubicacion', name: 'ubicacion' },
 						{ data: 'action', name: 'action', className: 'text-center', orderable: false, searchable: false },
 						],
 				});
