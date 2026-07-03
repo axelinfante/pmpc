@@ -371,7 +371,75 @@
                     // $('#miModal .modal-body').html('<p>ID: ' + rowData.id + '</p><p>Nombre: ' + rowData.nombre + '</p>');
 						
                     }
+					},
+					/*{
+                    text: 'Confirmacion de despacho',
+			        className: 'btn btn-xs',
+					attr: {
+						title: "Confirmacion de despacho",
+						id: "confirmacion-button",
+						"data-title": "Confirmacion de despacho",
+					},
+					action: function (e, dt, node, config) {
+						var selectedIds = [];
+						$('.row-checkbox:checked').each(function() {
+							selectedIds.push($(this).data('id'));
+						});
+
+						if (selectedIds.length === 0) {
+							alert('Por favor, seleccione al menos un registro para continuar.');
+							return;
+						}
+					  $('#modal_orden_id_max').val(selectedIds);
+					  $('#modalConfirmarEntregaMax').modal('show');
 					}
+				},*/
+				{
+                    text: 'Confirmacion de despacho',
+			        className: 'btn btn-xs ajax-modal',
+					titleAttr: 'Confirmacion de despacho',
+					//enabled: false,
+					 attr: {
+						title: "Confirmación de despacho",
+						id: "despacho-button",
+						"data-reload": "false" // <--- Agregado de forma fija aquí
+					},
+					init: function (dt, node, config) {
+						 /*var selectedIds = [];
+                            $('.row-checkbox:checked').each(function() {
+                                selectedIds.push($(this).data('id'));
+                            });
+
+                            if (selectedIds.length === 0) {
+                                alert('Seleccione al menos una orden.');
+                                return;
+                            }
+						
+						$(node).attr('href', '{{ url('orden-desarme/generar-ordenesdesarme') }}/' + selectedIds)*/
+					},
+					  action: function (e, dt, node, config) {
+							e.preventDefault();
+							
+							var selectedIds = [];
+							$('.row-checkbox:checked').each(function() {
+								selectedIds.push($(this).data('id'));
+							});
+
+							if (selectedIds.length === 0) {
+								alert('Seleccione al menos una orden.');
+								$(node).attr('href', '#');
+								e.stopImmediatePropagation(); 
+								return false;
+							}
+
+							var baseUrl = "{{ url('orden-desarme/generar-ordenesdesarme') }}";
+							var finalUrl = baseUrl + '/' + selectedIds.join(',');
+							$(node).attr('href', finalUrl);
+							if ($(node).hasClass('ajax-modal') && typeof $.fn.modal !== 'undefined') {
+									$(node).trigger('click'); 
+							}
+						}
+				}
                 ],
                 columns: (function() {
                     var columns = [{
@@ -859,6 +927,53 @@
 			$('#orden-desarme-table').DataTable().ajax.reload(null, false);
 		});
 		 
+		 
+		 	$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
+			// Limpiar la validación al cerrar el modal
+			$('#miFormulario').parsley().reset();
+			// Limpiar los campos del formulario
+			$('#modal_orden_id_max').val('');
+			$('#orden-desarme-table').DataTable().ajax.reload(null, false);
+		}); 
+		 
+		 
+		        
+$( document ).ready(function() {
+		$('#miFormulario').submit(function(e) {
+        e.preventDefault();
+        var url = $(this).attr("action");
+        let formData = new FormData(this);
+    alert();
+       /* $.ajax({
+                type:'POST',
+                url: url,
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: (json) => {
+				if(json['result'] == "success"){
+						$('#modalConfirmarEntregaMax').modal('hide');
+				}else{
+					$('#miFormulario').find(".print-error-msg").find("ul").html('');
+                    $('#miFormulario').find(".print-error-msg").css('display','block');
+                    $.each( json['message'], function( key, value ) {
+					//	console.log(value);
+                        $('#miFormulario').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                    });
+				  }
+				},
+                error: function(response){
+                    $('#ajax-form').find(".print-error-msg").find("ul").html('');
+                    $('#ajax-form').find(".print-error-msg").css('display','block');
+                    $.each( response.responseJSON.errors, function( key, value ) {
+                        $('#ajax-form').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
+                    });
+                }
+           });*/
+        
+    });
+});	
+ 
 	
 	/*$('#fecha_venta').daterangepicker({
 			autoUpdateInput: false,
