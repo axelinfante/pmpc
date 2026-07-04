@@ -120,9 +120,8 @@ public function show()
     </tr>
   </tbody>
 </table>\' data-toggle="modal" data-target="#detailsModal"><i class="fa fa-info-circle" aria-hidden="true"></i></a>';
-
 			if 	($orden->items_pendientes){
-				return $imprimirBtn . ' '.$botonqr. ' '.$botondesarme;
+				return $imprimirBtn . ' '.$botonqr. ' '.$botondesarme.$orden->items_pendientes;
 			}else{
                 return $editarBtn . ' ' . $ordenEntregaBtn . ' ' . $imprimirBtn . ' ' . $confirmarEntrega.' '.$botonqr;
 				}
@@ -362,12 +361,24 @@ public function show()
                    $query->where('ordenes_despacho.id', 'LIKE', '%' . $keyword . '%');
 
             })
-			->filterColumn('fecha_venta', function ($query, $keyword) {
+			/*->filterColumn('fecha_venta', function ($query, $keyword) {
                 //$keyword = preg_replace('/[^\d\-]/', '', $keyword);
                 $query->whereHas('cotizacion', function ($q) use ($keyword) {
                     $q->whereDate('invoice_date', $keyword);
                 });
-            })
+            })*/
+			
+			->filterColumn('fecha_venta', function ($query, $keyword) {
+				 $query->whereHas('cotizacion', function ($q) use ($keyword) {
+                    //$q->whereDate('invoice_date', $keyword);
+					
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $q->whereDate('invoice_date', '>=', $date_range[0])
+                            ->whereDate('invoice_date', '<=', $date_range[1]);
+                    }
+                });
+                })
 			->filterColumn('cotizacion', function ($query, $keyword) {
                 $query->whereHas('cotizacion', function ($q) use ($keyword) {
                     $q->where(function ($q2) use ($keyword) {

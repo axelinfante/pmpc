@@ -106,6 +106,7 @@
                                             <th >Producto</th>
                                             <th>{{ _lang('nº oblea') }}</th>
                                             <th >Id_Producto</th>
+                                            <th >Vendedor</th>
                                             <th >Estado</th>
                                             <th >Stock</th>
 											<th class="notexport">Accion <input type="checkbox" id="qr_master" class="ml-1"></th>
@@ -240,7 +241,7 @@ $(document).ready(function() {
 		],  
 		"columnDefs": [
     {
-        "targets": 6, 
+        "targets": 7, 
         "searchable": false,
         "orderable": false,
         "className": 'text-center',
@@ -265,6 +266,7 @@ $(document).ready(function() {
             { data: 'item_name', name: 'item_name' },
             { data: 'nro_oblea', name: 'nro_oblea' },
 			{ data: 'id_producto', name: 'id_producto' },
+			{ data: 'vendedor', name: 'vendedor' },
 			{ data: 'estado', name: 'estado' },
             { data: 'stock', name: 'stock' },
             { data: 'action', name: 'action', orderable: false, searchable: false },

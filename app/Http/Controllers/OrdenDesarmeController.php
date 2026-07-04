@@ -23,7 +23,7 @@ use App\Cars;
 use App\CompanySetting;
 use PDF;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\DB;
 
 use ZipArchive;
 use Illuminate\Support\Facades\Storage;
@@ -1412,56 +1412,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         $orden->puesto = $request->puesto;
         $orden->f_ingreso_puesto = $request->f_ingreso_puesto;
         $orden->idCadete_operario = $operario->id;
-		
-		/*if (in_array($compania, array("2"))) {		
-			$orden->puesto_final = '';
-			$orden->fecha_desarmado_anulado = $request->f_ingreso_puesto;
-			$orden->estado = 'completado'; 
-		
-            $item_invoice = InvoiceItem::where('invoice_id',$orden->id_venta )->where('item_id',$orden->pieza)->first();
-			if($item_invoice)
-			{
-				$item_invoice->product_id=$orden->product_id;
-				$item_invoice->save();
-				
-				//$vend = Product::where('nro_interno', "$car->id")->where('stock', 0)->get();
-				 $stock = Product::where("id", $orden->product_id)->first();
-				 $stock->stock = $stock->stock - $item_invoice->quantity;
-			     $stock->save();
-				
-				$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden->venta->id)->where('invoiceitem_id', '=',  $orden->product_id)->first();
-
-					if(!$orden_despacho_){
-					//	Notification::send(User::find($orden->venta->user_id), new OrdenUpdated($orden));
-
-						$orden_despacho = new OrdenDespacho();
-
-						$orden_despacho->invoice_id = $orden->venta->id;
-
-						$orden_despacho->invoiceitem_id =  $item_invoice->id; //$orden->product_id; --
-						$orden_despacho->description =  $item_invoice->description;
-						$orden_despacho->quantity =  $item_invoice->quantity;
-						$orden_despacho->company_id =  $item_invoice->company_id;
-						$orden_despacho->estatus = 'pendiente';
-
-						$orden_despacho->save();
-
-						//$message = "Cambio de estado en orden de desarme <b><a href='" . route('orden-desarme.show', $orden->id) . "'>$orden->id</a></b>";
-
-						//$user = User::find($orden->venta->user_id);
-						//$email = $user->email;
-						//Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
-					 }
-
-
-			}		
-			
-		 }//
-		 */
-
-        $orden->save();
-
-        // Respuesta de éxito
+	    $orden->save();
+    // Respuesta de éxito
         return response()->json(['success' => 'Registro actualizado exitosamente.']);
     }
 
@@ -1755,140 +1707,6 @@ data-title="' . _lang('Update Vehicle') . '" class="btn btn-warning btn-xs ajax-
 class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
                     . '</form>';
             })
-			
-		
-           /* ->editColumn('procesar', function ($orden) {
-                $selected = $orden->procesar == 1 ? 'selected' : '';
-                $disable = '';
-                if ($orden->estado == 'completado')
-                    $disable = 'disabled';
-
-                $a = "<select $disable class='form-control' onchange='changeProcesar(this)' data-id='$orden->id' name='procesar[$orden->id]'>
-                    <option value = '' > No procesado</option>
-                    <option $selected value = '1' > Procesar</option>
-                </select>";
-                return $a;
-            })
-
-            ->addColumn('id_link', function ($orden) {
-                return '<a href="' . action('OrdenDesarmeController@show', $orden->id) . '">' . $orden->id . '</a>';
-            })
-            ->editColumn('pedido_pasado', function ($orden) {
-                return $orden->pedido_pasado;
-            })
-            ->editColumn('prioridad', function ($orden) {
-
-                return $orden->prioridad;
-            })*/
-            
-			
-			
-			
-			
-           
-            /*->editColumn('fecha_venta', function ($orden) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return isset($orden->fecha_venta) ? date($date_format, strtotime($orden->fecha_venta)) : null;
-            })
-            ->editColumn('lugar_venta', function ($orden) {
-                return $orden->lugar_venta;
-            })*/
-           
-            /*->editColumn('detalle_anulado', function ($orden) {
-                return $orden->detalle_anulado;
-            })
-            ->editColumn('cliente', function ($orden) {
-                if (!empty($orden->cotizacion) || !empty($orden->venta)) {
-                    return $orden->cotizacion->client->contact_name ?? $orden->venta->client->contact_name;
-                }
-
-                return '';
-            })*/
-			
-			
-			
-            
-           /* ->editColumn('ubicacion', function ($orden) {
-                return $orden->car->lugar_entrega->nombre ?? '';
-            })*/
-            
-           /* ->editColumn('autorizo', function ($orden) {
-                return $orden->autorizo;
-            })
-            ->editColumn('fecha_estimada_pieza_disponible', function ($orden) {
-
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return isset($orden->fecha_estimada_pieza_disponible) ? date($date_format, strtotime($orden->fecha_estimada_pieza_disponible)) : null;
-            })
-            ->editColumn('existe', function ($orden) {
-                return $orden->existe;
-            })
-            ->editColumn('falta', function ($orden) {
-                return $orden->falta;
-            })
-            ->editColumn('informo_ausencia', function ($orden) {
-                return $orden->informo_ausencia;
-            })->editColumn('obs_desarme_busqueda', function ($orden) {
-                return $orden->obs_desarme_busqueda;
-            })
-            ->editColumn('fecha_desarmado_anulado', function ($orden) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return isset($orden->fecha_desarmado_anulado) ? date($date_format, strtotime($orden->fecha_desarmado_anulado)) : null;
-            })
-            ->editColumn('cargando_camioneta', function ($orden) {
-                return $orden->cargando_camioneta;
-            })->editColumn('entregado', function ($orden) {
-                return $orden->entregado;
-            })
-            ->editColumn('fecha_embalado', function ($orden) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return isset($orden->fecha_embalado) ? date($date_format, strtotime($orden->fecha_embalado)) : null;
-            })
-
-            ->editColumn('fecha_avisado_vendedor', function ($orden) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return isset($orden->fecha_avisado_vendedor) ? date($date_format, strtotime($orden->fecha_avisado_vendedor)) : null;
-            })*/
-            
-			
-			
-			
-/*
-            ->addColumn('cliente', function ($orden) {
-                return $orden->venta->client->contact_name;
-            })*/
-            
-           /* ->editColumn('puesto', function ($orden) {
-
-                if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial') {
-
-                    $opciones = ['1C', '1P', '2C', '2P', '3', '4C', '4P'];
-                    $operarios = ['operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operarioconstituyentes@pmpc.com.ar', 'operarioventanita@pmpc.com.ar', 'operarioventanita@pmpc.com.ar'];
-
-                    $select = '<select name="puesto" class="puesto-select form-control" data-id=' . $orden->id . '>';
-                    $select .= '<option value=""> </option>';
-                    $i = 0;
-                    foreach ($opciones as $opcion) {
-                        $selected = ($orden->puesto == $opcion) ? 'selected' : '';
-                        $select .= '<option value="' . $opcion . '" ' . $selected . ' data-operario ="' . $operarios[$i] . '">' . $opcion . '</option>';
-                        $i++;
-                    }
-
-                    $select .= '</select>';
-                    return $select;
-                } else {
-                    return '<span>' . $orden->puesto . '</span>';
-                }
-            })
-            ->editColumn('f_ingreso_puesto', function ($orden) {
-
-                if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial') {
-                    $fecha = isset($orden->f_ingreso_puesto) ? date('Y-m-d\TH:i', strtotime($orden->f_ingreso_puesto)) : '';
-                    return '<input type="datetime-local" name="f_ingreso_puesto" value="' . $fecha . '" class="f-ingreso-puesto-input form-control">';
-                } else {
-                    return '<span>' . $orden->f_ingreso_puesto . '</span>';
-                }
-            })*/
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;
             })
@@ -1897,6 +1715,133 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
             ->make(true);
 		}
 	}	
+	
+	
+	public function confirmacionesMAX(Request $request)
+    {
+		 $validator = Validator::make($request->all(), [
+            'product_ids' => 'nullable|array',
+        ]);
+
+		if ($validator->fails()) {
+			if ($request->ajax()) {
+				return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+			} else {
+				return back()->withErrors($validator)
+					->withInput();
+			}
+		}
+/*			$ids = explode(',', $request->input('orden_id_max'));
+
+			OrdenDespacho::whereIn('id', $ids)->update(['f_entrega' => $request->fecha_entrega_max,'forma_entrega' => $request->forma_entrega_max,'despachado_por' => $request->despachado_por_max,'estatus' => 'despachado']);	*/
+		
+	  DB::beginTransaction();
+			try {
+		
+			if (isset($request->id_desarme)) {
+				$product_ids= $request->product_ids;
+                foreach ($request->id_desarme as $key => $id) {
+					
+					//------------------
+					if($product_ids[$key]){		
+					
+								$orden_desarme = Orden_desarme::findOrFail($id);
+								$cadete_operario_aterior = $orden_desarme->idCadete_operario;
+								$estado_anterior = $orden_desarme->estado;
+
+								
+								$orden_desarme->informo_ausencia =  $request->input('informo_ausencia');
+								$orden_desarme->obs_desarme_busqueda =  $request->input('obs_desarme_busqueda');
+								$orden_desarme->fecha_desarmado_anulado =  $request->input('fecha_desarmado_anulado');
+								 $orden_desarme->puesto_final = $request->input('puesto_final') ?? '';
+								 
+								 if ($orden_desarme->fecha_desarmado_anulado !== null) { 
+									$orden_desarme->estado = 'completado'; 
+								}
+								 
+								$orden_desarme->save();
+									
+									
+								if ($orden_desarme->fecha_desarmado_anulado !== null)
+								 {       
+									$item_invoice = InvoiceItem::where('invoice_id',$orden_desarme->id_venta )->where('item_id',$orden_desarme->pieza)->first();
+									$stock = Product::where("id", $orden_desarme->product_id)->first();
+									if($item_invoice)
+									{
+										$item_invoice->product_id=$orden_desarme->product_id;
+										$item_invoice->save();
+
+										 if (in_array($stock->estado, array("desarme","desarme-stock"))) {
+											$stock->estado = "optimo";
+										  }
+										 
+										 $stock->stock = $stock->stock - $item_invoice->quantity;
+										 $stock->save();
+										
+										$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden_desarme->venta->id)->where('invoiceitem_id', '=',  $orden_desarme->product_id)->first();
+
+											if(!$orden_despacho_){
+												$orden_despacho = new OrdenDespacho();
+
+												$orden_despacho->invoice_id = $orden_desarme->venta->id;
+
+												$orden_despacho->invoiceitem_id = $item_invoice->id; // $orden_desarme->product_id;---
+												$orden_despacho->description =  $item_invoice->description;
+												$orden_despacho->quantity =  $item_invoice->quantity;
+												$orden_despacho->company_id =  $item_invoice->company_id;
+												$orden_despacho->estatus = 'pendiente';
+
+												$orden_despacho->save();
+											 }
+
+
+									}		
+									/// proceso para desarme-stock
+										 if (in_array($stock->estado, array("desarme-stock"))) {
+											$stock->estado = "despacho";
+											$stock->save();
+										  }
+								}
+			}					
+					//------------------------
+					
+                }
+            }
+			
+	   DB::commit();
+            //toast('Proceso realizado correctamente!', 'success');
+			return response()->json([
+            'result' => 'success',
+            'message' => 'Orden de despacho actualizada correctamente.',
+            'reload' => true
+			]);	
+        } catch (Throwable $e) {
+            DB::rollBack();
+            // dd($e->getMessage());
+            //toast('Error al crear la cotizacione! '.$e->getMessage(), 'error');
+        }		
+	}
+	
+	
+	 public function generateOrdenMaxLote(Request $request, $ids)
+    {
+		if ($ids){
+
+	    $lugar_entregas = Lugar_entregas::all();
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		$idsArray = explode(',', $ids);
+			$ordenes = Orden_desarme::with(['venta', 'cotizacion', 'producto.marcaModelo.marca', 'producto.marcaModelo.modelo', 'producto.item', 'car.lugar_entrega', 'car'])
+            ->whereIn("id", $idsArray)
+            ->orderBy('interno', 'desc')
+            ->get();
+        $data = ['o' => $ordenes, 'ids' => $ids, 'lugar_entregas' => $lugar_entregas];
+		$data['puestos'] = Puesto::with('asignado')->with('company')
+		->whereIn('company_id', $company_id)
+		->orderBy("company_id", "asc")
+		->get();
+        return view('backend.accounting.desarme.modal.confirmar-entrega-max', $data);
+	  }
+    }
 	
 	
 }

@@ -262,6 +262,10 @@ class ProductsReturnController extends Controller
 	if ($estatus=="procesada"){
 		Product::where('id', $productReturn->product_id)->update(['stock' => 1]);
 	}	
+	if ($estatus=="comercializable"){
+		Product::where('id', $productReturn->product_id)->update(['stock' => 1,'estado'=> 'Defectuoso Comercializable']);
+	}	
+	
 
     $productReturn->status = $estatus;
     $productReturn->save();
@@ -433,6 +437,9 @@ class ProductsReturnController extends Controller
         ->editColumn('client', function ($ProductReturn) {
             return $ProductReturn->invoice->client->contact_name ?? '';
         })
+		 ->editColumn('vendedor', function ($orden) {
+                return $orden->invoice->vendedor->name ?? '' ;
+            })
 		->editColumn('status', function ($ProductReturn) {
     $statuses = [
         'pendiente'    => '<span class="badge badge-warning">Pendientes</span>',
@@ -513,6 +520,20 @@ class ProductsReturnController extends Controller
                     }
 			//$query->whereRaw("DATE_FORMAT(return_date, '%d-%m-%Y') like ?", ["%{$keyword}%"]);
 		})
+		 ->filterColumn('vendedor', function ($query, $keyword) {
+			$query->where(function ($query) use ($keyword) {
+				$query->whereHas('invoice.vendedor', function ($subQuery) use ($keyword) {
+					$subQuery->where('name', 'like', "%{$keyword}%");
+				});
+			});
+		})->filterColumn('ubicacion', function ($query, $keyword) {
+                $query->orwhereHas('producto.deposito', function ($str) use ($keyword) {
+                        $str->where('nombre', 'like', "%{$keyword}%");
+                    });
+            })
+		->editColumn('ubicacion', function ($ProductReturn) {
+				return $ProductReturn->producto->deposito->nombre ?? '';
+		})
         ->editColumn('action', function ($ProductReturn) {
             //if (strtolower(auth()->user()->role->name) !== 'despacho' && $ProductReturn->status === 'pendiente') {
 				
@@ -545,6 +566,8 @@ class ProductsReturnController extends Controller
 								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=reparar" class="dropdown-item ajax-modal"><i class="fas fa-tools"></i> ' . _lang('Defectuoso a reparar') . '</a>
 								
 								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=descompuesto" class="dropdown-item ajax-modal"><i class="fas fa-trash-alt"></i> ' . _lang('Defectuoso a destruir') . '</a>
+								
+								<a data-reload="false" href="' . action('ProductsReturnController@edit', $ProductReturn->id) . '?status=comercializable" class="dropdown-item ajax-modal"><i class="fas fa-wrench"></i> ' . _lang('Defectuoso comercializable') . '</a>
                                
                             </div>
                         </div>';
