@@ -44,7 +44,8 @@ var current_row;
 
     $(document).on('change', '#service', function () {
         var product_id = $(this).val();
-        if (product_id == '') {
+		if (!$(this).val()) { 
+        ///*if (product_id == '') {
             return;
         }
 		
