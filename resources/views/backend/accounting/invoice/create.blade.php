@@ -703,28 +703,28 @@
 
 	$('.select2-ajax').on('change',function (e) {
 	
-	if($(this).prop('id') == 'car_id') {
-		if ($(this).val()!= '') {
-		$.ajax({
-			url :_url + '/vehiculo/get-company/'+$(this).val(),
-			async: false,
-			dataType: 'json',
-			success: function(data) {
-				$('#service').data('company', data.company);
-				$('#car_id').data('company', data.company);
-				//console.log(car.data('company'));
-				$('#company_id').val( data.company);
-				$('#company_id_s').val( data.company);
-			},
-			error: function(error) {
-				console.log('Error: Al cargar empresa' )
-			}
-		});
-		}
-	}
+	if ($(this).prop('id') == 'car_id') {
+    if ($(this).val()) { 
+        $.ajax({
+            url: _url + '/vehiculo/get-company/' + $(this).val(),
+            async: false,
+            dataType: 'json',
+            success: function(data) {
+                $('#service').data('company', data.company);
+                $('#car_id').data('company', data.company);
+                $('#company_id').val(data.company);
+                $('#company_id_s').val(data.company);
+            },
+            error: function(error) {
+                console.log('Error: Al cargar empresa');
+            }
+        });
+    }
+}
+
 
 	if($(this).prop('id') == 'service') {
-		if ($(this).val()!= '') {
+	if ($(this).val()) { 
 		$.ajax({
 			url :_url + '/products/get-company/'+$(this).val(),
 			async: false,
