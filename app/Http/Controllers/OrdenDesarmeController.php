@@ -857,8 +857,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 })
                 ->addColumn('invoice_number', function ($data) {
                     if (!empty($data->venta)) {
-
-                        return '<a href="' . action('InvoiceController@show', $data->venta->id) . '">' .  $data->venta->invoice_number . '</a>';
+						$datos_adicional =	($data->venta->status == 'Canceled') ? "</br>Anulada":"";
+                        return '<a href="' . action('InvoiceController@show', $data->venta->id) . '">' .  $data->venta->invoice_number . '</a>'.$datos_adicional;
                         //return $data->venta->invoice_number ?? '';   
                     }
                 })

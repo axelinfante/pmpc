@@ -89,10 +89,14 @@ class ProductController extends Controller
                     //$query->where('products.id11', 'like', "%{$keyword}");
                 })
                 ->filterColumn('created_at', function ($query, $keyword) {
-                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
-                    if (count($date_range) == 2) {
-                        $query->whereDate('products.created_at', '>=', $date_range[0])
-                            ->whereDate('products.created_at', '<=', $date_range[1]);
+                    if ($keyword != '') {
+                        $date_range = explode(' - ', $keyword);
+                        if (count($date_range) == 2) {
+                            $query->whereDate('products.created_at', '>=', $date_range[0])
+                                ->whereDate('products.created_at', '<=', $date_range[1]);
+                        } else {
+                            $query->whereDate('products.created_at', '=', $keyword);
+                        }
                     }
                 })
                 ->filterColumn('fecha_ingreso_a_stock', function ($query, $keyword) {
@@ -100,11 +104,24 @@ class ProductController extends Controller
                         $query->where('products.fecha_ingreso_a_stock', '=', "")
                             ->orWhereNull('products.fecha_ingreso_a_stock');
                     } elseif ($keyword != "") {
-						 $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+						 $date_range = explode(' - ', $keyword);
                     if (count($date_range) == 2) {
                         $query->whereDate('products.fecha_ingreso_a_stock', '>=', $date_range[0])
                             ->whereDate('products.fecha_ingreso_a_stock', '<=', $date_range[1]);
+                    } else {
+                        $query->whereDate('products.fecha_ingreso_a_stock', '=', $keyword);
                     }
+                    }
+                })
+                ->filterColumn('fecha_ultimogiro', function ($query, $keyword) {
+                    if ($keyword != "") {
+                        $date_range = explode(' - ', $keyword);
+                        if (count($date_range) == 2) {
+                            $query->whereDate('products.fecha_ultimogiro', '>=', $date_range[0])
+                                ->whereDate('products.fecha_ultimogiro', '<=', $date_range[1]);
+                        } else {
+                            $query->whereDate('products.fecha_ultimogiro', '=', $keyword);
+                        }
                     }
                 })
                 ->filterColumn('nro_interno', function ($query, $keyword) {
@@ -1117,6 +1134,42 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+    public function bulkUpdateFechaUltimogiro(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required',
+            'fecha_ultimogiro' => 'nullable|date'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['result' => 'error', 'message' => $validator->errors()->all()], 422);
+        }
+
+        $idsInput = $request->input('ids', '');
+        $ids = array_values(array_filter(array_map(function ($value) {
+            $value = trim((string) $value);
+            if ($value === '') {
+                return null;
+            }
+
+            if (preg_match('/(\d+)/', $value, $matches)) {
+                return (int) $matches[1];
+            }
+
+            return is_numeric($value) ? (int) $value : null;
+        }, explode(',', $idsInput))));
+
+        if (empty($ids)) {
+            return response()->json(['result' => 'error', 'message' => 'No se seleccionaron productos.'], 422);
+        }
+
+        Product::whereIn('id', $ids)
+            ->whereIn('company_id', company_id_arr())
+            ->update(['fecha_ultimogiro' => $request->filled('fecha_ultimogiro') ? $request->input('fecha_ultimogiro') : null]);
+
+        return response()->json(['result' => 'success', 'updated' => count($ids)]);
+    }
+
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -1199,6 +1252,7 @@ class ProductController extends Controller
                 $product->nro_oblea = $request->input('nro_oblea') ?? null;
                 $product->idDeposito = $request->input('idDeposito') ?? null;
                 $product->ubicacion = $request->input('ubicacion') ?? null;
+                $product->fecha_ultimogiro = $request->filled('fecha_ultimogiro') ? $request->input('fecha_ultimogiro') : null;
 
                 if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
                     $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
