@@ -148,6 +148,17 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="control-label">{{ _lang('Fecha último giro') }}</label>
+                                    @php
+                                        $fechaUltimoGiro = $product->fecha_ultimogiro ? \Carbon\Carbon::parse($product->fecha_ultimogiro)->format('Y-m-d') : '';
+                                    @endphp
+                                    <input type="date" class="form-control" name="fecha_ultimogiro"
+                                        value="{{ old('fecha_ultimogiro', $fechaUltimoGiro) }}">
+                                </div>
+                            </div>
+
                             <div class="col-md-6 d-none">
                                 <label for="car_or_stock">Tipo de producto</label>
                                 <select name="car_or_stock" class="form-control" id="car_or_stock" disable>
