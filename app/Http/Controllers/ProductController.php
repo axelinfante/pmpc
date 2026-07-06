@@ -1138,7 +1138,10 @@ class ProductController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required',
-            'fecha_ultimogiro' => 'nullable|date'
+            'fecha_ultimogiro' => 'nullable|date',
+            'ubicacion' => 'nullable|string|max:255',
+            'update_fecha_ultimogiro' => 'nullable',
+            'update_ubicacion' => 'nullable'
         ]);
 
         if ($validator->fails()) {
@@ -1163,11 +1166,34 @@ class ProductController extends Controller
             return response()->json(['result' => 'error', 'message' => 'No se seleccionaron productos.'], 422);
         }
 
+        $updateFecha = $request->has('update_fecha_ultimogiro')
+            ? filter_var($request->input('update_fecha_ultimogiro', false), FILTER_VALIDATE_BOOLEAN)
+            : $request->has('fecha_ultimogiro');
+
+        $updateUbicacion = $request->has('update_ubicacion')
+            ? filter_var($request->input('update_ubicacion', false), FILTER_VALIDATE_BOOLEAN)
+            : $request->has('ubicacion');
+
+        if (!$updateFecha && !$updateUbicacion) {
+            return response()->json(['result' => 'error', 'message' => 'Seleccione al menos un campo para actualizar.'], 422);
+        }
+
+        $data = [];
+
+        if ($updateFecha) {
+            $data['fecha_ultimogiro'] = $request->filled('fecha_ultimogiro') ? $request->input('fecha_ultimogiro') : null;
+        }
+
+        if ($updateUbicacion) {
+            $ubicacion = $request->exists('ubicacion') ? trim((string) $request->input('ubicacion')) : null;
+            $data['ubicacion'] = $ubicacion === '' ? null : $ubicacion;
+        }
+
         Product::whereIn('id', $ids)
             ->whereIn('company_id', company_id_arr())
-            ->update(['fecha_ultimogiro' => $request->filled('fecha_ultimogiro') ? $request->input('fecha_ultimogiro') : null]);
+            ->update($data);
 
-        return response()->json(['result' => 'success', 'updated' => count($ids)]);
+        return response()->json(['result' => 'success', 'updated' => count($ids), 'updated_fields' => array_keys($data)]);
     }
 
     public function update(Request $request, $id)
