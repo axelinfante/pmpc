@@ -61,24 +61,6 @@
 				</div>
 			</div> --}}
 
-			<!--/*<div class="col-md-4">
-				<div class="form-group">
-					<label class="control-label">{{ _lang('Acciones') }}</label>
-					<select class="form-control select2" multiple name="acciones[]" id="acciones">
-						<option value="0">Seleccionar</option>
-						<!--<option value="no_desarmar">{{ _lang('Desarmado') }}</option>
-						<option value="retirar">{{ _lang('Retirar en el momento') }}</option>
-						<option value="despacho">{{ _lang('Despacho') }}</option>
-						<option value="retiro_programado">{{ _lang('Retiro Programado') }}</option>
-						<option value="facturar">{{ _lang('Facturar') }}</option> 
-						<option value="retiro_ventanita">{{ _lang('Retiro Ventanita') }}</option> 
-						<option value="retiro_constituyentes">{{ _lang('Retiro Constituyentes') }}</option> 
-						<option value="retiro_octubre">{{ _lang('Retiro Octubre') }}</option> 
-						<option value="despacho">{{ _lang('Despacho') }}</option> 
-					</select>
-				</div>
-			</div>-->
-
 			<div class="col-md-4">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Acciones') }}</label>
@@ -222,9 +204,9 @@
 			  <div class="form-group">
 				<a href="{{ route('contacts.create') }}" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 				<label class="control-label">{{ _lang('Select Client') }}</label>
-				<select class="form-control select2-ajax" data-value="id" data-display="contact_name" data-display2="dni_cuit"
+				<select data-placeholder="{{ _lang('Buscar por Dni o nombre...') }}" class="form-control select2-ajax" data-value="id" data-display="contact_name" data-display2="dni_cuit"
 						data-table="contacts" data-where="101" name="client_id" id="client_id" required>
-				   <option value="">{{ _lang('Select One') }}</option>
+						{{--  <option value="">{{ _lang('Escriba el nombre o dni del cliente...') }}</option> --}}
 				</select>
 			  </div>
 			</div>
@@ -312,11 +294,11 @@
 						<a href="{{ route('products.create') }}?modalInStock=1" data-reload="false" data-title="{{
 								_lang('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 						<label class="control-label">{{ _lang('Productos') }}</label>
-						<select class="form-control select2-ajax" data-value="products.id"
+						<select data-placeholder="{{ _lang('Buscar por IdProducto, Interno, Items name o marca-modelo...') }}" class="form-control select2-ajax" data-value="products.id"
 								data-display="items.item_name"
 								data-display2="IF(products.marca_modelo > 0, marcas.marca , 'Sin marca')" data-display3="IF(products.marca_modelo > 0,modelos.modelo, 'Sin modelo')"
 								data-table="products" data-where="9"  name="service" id="service">
-							<option value="">{{ _lang('Select Product') }}</option>
+								{{--<option value="">{{ _lang('Select Product') }}</option>--}}
 							{{--<option value="{{$item->product->id}}">{{ $item->item_name}}</option>--}}
 							@if ($idProduct)
 							<option selected value="{{$item->id}}">{{ $item->item->item_name}}</option>
@@ -592,11 +574,12 @@
             display3 = "&display3=" +  product.data('display3');
         }
 		
-        product.select2({
+        /*product.select2({
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
                 '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
                 '&option=' +product.data('option'),
+				delay: 250,
                 processResults: function (data) {
 
                     return {
@@ -604,7 +587,37 @@
                     };
                 }
             }
-        });
+        });*/
+		
+		product.select2({
+				placeholder: 'Buscar ...',
+				allowClear: true,
+			ajax: {
+				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+					  '&value=' + product.data('value') +
+					  '&display=' + product.data('display') + display2 + display3 + 
+					  '&where=' + product.data('where') +
+					  '&option= products.car_id = ' + $(this).val(),
+        delay: 250,
+        dataType: 'json',
+        processResults: function (data) {
+            var selectedRaw = $('#nro_interno_tmp').val();
+            var selected = [];
+            
+            if (selectedRaw) {
+                selected = selectedRaw.toString().split(",").map(function(t) { 
+                    return parseInt(t.trim(), 10); 
+                });
+            }
+            var data_modified = $.map(data, function (obj) {
+                obj.disabled = ($.inArray(parseInt(obj.id, 10), selected) !== -1); 
+                return obj;
+            });
+
+            return { results: data_modified };  
+        }
+    }
+});
 		
 		setTimeout(function() {
 			$('#car_id').trigger('change');
@@ -634,11 +647,41 @@
         $('#product').prop('data-idCar',car.val());
 
 		limpiarItems($(this).val());
-        product.select2({
+			product.select2({
+				placeholder: 'Buscar...', // ¡Aquí puedes meter el placeholder que querías!
+				allowClear: true,
+			ajax: {
+				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+					  '&value=' + product.data('value') +
+					  '&display=' + product.data('display') + display2 + display3 + 
+					  '&where=' + product.data('where') +
+					  '&option= products.car_id = ' + $(this).val(),
+        delay: 250,
+        dataType: 'json',
+        processResults: function (data) {
+            var selectedRaw = $('#nro_interno_tmp').val();
+            var selected = [];
+            
+            if (selectedRaw) {
+                selected = selectedRaw.toString().split(",").map(function(t) { 
+                    return parseInt(t.trim(), 10); 
+                });
+            }
+            var data_modified = $.map(data, function (obj) {
+                obj.disabled = ($.inArray(parseInt(obj.id, 10), selected) !== -1); 
+                return obj;
+            });
+
+            return { results: data_modified };  
+        }
+    }
+});
+     /*    product.select2({
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
                 '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
                 '&option= products.car_id = ' + $(this).val(),
+				delay: 250,
                 processResults: function (data) {
 					selected=$('#nro_interno_tmp').val();
 					selected = selected.toString().split(",").map(function(t){return parseInt(t)})
@@ -649,12 +692,9 @@
 
 					   return { results: data_modified };	
 
-                    /*return {
-                        results: data
-                    };*/
                 }
             }
-        });
+        }); */
 
 
 
@@ -663,26 +703,28 @@
 
 	$('.select2-ajax').on('change',function (e) {
 	
-	if($(this).prop('id') == 'car_id') {
-		$.ajax({
-			url :_url + '/vehiculo/get-company/'+$(this).val(),
-			async: false,
-			dataType: 'json',
-			success: function(data) {
-				$('#service').data('company', data.company);
-				$('#car_id').data('company', data.company);
-				//console.log(car.data('company'));
-				$('#company_id').val( data.company);
-				$('#company_id_s').val( data.company);
-			},
-			error: function(error) {
-				console.log('Error: Al cargar empresa' )
-			}
-		});
-	}
+	if ($(this).prop('id') == 'car_id') {
+    if ($(this).val()) { 
+        $.ajax({
+            url: _url + '/vehiculo/get-company/' + $(this).val(),
+            async: false,
+            dataType: 'json',
+            success: function(data) {
+                $('#service').data('company', data.company);
+                $('#car_id').data('company', data.company);
+                $('#company_id').val(data.company);
+                $('#company_id_s').val(data.company);
+            },
+            error: function(error) {
+                console.log('Error: Al cargar empresa');
+            }
+        });
+    }
+}
+
 
 	if($(this).prop('id') == 'service') {
-		if ($(this).val()!= '') {
+	if ($(this).val()) { 
 		$.ajax({
 			url :_url + '/products/get-company/'+$(this).val(),
 			async: false,
