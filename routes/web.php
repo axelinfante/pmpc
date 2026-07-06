@@ -650,6 +650,10 @@ Route::group(["middleware" => ["install"]], function () {
                 "products/carga-rapida",
                 "ProductController@cargaRapida",
             );
+            Route::post(
+                "products/update-fecha-ultimogiro",
+                "ProductController@bulkUpdateFechaUltimogiro",
+            )->name("products.update_fecha_ultimogiro");
 
             //productos anulados
             Route::get("products/anulados", "ProductController@anulados");

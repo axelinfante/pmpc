@@ -39,6 +39,7 @@
                                 <th>{{ _lang('Descripcion') }}</th>
                                 <th>{{ _lang('Publicado ML') }}</th>
 								<th >{{ _lang('Reparaciones') }}</th>
+                                <th>{{ _lang('Fecha último giro') }}</th>
                                 <th class="act">{{ _lang('Accciones disponibles') }}</th>
                                 <th class="text-center act">Lote</th>
                             </tr>
@@ -51,6 +52,29 @@
 					</div>
 
 
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUpdateFechaUltimoGiro" tabindex="-1" role="dialog" aria-labelledby="modalUpdateFechaUltimoGiroLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalUpdateFechaUltimoGiroLabel">Actualizar fecha último giro</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="bulk_fecha_ultimogiro">Fecha</label>
+                    <input type="date" id="bulk_fecha_ultimogiro" class="form-control" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmar-actualizar-fecha-ultimogiro">Guardar</button>
             </div>
         </div>
     </div>
@@ -98,6 +122,7 @@
                     { data: 'description', name: 'description' },
                     { data: 'mercado_libre', name: 'mercado_libre' },
                     { data: 'reparaciones', name: 'reparaciones' },
+                    { data: 'fecha_ultimogiro', name: 'fecha_ultimogiro' },
                     { data: 'action', name: 'action',  searchable: false, orderable: false},
                      {
                         data: null,
@@ -131,6 +156,22 @@
                     $('.filtros').val('');
 					$('.select-filter').val('').trigger('change');
                                 }
+                },
+                {
+                    text: 'Actualizar fecha último giro',
+                    action: function(e, dt, node, config) {
+                        const ids = $('.row-checkbox:checked').map(function() {
+                            return $(this).data('id');
+                        }).get();
+
+                        if (ids.length === 0) {
+                            alert('Seleccione al menos un producto.');
+                            return;
+                        }
+
+                        $('#bulk_fecha_ultimogiro').val('');
+                        $('#modalUpdateFechaUltimoGiro').modal('show');
+                    }
                 },
                 {
                         extend: 'excel',
@@ -430,12 +471,16 @@
 						} );
 										
 						if(i == 1) {
-						$(this).html( '<input style="width:100%;" type="text" id="fecha_ingreso" name="fecha_ingreso" value="" class="form-control select-filter" placeholder="Search...'+title+'" />' );
+						$(this).html( '<input style="width:100%;" type="date" id="fecha_ingreso" name="fecha_ingreso" value="" class="form-control select-filter" />' );
+						$('#fecha_ingreso').on('change', function () {
+							let val = $(this).val();
+							table.column(i).search(val ? val : '', true, false).draw();
+						});
 						}
 						
 						if(i == 2) {
 						let name_ingreso = "fechaingreso_vacio";
-							$(this).html( '<input type="checkbox" id="mostrar-todos-'+name_ingreso+'">vacios <input type="text" style="width:100%;" id="fecha_ingreso_stock" name="fecha_ingreso_stock" value="" class="form-control select-filter" placeholder="Search...'+title+'" />' );
+							$(this).html( '<input type="checkbox" id="mostrar-todos-'+name_ingreso+'">vacios <input type="date" style="width:100%;" id="fecha_ingreso_stock" name="fecha_ingreso_stock" value="" class="form-control select-filter" />' );
 								let campoInput = $('#fecha_ingreso_stock');
 								$('#mostrar-todos-'+name_ingreso).change(function () {
 								  let buscar= ($(this).is(':checked')) ? "todos":"";
@@ -450,6 +495,10 @@
 									.column(i)
 									.search(buscar)
 									.draw();
+								});
+								campoInput.on('change', function () {
+									let val = $(this).val();
+									table.column(i).search(val ? val : '', true, false).draw();
 								});
 						
 						}
@@ -579,62 +628,7 @@
          });
 
 
-                
-        $('#fecha_ingreso').daterangepicker({
-            autoUpdateInput: false,
-            locale: {
-                format: 'YYYY-MM-DD',
-                cancelLabel: 'Clear'
-            }
-        });
-
-         $('#fecha_ingreso').on('change', function(e) {
-            let val = $(this).val();
-            table.columns(1).search(val ? val : '', true, false );
-            table.draw();
-        });
-    
-    
-        $('#fecha_ingreso').on('apply.daterangepicker', function(ev, picker) {
-                let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
-                    $(this).val(daterango);
-                    table.columns(1).search(daterango);
-                    table.draw();
-            });
-
-            $('#fecha_ingreso').on('cancel.daterangepicker', function(ev, picker) {
-                $('#fecha_ingreso').val(null).trigger('change');    
-        });
-
-
-	$('#fecha_ingreso_stock').daterangepicker({
-            autoUpdateInput: false,
-            locale: {
-                format: 'YYYY-MM-DD',
-                cancelLabel: 'Clear'
-            }
-        });
-
-         $('#fecha_ingreso_stock').on('change', function(e) {
-            let val = $(this).val();
-            table.columns(2).search(val ? val : '', true, false );
-            table.draw();
-        });
-    
-    
-        $('#fecha_ingreso_stock').on('apply.daterangepicker', function(ev, picker) {
-                let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
-                    $(this).val(daterango);
-                    table.columns(2).search(daterango);
-                    table.draw();
-            });
-
-            $('#fecha_ingreso_stock').on('cancel.daterangepicker', function(ev, picker) {
-                $('#fecha_ingreso_stock').val(null).trigger('change');    
-        });
-
-
-        function newexportaction(e, dt, button, config) {
+                        function newexportaction(e, dt, button, config) {
 
            this.processing( true );
          var self = this;
@@ -693,7 +687,44 @@
   });
 
   $(document).ready(function() {
-     ////---------------ne-e-e-e-e
+
+            $('#confirmar-actualizar-fecha-ultimogiro').on('click', function() {
+                const ids = $('.row-checkbox:checked').map(function() {
+                    return $(this).data('id');
+                }).get();
+                const fecha = $('#bulk_fecha_ultimogiro').val();
+
+                if (ids.length === 0) {
+                    alert('Seleccione al menos un producto.');
+                    return;
+                }
+
+                if (!fecha) {
+                    alert('Ingrese una fecha.');
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ url('products/update-fecha-ultimogiro') }}",
+                    method: 'POST',
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content'),
+                        ids: ids.join(','),
+                        fecha_ultimogiro: fecha
+                    },
+                    success: function(response) {
+                        $('#modalUpdateFechaUltimoGiro').modal('hide');
+                        if (response.result === 'success') {
+                            table.ajax.reload(null, false);
+                        } else {
+                            alert(response.message || 'No se pudo actualizar.');
+                        }
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo actualizar.');
+                    }
+                });
+            });
 
             $('#select-all').on('change', function() {
                 const isChecked = $(this).is(':checked');

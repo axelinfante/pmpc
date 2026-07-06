@@ -61,20 +61,21 @@ table.dataTable {
 
 <script>
      var table; 
+     
         $(function() {
               $('#table-data-product').css('width', '100%');
-				table = $('#table-data-product').appTable({
-				    title:"Productos Anulados",
-					ajax: "{{ url('products/anulados') }}", 
-					visibleButtonsFilter:true, 
-					visibleButtons: {
-						reset: true,
-						excel: true,
-						print: false
-					},
-					columnFilters: ['input', 'daterangepicker','input',,,,,,,,{type: 'select',data: @json($lugar_entregas)}], 
-				   columns: [
-                   { data: 'productsid', name: 'productsid'},
+                table = $('#table-data-product').appTable({
+                    title:"Productos Anulados",
+                    ajax: "{{ url('products/anulados') }}", 
+                    visibleButtonsFilter:true, 
+                    visibleButtons: {
+                        reset: true,
+                        excel: true,
+                        print: false
+                    },
+                    columnFilters: ['input', 'daterangepicker','input',,,,,,,,{type: 'select',data: @json($lugar_entregas)}], 
+                    columns: [
+                    { data: 'productsid', name: 'productsid'},
                     { data: 'created_at', name: 'created_at' },
                     { data: 'fecha_ingreso_a_stock', name: 'fecha_ingreso_a_stock' },
                     { data: 'interno', name: 'nro_interno' },
@@ -87,12 +88,12 @@ table.dataTable {
                     { data: 'deposito', name: 'deposito' },
                     { data: 'ubicacion', name: 'ubicacion' },
                     { data: 'description', name: 'description' },
-                    { data: 'action', name: 'action',  searchable: false, orderable: false}
-
+                    { data: 'action', name: 'action', searchable: false, orderable: false}
                 ],
-				});
+                });
+  });
 
-/*
+/* {{-- 
              table = $('#table-data-product').DataTable({
                 processing:true,
                 serverSide:true,
@@ -163,8 +164,8 @@ table.dataTable {
                 }
              ],
 
-            });
-*/
+            });*/ 
+
 
      /*       $('#table-data-product thead tr').clone().prependTo('#table-data-product thead');
 
@@ -308,9 +309,8 @@ table.dataTable {
             table.search(this.value).draw();
         }
     });
-
+--}}
 */
-  });
 
   async function toggleStock(btn) {
     const itemId = btn.dataset.id;
@@ -330,7 +330,7 @@ table.dataTable {
     //console.log(data);
 
     if (typeof table !== 'undefined' && table !== null) {
-            table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
+            table.ajax.reload(null, false);
         }
   }
     </script>
