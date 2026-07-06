@@ -775,19 +775,6 @@ class QuotationController extends Controller
         Transaction::where("id_quotation", $quotation->id)->update(['invoice_id' => $invoice->id, 'id_quotation' => null]);
         $taxes = Tax::all();
 
-/*
-
-$hasPiezaSavedForUser = Product::query()
-                                ->where('item_id', $value)
-                                ->where('nro_interno', $request->input('nro_interno'))
-                                ->where('car_id', null)
-                                ->exists();
-
-                            if ($hasPiezaSavedForUser) {
-                                $fail('Item ya se encuentra asignado al nro interno.');
-                                return;
-                            }
-*/
 
         //Save Invoice Item
         foreach ($quotation->quotation_items as $quotation_item) {
@@ -910,13 +897,13 @@ $hasPiezaSavedForUser = Product::query()
 
 						$orden_desarme->idCadete_operario =  $operario->id;*/
 
-                        $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
+                        $operario = Puesto::where('predeterminada', '1')->where('company_id', $quotation->company_id)->first();
 						$orden_desarme->idCadete_operario =  $operario->user_id;
 
 						$orden_desarme->save();
 
 						// enviar notificacion al operario de creada una orden
-						Notification::send($operario, new OrdenCreated($orden_desarme));
+						//Notification::send($operario, new OrdenCreated($orden_desarme));
 		
 				
 			}
