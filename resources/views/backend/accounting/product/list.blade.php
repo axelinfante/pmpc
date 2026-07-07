@@ -61,15 +61,32 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalUpdateFechaUltimoGiroLabel">Actualizar fecha último giro</h5>
+                <h5 class="modal-title" id="modalUpdateFechaUltimoGiroLabel">Actualizar campos masivos</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="bulk_fecha_ultimogiro">Fecha</label>
-                    <input type="date" id="bulk_fecha_ultimogiro" class="form-control" />
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input bulk-field-toggle" id="bulk_update_fecha_ultimogiro">
+                        <label class="custom-control-label" for="bulk_update_fecha_ultimogiro">Modificar fecha último giro</label>
+                    </div>
+                </div>
+                <div class="form-group" id="bulk_fecha_ultimogiro_group" style="display:none;">
+                    <label for="bulk_fecha_ultimogiro">Fecha último giro</label>
+                    <input type="text" id="bulk_fecha_ultimogiro" class="form-control datepicker" autocomplete="off" readonly />
+                </div>
+
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input bulk-field-toggle" id="bulk_update_ubicacion">
+                        <label class="custom-control-label" for="bulk_update_ubicacion">Modificar ubicación</label>
+                    </div>
+                </div>
+                <div class="form-group" id="bulk_ubicacion_group" style="display:none;">
+                    <label for="bulk_ubicacion">Ubicación</label>
+                    <input type="text" id="bulk_ubicacion" class="form-control" />
                 </div>
             </div>
             <div class="modal-footer">
@@ -99,6 +116,67 @@
                 }
             });
 
+            function toggleBulkFieldSection() {
+                $('#bulk_fecha_ultimogiro_group').toggle($('#bulk_update_fecha_ultimogiro').is(':checked'));
+                $('#bulk_ubicacion_group').toggle($('#bulk_update_ubicacion').is(':checked'));
+            }
+
+            $('.bulk-field-toggle').on('change', toggleBulkFieldSection);
+            toggleBulkFieldSection();
+            init_datepicker();
+
+            $('#confirmar-actualizar-fecha-ultimogiro').on('click', function() {
+                const ids = $('.row-checkbox:checked').map(function() {
+                    return $(this).data('id');
+                }).get();
+
+                if (ids.length === 0) {
+                    alert('Seleccione al menos un producto.');
+                    return;
+                }
+
+                const updateFecha = $('#bulk_update_fecha_ultimogiro').is(':checked');
+                const updateUbicacion = $('#bulk_update_ubicacion').is(':checked');
+
+                if (!updateFecha && !updateUbicacion) {
+                    alert('Seleccione al menos un campo para actualizar.');
+                    return;
+                }
+
+                const payload = {
+                    ids: ids.join(','),
+                    update_fecha_ultimogiro: updateFecha ? 1 : 0,
+                    update_ubicacion: updateUbicacion ? 1 : 0
+                };
+
+                if (updateFecha) {
+                    payload.fecha_ultimogiro = $('#bulk_fecha_ultimogiro').val();
+                }
+
+                if (updateUbicacion) {
+                    payload.ubicacion = $('#bulk_ubicacion').val();
+                }
+
+                $.ajax({
+                    url: "{{ route('products.update_fecha_ultimogiro') }}",
+                    type: 'POST',
+                    data: payload,
+                    success: function(response) {
+                        $('#modalUpdateFechaUltimoGiro').modal('hide');
+                        if (response.result === 'success') {
+                            alert(response.updated + ' productos actualizados.');
+                            table.draw(false);
+                        } else {
+                            alert(response.message || 'No se pudo actualizar.');
+                        }
+                    },
+                    error: function(xhr) {
+                        const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo actualizar.';
+                        alert(message);
+                    }
+                });
+            });
+
              table = $('#table-data-product').DataTable({
                 processing:true,
                 serverSide:true,
@@ -122,7 +200,22 @@
                     { data: 'description', name: 'description' },
                     { data: 'mercado_libre', name: 'mercado_libre' },
                     { data: 'reparaciones', name: 'reparaciones' },
-                    { data: 'fecha_ultimogiro', name: 'fecha_ultimogiro' },
+                    {
+                        data: 'fecha_ultimogiro',
+                        name: 'fecha_ultimogiro',
+                        render: function(data) {
+                            if (!data) {
+                                return '';
+                            }
+
+                            if (data.includes('-')) {
+                                const [year, month, day] = data.split('-');
+                                return `${day}/${month}/${year}`;
+                            }
+
+                            return data;
+                        }
+                    },
                     { data: 'action', name: 'action',  searchable: false, orderable: false},
                      {
                         data: null,
@@ -158,7 +251,7 @@
                                 }
                 },
                 {
-                    text: 'Actualizar fecha último giro',
+                    text: 'Actualizar campos masivos',
                     action: function(e, dt, node, config) {
                         const ids = $('.row-checkbox:checked').map(function() {
                             return $(this).data('id');
@@ -170,6 +263,9 @@
                         }
 
                         $('#bulk_fecha_ultimogiro').val('');
+                        $('#bulk_ubicacion').val('');
+                        $('.bulk-field-toggle').prop('checked', false);
+                        toggleBulkFieldSection();
                         $('#modalUpdateFechaUltimoGiro').modal('show');
                     }
                 },
@@ -692,26 +788,44 @@
                 const ids = $('.row-checkbox:checked').map(function() {
                     return $(this).data('id');
                 }).get();
-                const fecha = $('#bulk_fecha_ultimogiro').val();
 
                 if (ids.length === 0) {
                     alert('Seleccione al menos un producto.');
                     return;
                 }
 
-                if (!fecha) {
+                const updateFecha = $('#bulk_update_fecha_ultimogiro').is(':checked');
+                const updateUbicacion = $('#bulk_update_ubicacion').is(':checked');
+
+                if (!updateFecha && !updateUbicacion) {
+                    alert('Seleccione al menos un campo para actualizar.');
+                    return;
+                }
+
+                if (updateFecha && !$('#bulk_fecha_ultimogiro').val()) {
                     alert('Ingrese una fecha.');
                     return;
                 }
 
+                const payload = {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: ids.join(','),
+                    update_fecha_ultimogiro: updateFecha ? 1 : 0,
+                    update_ubicacion: updateUbicacion ? 1 : 0
+                };
+
+                if (updateFecha) {
+                    payload.fecha_ultimogiro = $('#bulk_fecha_ultimogiro').val();
+                }
+
+                if (updateUbicacion) {
+                    payload.ubicacion = $('#bulk_ubicacion').val();
+                }
+
                 $.ajax({
-                    url: "{{ url('products/update-fecha-ultimogiro') }}",
+                    url: "{{ route('products.update_fecha_ultimogiro') }}",
                     method: 'POST',
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content'),
-                        ids: ids.join(','),
-                        fecha_ultimogiro: fecha
-                    },
+                    data: payload,
                     success: function(response) {
                         $('#modalUpdateFechaUltimoGiro').modal('hide');
                         if (response.result === 'success') {
