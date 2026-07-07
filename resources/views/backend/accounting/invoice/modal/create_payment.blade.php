@@ -160,7 +160,7 @@
 					<select class="form-control" name="idCotizacionSaldo" id="idCotizacionSaldo">
 						<option value="">Elige una cotizacion</option>
 						@forelse($result as $cotizacion)
-							<option value="{{$cotizacion['idCotizacion']}}{{$cotizacion['paid_dev']}}">(	 {{$cotizacion['idCotizacion']}} ) {{$cotizacion['paid_dev']}}</option>	
+							<option value="{{$cotizacion['idCotizacion']}}{{$cotizacion['paid_dev']}}">(	 {{$cotizacion['paid_coti']}} ) {{$cotizacion['paid_dev']}}</option>	
 							@empty
 							<option value="">No disponible</option>
 						@endforelse

@@ -1251,8 +1251,65 @@ class InvoiceController extends Controller
 		$resultado=$this->nota_debito($id, $request);
 		return redirect('invoices')->with('success', _lang('Invoice deleted sucessfully'));
     }
+	
+	public function create_payment(Request $request, $id)
+{
+    // 1. Obtener la factura principal
+    $invoice = Invoice::where("id", $id)->first();
 
-    public function create_payment(Request $request, $id)
+    // 2. Obtener TODAS las facturas del cliente con sus pagos
+    $invoices = Invoice::with(['transaction' => function($query) {
+        $query->where('type', 'income');
+    }])
+    ->where('client_id', $invoice->client_id)
+    ->get();
+
+    $invoiceIds = $invoices->pluck('id');
+
+    // 3. NUEVA FORMA: Ir directo a la tabla sales_return (igual que tu CTE)
+    // Sumamos el grand_total de las devoluciones asociadas a estas facturas
+    $salesReturns = DB::table('sales_return')
+        ->whereIn('invoice_id', $invoiceIds)
+        // ->where('status', 'procesada') // Descomenta esta línea si solo quieres contar las devoluciones procesadas
+        ->select('invoice_id', 'grand_total')
+        ->get();
+
+    // Agrupar por factura
+    $returnsByInvoice = $salesReturns->groupBy('invoice_id');
+
+    $result = [];
+
+    // 4. Calcular todo en memoria
+    foreach ($invoices as $inv) {
+        // Suma de pagos
+        $paid = $inv->transaction->sum('base_amount');
+        
+        // NUEVA FORMA: Sumar el grand_total de la devolución (coincide exactamente con tu SQL)
+        $paid_dev = $returnsByInvoice->get($inv->id, collect())->sum('grand_total');
+
+        // Calculamos el saldo (Factura - Pagos - Devoluciones)
+        $saldo = $inv->grand_total - ($paid + $paid_dev);
+
+        // Si es menor a 0, hay saldo a favor
+        if ($saldo < 0) {
+            $result[] = [
+                'idCotizacion' => $inv->id,
+                'paid_coti' => $inv->invoice_number, 
+                'paid_dev' => $saldo 
+            ];
+        }
+    }
+
+    // 5. Pago específico de la factura principal
+    $mainInvoicePaid = $invoices->find($id)->transaction->sum('base_amount');
+
+    if ($request->ajax()) {
+        return view('backend.accounting.invoice.modal.create_payment', compact('invoice', 'id', 'result'))
+               ->with(['paid' => $mainInvoicePaid]); 
+    }
+}
+
+    /* public function create_payment(Request $request, $id)
     {
         $invoice = Invoice::where("id", $id)->first(); //->where("company_id", company_id())
 		//dd($invoice);
@@ -1298,7 +1355,7 @@ class InvoiceController extends Controller
         if ($request->ajax()) {
             return view('backend.accounting.invoice.modal.create_payment', compact('invoice', 'id', 'result'))->with(['paid' => $paid]);
         }
-    }
+    } */
 
     public function store_payment(Request $request)
     {
