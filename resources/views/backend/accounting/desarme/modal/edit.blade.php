@@ -5,9 +5,9 @@
 
 	@php
 		$class = '';
-		if(strtolower(auth()->user()->role->name) == 'gerente de operarios') {
+		/*if(strtolower(auth()->user()->role->name) == 'gerente de operarios') {
 			$class = 'd-none';
-		}
+		}*/
 	@endphp
 
 
