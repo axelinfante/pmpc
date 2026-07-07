@@ -131,7 +131,8 @@
                 }).get();
 
                 if (ids.length === 0) {
-                    alert('Seleccione al menos un producto.');
+                    if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Seleccione al menos un producto.', icon: 'error' });}
+                    //alert('Seleccione al menos un producto.');
                     return;
                 }
 
@@ -139,7 +140,8 @@
                 const updateUbicacion = $('#bulk_update_ubicacion').is(':checked');
 
                 if (!updateFecha && !updateUbicacion) {
-                    alert('Seleccione al menos un campo para actualizar.');
+                    if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: 'Seleccione al menos un campo para actualizar.', icon: 'error' });
+                    //alert('Seleccione al menos un campo para actualizar.');
                     return;
                 }
 
@@ -164,15 +166,15 @@
                     success: function(response) {
                         $('#modalUpdateFechaUltimoGiro').modal('hide');
                         if (response.result === 'success') {
-                            alert(response.updated + ' productos actualizados.');
+                            if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: response.updated + ' productos actualizados.', icon: 'success' });
                             table.draw(false);
                         } else {
-                            alert(response.message || 'No se pudo actualizar.');
+                            if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: response.message || 'No se pudo actualizar.', icon: 'error' });
                         }
                     },
                     error: function(xhr) {
                         const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo actualizar.';
-                        alert(message);
+                        if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: message, icon: 'error' });
                     }
                 });
             });
@@ -258,7 +260,7 @@
                         }).get();
 
                         if (ids.length === 0) {
-                            alert('Seleccione al menos un producto.');
+                            if(typeof $.toast !== 'undefined') $.toast({ position: 'top-right', text: 'Seleccione al menos un producto.', icon: 'error' });
                             return;
                         }
 
@@ -290,7 +292,9 @@
 							
 
 							if (valorIdProd.length === 0) {
-								alert('Por favor seleccione un valor')
+								if (typeof $.toast !== 'undefined') {
+									$.toast({ position: 'top-right', text: 'Por favor seleccione un valor.', icon: 'error' });
+								}
 								return
 							}
 					target_select = $(this).parent().find(".select2-ajax");
