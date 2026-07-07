@@ -469,7 +469,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 													
 												</td>
 												
-												<td class="description"><input type="text" name="product_description[]" class="form-control input-description"readonly value="{{ $item->description }}"></td>
+												<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="{{ $item->description }}"></td>
 
 												<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" value="{{ $item->quantity }}" max="1"></td>
 
@@ -485,7 +485,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 													}
 												@endphp
 												
-												<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="{{ $item->product_id }}" readonly onChange="monto_en_usd(this,{{ $item->product_id }})" class="form-control input-unit-cost text-right" value="{{ $item->unit_cost }}"></td>
+												<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="{{ $item->product_id }}"  onChange="monto_en_usd(this,{{ $item->product_id }})" class="form-control input-unit-cost text-right" value="{{ $item->unit_cost }}"></td>
 												
 												<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="{{ $item->sub_total }}" readonly></td>
 
@@ -510,11 +510,12 @@ Venta menos a 30000'  ? 'selected' : '' }}
 									<tfoot class="tfoot active">
 										<tr>
 											<th></th>
-											<th>{{ _lang('Total') }}</th>
-											<th></th>
+											<th colspan="3">{{ _lang('Total') }}</th>
 											<th class="text-center" id="total-qty">0</th>
 											
 											<th class="text-right" id="total">0.00</th>
+											<th class="text-center"></th>
+											<th class="text-center"></th>
 											<th class="text-center"></th>
 											<input type="hidden" name="product_total" id="product_total" value="0">
 											<input type="hidden" name="tax_total" id="tax_total" value="0">
