@@ -750,7 +750,7 @@ class ProductController extends Controller
         $auto = Cars::where('id', $idCar)->with('marca_modelo')->first();
         //$cars = Cars::All()->whereIn('company_id', $company_id);
 
-        $company_id = company_id();//empty(session('cia')) ? company_id_arr() : company_id_arr();
+        $company_id =  (auth()->user()->id==2) ? company_id_arr() : company_id();//empty(session('cia')) ? company_id_arr() : company_id_arr();
 //        $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
         $nro_interno_datos = Cars::All()->whereIn('company_id', $company_id);
         $items = Item::where('activo', "Si")->orderBy('item_name', 'ASC')->get();
