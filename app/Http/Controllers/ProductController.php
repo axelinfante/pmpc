@@ -2333,47 +2333,6 @@ public function buscar(Request $request): JsonResponse
 						'disabled' => $disabledRow
 					];
 				});
-				
-				/*$productStatuses = [];
-
-					if (!empty($carId) && $itemsPaginados->isNotEmpty()) {
-						$productStatuses = Product::whereIn('item_id', $itemsPaginados->pluck('id'))
-							->where('nro_interno', $carId)
-							->pluck('id','estado', 'item_id')
-							->toArray();
-					}
-
-					$itemsFormateados = $itemsPaginados->getCollection()
-						->unique('id') 
-						->map(function ($item) use ($productStatuses) {
-							$itemId = $item->id;
-							$estadoInformativo = $productStatuses[$itemId] ?? null; 
-							$diseabledrow=isset($productStatuses[$itemId]);
-							return [
-								'id' => $itemId,
-								'text' => $item->text . ((($diseabledrow) && $estadoInformativo=="Anulado")  ? " ($estadoInformativo)":""),
-								'disabled' => $diseabledrow
-							];
-						});*/
-				
-				/*if (!empty($carId) && $itemsPaginados->isNotEmpty()) {
-						$existingItemsIds = Product::whereIn('item_id', $itemsPaginados->pluck('id'))
-							->where('nro_interno', $carId)
-							->pluck('item_id')
-							->flip() 
-							->toArray();
-					}
-				
-					$itemsFormateados = $itemsPaginados->getCollection()
-						->unique('id') 
-						->map(function ($item) use ($existingItemsIds) {
-							return [
-								'id' => $item->id,
-								'text' => $item->text,
-								'disabled' => isset($existingItemsIds[$item->id]),
-							];
-						});*/
-
 				return response()->json([
 					'items' => $itemsFormateados->values()->all(),
 					'more' => $itemsPaginados->hasMorePages()

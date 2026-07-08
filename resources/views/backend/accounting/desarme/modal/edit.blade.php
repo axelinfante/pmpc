@@ -91,7 +91,7 @@
 									<select  style="pointer-events:none"  id="producto_id" name="producto_id" required class="form-control">
                                     <option value="">Seleccionar</option>
                                         @foreach ($productos as $producto_row)
-                                                        <option value="{{ $producto_row->id }}"  {{ $o->pieza == $producto_row->item_id ? 'selected' : '' }} >{{ nroInternoAlias($producto_row->company_id,$producto_row->cars->tipo_vehiculo ?? '',$producto_row->nro_interno) ." ". $producto_row->item_name }}</option>
+                                                        <option value="{{ $producto_row->id }}"  {{ $o->pieza == $producto_row->item_id ? 'selected' : '' }} >{{ nroInternoAlias($producto_row->company_id,$producto_row->cars->tipo_vehiculo ?? '',$producto_row->id) ." ". $producto_row->item_name }}</option>
                                         @endforeach
                                     </select>
 

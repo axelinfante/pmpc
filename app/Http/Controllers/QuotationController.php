@@ -736,6 +736,13 @@ class QuotationController extends Controller
             ->withErrors("Estado no esta autorizado...".$quotation->car_id)
             ->withInput();
         }
+		
+		 $company = '';
+        if ($vehiculo->company_id  == 1) {
+                        $company = 'PM-';
+        } else if ($vehiculo->company_id  == 2) {
+                    $company = 'PC-';
+        }
 
 
         DB::beginTransaction();
@@ -783,7 +790,6 @@ class QuotationController extends Controller
 			->where('nro_interno', $quotation_item->idCar)
 			// ->where('car_id', null)
 			->first();
-			//dd($product);
 			$invoiceItem = new InvoiceItem();
             $invoiceItem->invoice_id = $invoice->id;
             $invoiceItem->item_id = $quotation_item->item_id;
@@ -796,7 +802,7 @@ class QuotationController extends Controller
             $invoiceItem->sub_total = $quotation_item->sub_total;
             $invoiceItem->idCar = $quotation_item->idCar ?? null;
             $invoiceItem->company_id = $quotation->company_id;
- 		    $invoiceItem->product_id = $quotation_item->product_id;
+ 		    //$invoiceItem->product_id = $quotation_item->product_id;
             $invoiceItem->save();
 			
 			
@@ -819,7 +825,6 @@ class QuotationController extends Controller
 			
 
 			if (!empty($product)){ // envia a retiro
-			
 					if ($product->stock < 1) { //$request->quantity[$i]
 						DB::rollBack();
 						return back()->with('error', $invoiceItem->item->item_name . ' ' . _lang('Stock is not available!'));
@@ -866,9 +871,57 @@ class QuotationController extends Controller
 						$product->save();
 					//}
 				
-			}else{ // envia a desarme
+			}else{ 
 			
+					// envia a desarme
+						//$invoiceItem->product_id = $quotation_item->product_id;
+						$product_new = new Product();
+						$product_new->item_id = $invoiceItem->item_id;
+						$product_new->car_id =  null;
+						$product_new->marca_modelo = $vehiculo->idMarca_modelo;
+						$product_new->product_price = 0;
+						$product_new->tax_method = 'exclusive';
+						$product_new->description = "";
+						$product_new->stock = 0;
+						$product_new->estado = "desarme";
+						$product_new->nro_interno = $vehiculo->id;
+						$product_new->company_id = $vehiculo->company_id;
+						$product_new->save();
+						
 						$orden_desarme = new Orden_desarme();
+                        $orden_desarme->id_venta = $invoice->id;
+                        $orden_desarme->fecha_venta = $invoice->invoice_date;
+                        //$orden_desarme->idCar = $product_new->idCar ?? null;
+                        $orden_desarme->idCar = $product_new->idCar ?? $product_new->nro_interno;
+                        $orden_desarme->prioridad = "normal";
+                        $orden_desarme->interno = $company . ($product_new->idCar ?? $product_new->nro_interno);
+                        $orden_desarme->marca_modelo = $product_new->marca_modelo;
+                        $orden_desarme->pieza = $product_new->item->id; //$product_new->id;
+                        $orden_desarme->product_id = $product_new->id ?? 0;
+                        // Aqui colocae orden procesada y asignarla al operario segun la compañia
+                        $orden_desarme->procesar = 1;
+                        /*$operario = User::wherehas('role', function ($q) {
+                            $q->where('name', 'Operario');
+                        })->where('company_id', $product_new->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->id;*/
+                        $operario = Puesto::where('predeterminada', '1')->where('company_id', $product_new->company_id)->first();
+                        $orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
+                        $orden_desarme->save();
+            
+						$orden_despacho = new OrdenDespacho();
+						$orden_despacho->invoice_id = $invoice->id;
+						$orden_despacho->invoiceitem_id = $invoiceItem->id;
+						$orden_despacho->description = $product_new->description;
+						$orden_despacho->quantity = 1;
+						$orden_despacho->company_id = $product_new->company_id;
+						$orden_despacho->estatus = 'pendiente';
+						$orden_despacho->save();
+					
+					
+						$invoiceItem->product_id = $product_new->id;
+						$invoiceItem->save();
+					
+						/*$orden_desarme = new Orden_desarme();
 						$company = '';
 						$prioridad = 'normal';
 
@@ -891,20 +944,19 @@ class QuotationController extends Controller
 						// Aqui colocae orden procesada y asignarla al operario segun la compañia
 						$orden_desarme->procesar = 1;
 
-						/*$operario = User::wherehas('role', function ($q) {
-							$q->where('name', 'Operario');
-						})->where('company_id', $invoiceItem->company_id)->first();
-
-						$orden_desarme->idCadete_operario =  $operario->id;*/
+						//$operario = User::wherehas('role', function ($q) {
+						//	$q->where('name', 'Operario');
+						//})->where('company_id', $invoiceItem->company_id)->first();
+						// $orden_desarme->idCadete_operario =  $operario->id;
 
                         $operario = Puesto::where('predeterminada', '1')->where('company_id', $quotation->company_id)->first();
 						$orden_desarme->idCadete_operario =  $operario->user_id;
-
+						$orden_desarme->product_id = $product_new->id;
 						$orden_desarme->save();
 
 						// enviar notificacion al operario de creada una orden
 						//Notification::send($operario, new OrdenCreated($orden_desarme));
-		
+						*/
 				
 			}
         }
@@ -946,86 +998,6 @@ class QuotationController extends Controller
         DB::commit();
 
         return redirect('invoices/' . $invoice->id)->with('success', _lang('Quotation Converted Sucessfully'));
-
-/**************************************************************************************************************************
-
-
-
-        
-        
-
-
-
-
-        //crear comision
-        $montoAgregadoComision = 0;
-        $percent = $this->comisiones[$request->comision];
-        //dd($percent);
-        if ($request->comision == 'Venta menos a 30000') {
-            // if ($invoice->grand_total < 30000) {
-            $percent = 7;
-            $montoAgregadoComision = 1000;
-            // } else {
-            //     $percent = 7;
-            // }
-
-        }
-
-
-        //sacar porcentaje con el monto de la factura
-        $montoComi = ($percent * $invoice->grand_total) / 100;
-
-        //dd($invoice->comision->id);
-        if (isset($invoice->comision->id)) {
-            $comision = Comision::find($invoice->comision->id);
-        } else {
-            $comision = new Comision();
-        }
-
-        $total = $montoComi + $montoAgregadoComision;
-        if ($invoice->is_usd) {
-            $total = $total * $invoice->tasa;
-        }
-
-        $comision->porcentaje = $percent;
-        $comision->monto = $total;
-        $comision->id_venta = $invoice->id;
-        $comision->id_vendedor = $invoice->user_id;
-        $comision->isPaid = null;
-        $comision->tipo = $request->comision;
-
-        if ($montoAgregadoComision) {
-            $comision->isAdicional = 1;
-        } else {
-            $comision->isAdicional = null;
-        }
-
-        $comision->save();
-
-
-        //Increment Invoice Starting number
-        increment_invoice_number();
-
-        //Update Package limit
-        update_package_limit('invoice_limit');
-
-
-
-        if ($invoice->client->user->id != null) {
-            Notification::send($invoice->client->user, new InvoiceCreated($invoice));
-        }
-        $desarme = $invoice->desarmar;
-        // dd($desarme);
-        $desarme = $desarme == 1 ? false : true;
-        $prioridad = $request->input('prioridad_desarmar', 'normal');
-
-
-        $this->orden_desarme($invoice, $desarme, $prioridad);
-        DB::commit();
-
-        $this->pago_desde_cc($invoice->id, $invoice->client_id);
-
-**************************************************************************************************************************/
 
     }
 

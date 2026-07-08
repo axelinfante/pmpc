@@ -898,18 +898,49 @@ class ContactController extends Controller
 	{
 			if ($request->ajax()) {
 			$currency = currency();	
-			$sql = saldo_sql_list();
+/* 			$sql = saldo_sql_list();
 			$sql .= "select t1.number, t1.referencia,t1.clientesid,t1.date,t1.note,t1.movimiento, t1.debe, t1.haber,t1.status,t1.tipo,
 						  @acumulador:=(debe - abs(haber) + @acumulador) as saldo, SUM(debe - abs(haber)) OVER () AS gran_total_general
 			from cte_second t1,(select @acumulador := 0) as init_var
 			WHERE t1.clientesid=? and t1.tipo=?
 			order by t1.date";
-			$data = DB::select($sql, [$request->id,'ajuste_saldo']);
+			$data = DB::select($sql, [$request->id,'ajuste_saldo']); */
+			
+			 $sql = saldo_sql_list();
+
+ $sql .= " SELECT 
+              t1.number, 
+              t1.referencia,
+              t1.clientesid, 
+              t1.date, 
+              t1.note, 
+              t1.movimiento, 
+              t1.debe, 
+              t1.haber, 
+              t1.status, 
+              t1.tipo,
+              
+               SUM(t1.debe - ABS(t1.haber)) OVER (
+                  ORDER BY t1.date DESC, t1.number DESC 
+                  ROWS UNBOUNDED PRECEDING
+              ) AS saldo, 
+              
+              SUM(t1.debe - ABS(t1.haber)) OVER () AS gran_total_general
+              
+          FROM datos_unificados t1   
+          WHERE t1.clientesid = ? 
+            AND t1.tipo = ? 
+          ORDER BY 
+              t1.date DESC, 
+              t1.number DESC";
+
+	$data = DB::select($sql, [$request->id, 'ajuste_saldo']);
+			
             return Datatables::of($data)
                     ->addIndexColumn()
 					->editColumn('date', function ($data) {
 						$date_format = get_company_option('date_format', 'd/m/Y');
-						return date($date_format, strtotime($data->date));
+						return date($date_format, strtotime($data->date))."2222";
                     })
 					->editColumn('note', function ($data) {
 						return $data->note ?? '';
@@ -956,13 +987,52 @@ class ContactController extends Controller
 	{
 			if ($request->ajax()) {
 			$currency = currency();	
-			$sql = saldo_sql_list();
+			/*$sql = saldo_sql_list();
 			$sql .= "select t1.number, t1.referencia,t1.clientesid,t1.date,t1.note,t1.movimiento, t1.debe, t1.haber,t1.status,t1.tipo,
 						  @acumulador:=(debe - abs(haber) + @acumulador) as saldo, SUM(debe - abs(haber)) OVER () AS gran_total_general, t1.adicional,t1.documento_id
 			from cte_second t1,(select @acumulador := 0) as init_var
 			WHERE t1.clientesid=? and t1.tipo=?
 			order by t1.date";
-			$data = DB::select($sql, [$request->id,'sales_return']);
+			$data = DB::select($sql, [$request->id,'sales_return']);*/
+			
+			
+			 $sql = saldo_sql_list();
+
+		 $sql .= " SELECT 
+					  t1.number, 
+					  t1.referencia,
+					  t1.clientesid, 
+					  t1.date, 
+					  t1.fecha_real, 
+					  t1.note, 
+					  t1.movimiento, 
+					  t1.debe, 
+					  t1.haber, 
+					  t1.status, 
+					  t1.tipo,
+					  
+					  SUM(t1.debe - ABS(t1.haber)) OVER (
+						  ORDER BY 
+							  t1.date DESC, 
+							  t1.documento_id ASC, 
+							  t1.number DESC 
+						  ROWS UNBOUNDED PRECEDING
+					  ) AS saldo, 
+					  
+					  SUM(t1.debe - ABS(t1.haber)) OVER () AS gran_total_general, 
+					  t1.adicional,
+					  t1.documento_id
+					  
+				  FROM datos_unificados t1   
+				  WHERE t1.clientesid = ? 
+					AND t1.tipo = ? 
+				  ORDER BY 
+					  t1.date DESC, 
+					  t1.documento_id ASC, 
+					  t1.number DESC";
+				$data = DB::select($sql, [$request->id, 'sales_return']);
+			
+			
 			
 			//dd($data,$request->id);
 			
@@ -979,7 +1049,7 @@ class ContactController extends Controller
                     ->addIndexColumn()
 					->editColumn('date', function ($data) {
 						$date_format = get_company_option('date_format', 'd/m/Y');
-						return date($date_format, strtotime($data->date));
+						return date($date_format, strtotime($data->date))."";
                     })
 					->editColumn('note', function ($data) {
 						return ($data->note ?? '') . ('</br>'.$data->adicional ?? '');
@@ -1043,13 +1113,51 @@ class ContactController extends Controller
 	{
 			if ($request->ajax()) {
 			$currency = currency();	
-			$sql = saldo_sql_list();
+		/*	$sql = saldo_sql_list();
 			$sql .= "select t1.number, t1.referencia,t1.clientesid,t1.date,t1.note,t1.movimiento, t1.debe, t1.haber,t1.status,t1.tipo,
 						  @acumulador:=(debe - abs(haber) + @acumulador) as saldo, SUM(debe - abs(haber)) OVER () AS gran_total_general, t1.adicional,t1.documento_id
 			from cte_second t1,(select @acumulador := 0) as init_var
 			WHERE t1.clientesid=? and t1.tipo IN ('sales_return','invoices','retiros','ajuste_saldo') 
 			order by t1.date desc";
-			$data = DB::select($sql, [$request->id]);
+			$data = DB::select($sql, [$request->id]);*/
+			
+			
+			  $sql = saldo_sql_list();
+
+ $sql .= " SELECT 
+              t1.number, 
+              t1.referencia,
+              t1.clientesid, 
+              t1.date, 
+              t1.fecha_real, 
+              CASE 
+                  WHEN t1.tipo = 'invoices' AND t1.invoice_status = 'Canceled' 
+                  THEN CONCAT(IFNULL(t1.note, ''), ' - FACTURA ANULADA') 
+                  ELSE t1.note 
+              END AS note, 
+              t1.movimiento, 
+              t1.debe, 
+              t1.haber, 
+              t1.status, 
+              t1.tipo,
+              t1.invoice_status,
+              SUM(t1.debe - ABS(t1.haber)) OVER (
+                  ORDER BY t1.date DESC, t1.documento_id ASC, t1.number DESC 
+                  ROWS UNBOUNDED PRECEDING
+              ) AS saldo, 
+              SUM(t1.debe - ABS(t1.haber)) OVER () AS gran_total_general, 
+              t1.adicional,
+              t1.documento_id
+          FROM datos_unificados t1   
+          WHERE t1.clientesid = ? 
+          ORDER BY 
+              t1.date DESC, 
+              t1.documento_id ASC, 
+              t1.number DESC";
+
+ $data = DB::select($sql, [$request->id]);
+	
+	
 			
 			//dd($data,$request->id);
 			
