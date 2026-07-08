@@ -1020,7 +1020,7 @@ $('#miFormulario').submit(function(e) {
 
     $('#item_id').select2({
         placeholder: 'Escribe el modelo o producto...',
-        minimumInputLength: 2,
+        minimumInputLength: 0,
         allowClear: true,
         width: '100%',
         ajax: {

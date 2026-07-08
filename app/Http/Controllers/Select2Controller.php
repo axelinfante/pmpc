@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use DB;
 use App\Contact;
 use App\Product;
+use App\Item;
 
 
 class Select2Controller extends Controller
@@ -30,6 +31,9 @@ class Select2Controller extends Controller
 		}
 		if ($request->get('where')=="9"){
 			return self::SearchProducts($request);
+		}
+		if ($request->get('where')=="100"){
+			return self::SearchItems($request);
 		}
 		
         $companias_global= empty(session('cia')) ? company_id_arr() : company_id_arr(); company_id_arr();
@@ -333,7 +337,7 @@ class Select2Controller extends Controller
     if (!empty($company) && $company !== 'undefined') {
         $selectArray[] = DB::raw("IF(products.company_id = " . intval($company) . ", false, true) as disabled");
     }
-
+//$query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
     $query = Product::query()
         ->select($selectArray)
         ->leftJoin('items', 'products.item_id', '=', 'items.id')
@@ -344,7 +348,8 @@ class Select2Controller extends Controller
         ->whereNull('products.allCar')
         ->where('products.stock', 1)
         ->where(function ($q) {
-            $q->where('products.estado', '!=', 'descompuesto')
+            //$q->where('products.estado', '!=', 'descompuesto')
+				$q->whereNotIn('products.estado', ['desarme', 'desarme-stock','descompuesto'])
               ->orWhereNull('products.estado');
         })
         ->whereIn("products.company_id", $companias_global);
@@ -371,7 +376,88 @@ class Select2Controller extends Controller
     return $result;
 }
 
-	
+
+public function SearchItems(Request $request)
+{
+    $search = $request->input('q');
+    $carId = $request->input('car_id');
+    $currentId = $request->input('current_id');
+    
+    // 1. Creamos la consulta base
+    $query = Item::query()
+        ->select('id', 'item_name as text')
+        ->where(function ($q) use ($currentId) {
+            $q->where('activo', 'Si');
+            // ->where('allCar', 1); // (Comentado según tu código)
+            $q->when($currentId, fn($query) => $query->orWhere('id', $currentId));
+        });
+    
+    if (empty($search)) {
+        $items = $query->orderBy('item_name', 'ASC')
+            ->limit(30) 
+            ->get(); 
+    } else {
+        $items = $query->where('item_name', 'LIKE', "%{$search}%")
+            ->orderBy('item_name', 'ASC')
+            ->get(); 
+    }
+       
+  
+    $productsInfo = $this->obtenerInfoProductos($items->pluck('id'), $carId);
+    $itemsFormateados = $this->formatearItems($items, $productsInfo);
+
+	return $itemsFormateados;
+}
+/**
+ * Extrae la información de productos para evitar N+1
+ */
+private function obtenerInfoProductos($itemIds, $carId)
+{
+    if (empty($carId) || $itemIds->isEmpty()) {
+        return collect();
+    }
+
+    return Product::select('item_id', 'estado', 'id as idproducto') 
+        ->whereIn('item_id', $itemIds)
+        ->where('nro_interno', $carId)
+        ->get()
+        ->keyBy('item_id');
+}
+
+/**
+ * Formatea los items aplicando las reglas de negocio
+ */
+private function formatearItems($items, $productsInfo)
+{
+    return $items->map(function ($item) use ($productsInfo) {
+        $mensaje = "";
+        $disabledRow = false;
+        
+        $product = $productsInfo->get($item->id);
+
+        if ($product) {
+            $estado = $product->estado ?? '';   
+            $id_producto = $product->idproducto ?? '';
+
+            if ($estado === "Anulado") {
+                $mensaje = " - $id_producto ($estado)";
+                $disabledRow = true; 
+            } else {
+                $mensaje = " ($id_producto)";
+                $disabledRow = true;  
+            }
+        }	
+
+        return [
+            'id'       => $item->id,
+            'text'     => $item->text . $mensaje,
+            'disabled' => $disabledRow
+        ];
+    });
+}
+
+
+	/*
 	
     public function get_table_data_old(Request $request)
     {
@@ -613,6 +699,5 @@ class Select2Controller extends Controller
 
         return $result;
     }
-
-
+*/
 }

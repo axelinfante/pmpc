@@ -505,6 +505,23 @@
             allowClear: true,
             placeholder: $('#acciones').data('placeholder') 
         });
+		
+				
+		let idCar = "{{ $idCar ?? '' }}";
+		let nombreCar = "{{ ($vehiculos->id ?? '') .' '. ($vehiculos->marca_modelo->marca->marca ?? '').' '. ($vehiculos->marca_modelo->modelo->modelo ?? '') }}"; 
+		let $selectCar = $('#car_id');
+					
+			if (idCar !== '' && idCar !== null) {
+				console.log(nombreCar);
+				let nuevaOpcion = new Option(nombreCar, idCar, true, true);
+				$selectCar.append(nuevaOpcion).trigger('change.select2');
+				setTimeout(function() {
+					$('#car_id').trigger('change');
+				}, 2000); // Executes after 2 seconds
+							
+			} else {
+				$selectCar.val(null).trigger('change.select2');
+			}
     });
 
 	is_usd.change(function () {
@@ -597,11 +614,15 @@
 					  '&value=' + product.data('value') +
 					  '&display=' + product.data('display') + display2 + display3 + 
 					  '&where=' + product.data('where') +
+					  '&car_id=' + $(this).val() +
 					  '&option= products.car_id = ' + $(this).val(),
         delay: 250,
         dataType: 'json',
         processResults: function (data) {
-            var selectedRaw = $('#nro_interno_tmp').val();
+			    return {
+                    results: data
+                };
+            /*var selectedRaw = $('#nro_interno_tmp').val();
             var selected = [];
             
             if (selectedRaw) {
@@ -614,7 +635,7 @@
                 return obj;
             });
 
-            return { results: data_modified };  
+            return { results: data_modified };  */
         }
     }
 });
@@ -655,11 +676,15 @@
 					  '&value=' + product.data('value') +
 					  '&display=' + product.data('display') + display2 + display3 + 
 					  '&where=' + product.data('where') +
+					  '&car_id=' + $(this).val() +
 					  '&option= products.car_id = ' + $(this).val(),
         delay: 250,
         dataType: 'json',
         processResults: function (data) {
-            var selectedRaw = $('#nro_interno_tmp').val();
+			                 return {
+                    results: data 
+                };
+            /*var selectedRaw = $('#nro_interno_tmp').val();
             var selected = [];
             
             if (selectedRaw) {
@@ -672,7 +697,7 @@
                 return obj;
             });
 
-            return { results: data_modified };  
+            return { results: data_modified };  */
         }
     }
 });
@@ -767,6 +792,7 @@
 
 */
 			function limpiarItems(nro_interno) {
+				return;
 				$('#nro_interno_tmp').val("");
                  if (nro_interno > 0) {
                     $.ajax({
@@ -826,17 +852,8 @@ $(document).on('change', '#product', function () {
         if (product_id == '') {
             return;
         }
-
-
-        let car_id = car.val();
-
-        //alert($car_id);
-        /*{{ route('products.create') }}?modalInStock=1
-        item_id
-        car_id*/
-        //return;
-
 		
+        let car_id = car.val();
 		var link = "{{ url('products') }}";
 
 		var myformData = new FormData();        
