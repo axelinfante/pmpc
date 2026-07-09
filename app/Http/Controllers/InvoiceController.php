@@ -125,7 +125,13 @@ class InvoiceController extends Controller
         $rol_revendedor = Role::where('name', 'Revendedor')->first()->id ?? null;
 
         //$vehiculos = Cars::with('marca_modelo')->get(); //where('company_id', company_id())->
-        $vehiculos = Cars::with('marca_modelo')->where('id', $idCar)->first(); //where('company_id', company_id())-> 
+        if ($idCar){
+			$vehiculos = Cars::with('marca_modelo')->where('id', $idCar)->first(); //where('company_id', company_id())-> 
+		}
+		else{
+			$vehiculos = Cars::with('marca_modelo')->limit(5)->get();
+		}
+		
         $item = Product::where('id', $idProduct)->with('item')->first();
 
         $company = \App\Company::where('business_name', 'Pentacar')->orwhere('business_name', 'Paternal')->get();
