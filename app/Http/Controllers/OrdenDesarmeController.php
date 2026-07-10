@@ -949,104 +949,11 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
        //     $nro_interno_datos->whereIn('company_id', $company_id);
         //}
         $gerenciales_autorizado = Puesto::where("predeterminada", 1)->pluck('user_id')->toArray();
-        /*$ordenes = Orden_desarme::select('ordenes_desarme.*')
-    ->with([
-        'venta', 
-        'cotizacion', 
-        'car.estado_relacion' 
-    ])
-    ->whereHas('car', function ($str) use ($isHistorial, $company_id) {
-        if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete' || strtolower(auth()->user()->role->name) == 'administrativo de desarme') {
-            if (!$isHistorial)
-                $str->where('company_id', auth()->user()->company_id);
-        } else {
-            $str->whereIn('company_id', $company_id);
-        }
-        
-        $str->where(function ($row) use ($isHistorial) {
-            if (!$isHistorial)
-                $row->where('idEstado', '!=', 1);
-        });
-    })	
-	->whereHas('venta', function ($query) {
-        $query->where('status', '!=', 'Canceled');
-    });
-
-		// $ordenes->whereIn('company_id', $company_id)
-		
-        if (strtolower(auth()->user()->role->name) == 'vendedor') {
-            $ordenes->whereHas('venta', function ($str) {
-                $str->where('user_id', '=', auth()->id());
-            });
-        }
-        $ocultar = '';
-        if ((strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete') && (!$isHistorial)) {
-            $ordenes->where('procesar', 1);
-            $ordenes->where('idCadete_operario', auth()->id());
-        }
-
-        $ordenes->orderBy('created_at', 'desc');
-
-        $estEnv = $request->estado;
-
-        if (!$estEnv) {
-            if (!$isHistorial)
-                $ordenes->where(function ($query) {
-                    $query->where('estado', '!=', 'completado')
-                        ->orWhere('estado', null);
-                });
-        }
-		*/
-		
-		
+   	
 		   $ocultar = '';
 		$user = auth()->user();
-$role = strtolower($user->role->name);
+		$role = strtolower($user->role->name);
 
-/*$ordenes = Orden_desarme::select('ordenes_desarme.*')
-    ->with([
-        'venta', 
-        'cotizacion', 
-        'car.estado_relacion' 
-    ]);
-
-$ordenes->whereHas('car', function ($query) use ($isHistorial, $company_id, $user, $role) {
-    if (in_array($role, ['operario', 'cadete', 'administrativo de desarme'])) {
-        if (!$isHistorial) {
-            $query->where('company_id', $user->company_id);
-        }
-    } else {
-        $query->whereIn('company_id', $company_id);
-    }
-    
-    if (!$isHistorial) {
-        $query->where('idEstado', '!=', 1);
-    }
-});
-
-
-$ordenes->whereHas('venta', function ($query) use ($role) {
-    $query->where('status', '!=', 'Canceled');
-    if ($role === 'vendedor') {
-        $query->where('user_id', '=', auth()->id());
-    }
-});
-
-
-if (in_array($role, ['operario', 'cadete']) && !$isHistorial) {
-    $ordenes->where('procesar', 1)
-            ->where('idCadete_operario', auth()->id());
-}
-
-
-$estEnv = $request->estado;
-
-if (!$estEnv && !$isHistorial) {
-    $ordenes->where(function ($query) {
-        $query->where('estado', '!=', 'completado')
-              ->orWhereNull('estado'); 
-    });
-}*/
 
 $ordenes = Orden_desarme::with([
 			'venta', 
@@ -1265,38 +1172,30 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 					
 					
             })
-            ->editColumn('puesto', function ($orden) use ($opciones, $gerenciales_autorizado) {
-                if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
-                    //dd($opciones);
-                    //$opciones = ['1C', '1P', '2C', '2P', '3', '4C', '4P'];
-                    //$opciones = $this->opciones_puestos;
-				//	if (true == true ) {
-                    //$operarios = ['operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operariocolectora@pmpc.com.ar', 'operarioconstituyentes@pmpc.com.ar', 'operarioventanita@pmpc.com.ar', 'operarioventanita@pmpc.com.ar', 'operariogeneral@pmpc.com.ar'];
-					
-					
-					/*if (isset($orden->puesto)){
-						 return '<span>' . $orden->puesto . '</span>';
-					}*/
-					
-					$filteredCompany = $opciones->filter(function ($opcion) use ($orden) {
-						return $opcion->company_id == $orden->venta->company_id;
-					});
-                    $select = '<select name="puesto" class="puesto-select form-control" data-id=' . $orden->id . '>';
-                    $select .= '<option value=""> </option>';
-                    //$i = 0;
-                    foreach ($filteredCompany as $opcion) {
-                        $selected = ($orden->puesto == $opcion->puesto) ? 'selected' : '';
-                        $select .= '<option value="' . $opcion->puesto . '" ' . $selected . ' data-operario ="' . $opcion->asignado->email . 
-						'" data-compania ="'. $orden->venta->company_id .'">' . $opcion->puesto . '</option>';
-                      //  $i++;
-                    }
+			->editColumn('puesto', function ($orden) use ($opciones, $gerenciales_autorizado) {
+    if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
+        
+        $ventaCompanyId = $orden->venta->company_id ?? null;
 
-                    $select .= '</select>';
-                    return $select;
-                } else {
-                    return '<span>' . $orden->puesto . '</span>';
-                }
-            })
+        $filteredCompany = $opciones->filter(function ($opcion) use ($ventaCompanyId) {
+            return $opcion->company_id == $ventaCompanyId;
+        });
+
+        $select = '<select name="puesto" class="puesto-select form-control" data-id=' . $orden->id . '>';
+        $select .= '<option value=""> </option>';
+
+        foreach ($filteredCompany as $opcion) {
+            $selected = ($orden->puesto == $opcion->puesto) ? 'selected' : '';
+            $select .= '<option value="' . $opcion->puesto . '" ' . $selected . ' data-operario ="' . ($opcion->asignado->email ?? '') . 
+            '" data-compania ="'. ($ventaCompanyId ?? '') .'">' . $opcion->puesto . '</option>';
+        }
+
+        $select .= '</select>';
+        return $select;
+    } else {
+        return '<span>' . $orden->puesto . '</span>';
+    }
+})
 			->filterColumn('puesto', function ($query, $keyword) {
 				  $query->where('puesto', 'like', "%{$keyword}%");
             })
