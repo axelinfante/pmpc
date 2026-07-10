@@ -129,7 +129,7 @@ class InvoiceController extends Controller
 			$vehiculos = Cars::with('marca_modelo')->where('id', $idCar)->first(); //where('company_id', company_id())-> 
 		}
 		else{
-			$vehiculos = Cars::with('marca_modelo')->limit(5)->get();
+			$vehiculos = Cars::with('marca_modelo')->first();
 		}
 		
         $item = Product::where('id', $idProduct)->with('item')->first();
