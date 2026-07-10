@@ -35,7 +35,7 @@
                                 <th>{{ _lang('nº motor') }}</th>
                                 <th>{{ _lang('nº oblea') }}</th>
                                 <th style="width: 200px; min-width: 200px;">{{ _lang('Deposito') }}</th>
-                                <th>{{ _lang('Ubicacion') }}</th>
+                                <th style="width: 200px; min-width: 200px;">{{ _lang('Ubicacion') }}</th>
                                 <th>{{ _lang('Descripcion') }}</th>
                                 <th>{{ _lang('Publicado ML') }}</th>
 								<th >{{ _lang('Reparaciones') }}</th>
@@ -198,7 +198,22 @@
                     { data: 'motor_nro', name: 'motor_nro' },
                     { data: 'nro_oblea', name: 'nro_oblea' },
                     { data: 'deposito', name: 'deposito' },
-                    { data: 'ubicacion', name: 'ubicacion' },
+                    {
+                    data: 'ubicacion',
+                    name: 'ubicacion',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-sm edit-ubicacion" value="${data || ''}" id="input-ubicacion-${row.id}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-warning save-ubicacion" data-id="${row.id}">
+                                        <i class="ti-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
                     { data: 'description', name: 'description' },
                     { data: 'mercado_libre', name: 'mercado_libre' },
                     { data: 'reparaciones', name: 'reparaciones' },
@@ -1021,6 +1036,43 @@
 	*/	
         
     }
+
+    $(document).on('click', '.save-ubicacion', function(e) {
+    e.preventDefault();
+    let id = $(this).data('id');
+    let nuevaUbicacion = $('#input-ubicacion-' + id).val();
+	
+	
+			const payload = {
+                    ids: id,
+                    update_ubicacion: 1,
+					ubicacion: nuevaUbicacion
+                };
+	
+	
+	 $.ajax({
+                    url: "{{ route('products.update_fecha_ultimogiro') }}",
+                    type: 'POST',
+                    data: payload,
+					beforeSend: function() {
+						inicioLoading();
+					},
+                    success: function(response) {
+                        if (response.result === 'success') {
+                            if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: response.updated + ' productos actualizados.', icon: 'success' });
+                            table.draw(false);
+                        } else {
+                            if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: response.message || 'No se pudo actualizar.', icon: 'error' });
+                        }
+						closeLoading();	
+                    },
+                    error: function(xhr) {
+						closeLoading();
+                        const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo actualizar.';
+                        if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: message, icon: 'error' });
+                    }
+                });
+			});
 	
 	
 	$(document).on('click', '.btn-estado', function() {
