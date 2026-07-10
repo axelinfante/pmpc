@@ -497,7 +497,7 @@
 				$('#company_id_s').val( data.company);
             },
 			error: function(error) {
-				alert('Error: Al cargar empresa' )
+				//alert('Error: Al cargar empresa' )
 			}
 
         });
@@ -565,7 +565,7 @@
 					$('#company_id_s').val( data.company);
                 },
 				error: function(error) {
-					alert('Error: Al cargar empresa' )
+					//alert('Error: Al cargar empresa' )
 				}
             });
         }
