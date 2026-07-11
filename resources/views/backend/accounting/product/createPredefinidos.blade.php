@@ -324,6 +324,8 @@ $(document).ready(function() {
 		
 				 $('#formulario_create').on('submit', function(e) {
 					e.preventDefault();
+					let botonEnviar = $('#submit');
+					botonEnviar.prop('disabled', true).text('Guardando...');
 					$('#formulario_create').find(".print-error-msg").hide().find("ul").html('');
 				  var selectedIds = [];
 				   var ids = [];
@@ -363,8 +365,10 @@ $(document).ready(function() {
 									$('#formulario_create').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
 								});
 							}
+							botonEnviar.prop('disabled', false).text('Guardar');
 						},
 						error: function(response){
+							botonEnviar.prop('disabled', false).text('Guardar');
 							//$('#formulario_create').find(".print-error-msg").find("ul").html('');
 							$('#formulario_create').find(".print-error-msg").css('display','block');
 							$.each( response.responseJSON.errors, function( key, value ) {

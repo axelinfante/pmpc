@@ -33,7 +33,7 @@ use App\Orden_desarme;
 use App\Puesto;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
-
+use Illuminate\Support\Facades\Cache;
 use ZipArchive;
 use File;
 
@@ -799,13 +799,212 @@ class ProductController extends Controller
         }
     }
 
+
+
+
+public function store(Request $request)
+{
+    $lockKey = 'create_product_lock_' . auth()->user()->id;
+    $lock = Cache::lock($lockKey, 5);
+
+    if (!$lock->get()) {
+        if ($request->ajax()) {
+            return response()->json([
+                'result' => 'error', 
+                'message' => ['El producto ya fue solicitado, por favor espere unos segundos...']
+            ]);
+        }
+        return redirect()->back()->withErrors(['error' => 'El producto ya fue solicitado, por favor espere.']);
+    }
+
+    try {
+         $validator = Validator::make($request->all(), [
+            'nro_oblea' => 'nullable|unique:products',
+            'item_name' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value != "") {
+						  $item = Item::where('item_name', $value)->where('activo', "Si")->first();
+                        if ($item) {
+                            $fail('Item ya se encuentra creado.');
+                            return;
+                        }
+                    };
+                },
+            ],
+            'item_id' => [
+                function ($attribute, $value, $fail) use ($request) {
+					if (procesarSolicitud() == true) {
+						$fail("</br><strong>El producto ya fue solicitado, debe esperar unos segundos.....</strong>");
+						return;
+					 }
+					 
+                    if ($request->has('item_id') && $request->has('nro_interno')) {
+
+                        if ($request->input('nro_interno') > 0) {
+                            $hasPiezaSavedForUser = Product::query()
+                                ->where('item_id', $value)
+                                ->where('nro_interno', $request->input('nro_interno'))
+                                ->where('car_id', null)
+                                ->exists();
+
+                            if ($hasPiezaSavedForUser) {
+                                $fail('Item ya se encuentra asignado al nro interno.');
+                                return;
+                            }
+                        }
+                    }
+                },
+            ],
+            'imagen.*'          => ['mimes:jpg,jpeg,png,gif,svg']
+        ]);
+
+
+
+        if ($validator->fails()) {
+            $lock->release(); 
+			 if ($request->ajax()) {
+                return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+            } else {
+                return redirect('products/create')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+
+        }
+
+        DB::beginTransaction();
+          $allCar = $request->input('car_or_stock', false);
+
+        // $es_carga_rapida = $request->input('carga_rapida', false);
+
+        if (!empty($request->input('item_name')) && empty($request->input('item_id'))) {
+            //Create Item
+            $item = new Item();
+            $item->item_name = $request->input('item_name');
+            $item->item_type = 'product';
+            $item->company_id = $request->input('company') ?? company_id();
+            $item->activo = 'Si';
+
+            if ($allCar == 1) {
+                $item->allCar = 1;
+            }
+            $item->save();
+        } else if ($request->input('item_id')) {
+            $item = Item::find($request->input('item_id'));
+        }
+
+
+
+        //Create pieza 
+        if ($allCar != 1) {
+
+			//$car_id=$request->input('nro_interno') ?? 0;
+			$nro_interno= $request->input('nro_interno',null);
+            $car_id = $request->input('car_id', $nro_interno);
+			
+			//$car = Cars::find($nro_interno);
+
+
+            $product = new Product();
+            $product->item_id = $item->id;
+            $product->car_id =  null;
+            //$product->car_id = $car_id ?? null;
+            $product->marca_modelo = $request->input('marca_modelo');
+            //$product->product_cost = $request->input('product_cost');
+            $product->product_price = 0;
+            $product->nro_motor = $request->input('nro_motor') ?? null;
+            $product->nro_oblea = $request->input('nro_oblea') ?? null;
+            //$product->product_unit = $request->input('product_unit');
+            $product->tax_method = 'exclusive';
+            //$product->tax_id = $request->input('tax_id');
+            $product->description = $request->input('description');
+            $product->stock = 1;
+            $product->anio = $request->input('anio');
+
+            $product->estado = $request->input('estado_prod') ?? "desarme";
+
+			//$car_id=$request->input('nro_interno') ?? 0;
+            $car = Cars::find($car_id);
+
+            if (isset($car)) {
+                $product->nro_interno = $car_id ?? null;
+                $product->company_id = $car->company_id ?? company_id();
+                $product->marca_modelo = $car->idMarca_modelo ?? null;
+
+            } else {
+                $product->nro_interno = $request->input('nro_interno') ?? 0;
+                $product->company_id = $request->input('company') ?? company_id();
+				$product->marca_modelo = $request->input('marca_modelo');
+            }
+
+
+
+
+            $product->estado = $request->input('estado_prod') ?? null;
+
+            $product->idDeposito = $request->input('idDeposito') ?? null;
+            $product->ubicacion = $request->input('ubicacion') ?? null;
+
+            $product->mercado_libre = $request->input('mercado_libre') ?? 0;
+
+            $product->carga_rapida = $request->input('carga_rapida') ?? 0;
+
+            $product->user_id = auth()->user()->id;
+
+            if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
+                $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+            };
+
+            $product->save();
+            if (!empty($request->file())) {
+				$path = public_path('uploads/products');
+				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
+                $this->uploadImg($request, ['dir' => 'products', 'idProduct' => $product->id]);
+            }
+			
+			
+        } else {
+        }
+
+        $cate = $request->input('categoria');
+
+        if (isset($product) && !empty($cate[0])) {
+            foreach ($cate as $ca):
+                $cateProd = new Categoria_product;
+                $cateProd->product_id = $product->id;
+                $cateProd->categoria_id = $ca;
+                $cateProd->save();
+
+            endforeach;
+        }
+
+	    $request['informe'] = "Creacion de producto " . json_encode($product);
+		$this->grabarHistorial($request, $product);
+		DB::commit();
+        $lock->release();
+        if (!$request->ajax()) {
+            return redirect()->back()->with(['success' => _lang('Saved successfully'), 'product' => $product])->withInput();
+        } else {
+            $product->{"products.id"} = $product->id;
+            return response()->json(['result' => 'success', 'action' => 'store', 'message' => _lang('Saved successfully'), 'data' => $product]);
+        }
+		//$table->unique(['item_id', 'nro_interno']);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        $lock->release(); 
+        throw $e;
+    }
+}
+
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store_old(Request $request)
     {
 		//dd(procesarSolicitud());
         $validator = Validator::make($request->all(), [
@@ -2052,6 +2251,21 @@ return DataTables::of($products)
 	
 	  public function table_detalle_post(Request $request)
     {
+		$lockKey = 'create_product_lote_lock_' . auth()->user()->id;
+		$lock = Cache::lock($lockKey, 5);
+
+    if (!$lock->get()) {
+		$lock->release(); 
+        if ($request->ajax()) {
+            return response()->json([
+                'result' => 'error', 
+                'message' => ['El proceso ya fue solicitado, por favor espere unos segundos...']
+            ]);
+        }
+        return redirect()->back()->withErrors(['error' => 'El proceso ya fue solicitado, por favor espere.']);
+    }
+
+		
 		$validator = Validator::make($request->all(), [
 			//'nro_interno' => 'required',
 			'nro_interno' =>	 [
@@ -2076,6 +2290,7 @@ return DataTables::of($products)
 		]);
 
         if ($validator->fails()) {
+			$lock->release(); 
             if($request->ajax()){
                 return response()->json(['result'=>'error','message'=>$validator->errors()->all()]);
             }else{
@@ -2189,7 +2404,7 @@ if (isset($car)) {
     
     DB::commit();
 }
-
+$lock->release(); 
 $stringIdsCreados = implode(',', $productosCreadosIds);
 
 return response()->json([
@@ -2261,6 +2476,7 @@ return response()->json([
 			return response()->json(['result' => 'success', 'message' => _lang('Updated sucessfully')]);*/
 			
         } catch (Throwable $e) {
+			$lock->release(); 
             DB::rollBack();
              dd($e->getMessage());
 			return response()->json(['result' => 'error', 'message' => _lang('Error')]);
