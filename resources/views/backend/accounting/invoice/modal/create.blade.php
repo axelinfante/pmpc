@@ -193,11 +193,11 @@
 
 			<div class="col-md-4 d-none" id="contacts">
 			  <div class="form-group">
-				<a href="{{ route('contacts.create') }}" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+				<a href="{{ route('contacts.create') }}" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 				<label class="control-label">{{ _lang('Select Client') }}</label>
-				<select class="form-control select2-ajax" data-value="id" data-display="contact_name" data-display2="dni_cuit"
+				<select data-placeholder="{{ _lang('Buscar por Dni o nombre...') }}" class="form-control select2-ajax" data-value="id" data-display="contact_name" data-display2="dni_cuit"
 						data-table="contacts" data-where="101" name="client_id" id="client_id" required>
-				   <option value="">{{ _lang('Select One') }}</option>
+						{{--  <option value="">{{ _lang('Escriba el nombre o dni del cliente...') }}</option> --}}
 				</select>
 			  </div>
 			</div>
@@ -218,13 +218,13 @@
 						{{--}}" --}}
 						{{--class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>--}}
 
-						<label class="control-label">{{ _lang('Vehiculo') }}(Estados: BD / APTO / No Apto Autorizado)</label>
-						<select class="form-control select2-ajax" data-value="cars.id" data-display="IF(cars.company_id = 1, CONCAT('PM',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 7, '0')), CONCAT('PC',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 7, '0') ))"
+						<label class="control-label">{{ _lang('Vehiculo') }}(Estados: BD / APTO / No Apto Autorizado / Compactado -> Debe colocar observacion)</label>
+						<select class="form-control select2-ajax" data-value="cars.id" data-display="IF(cars.company_id = 1, CONCAT('PM',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 10, '0')), CONCAT('PC',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 10, '0') ))"
 								data-display2="IF(cars.idMarca_modelo > 0, marcas.marca , 'Sin marca')" data-display3="IF(cars.idMarca_modelo > 0,modelos.modelo, 'Sin modelo')"
 								data-table="cars"
 								data-where="11" name="car_id" id="car_id">
 							<option value="">{{ _lang('- Select Car -') }}</option>
-							@forelse($vehiculos as $v)
+							{{-- @forelse($vehiculos as $v)
 							@if($v->idEstado !=1)
 								<option {{old('car_id',$idCar ?? '') == $v->id? 'selected' :''}} value="{{
 										$v->id}}">{{ $v->id.' '.
@@ -235,7 +235,7 @@
 							
 							@endif
 							@empty
-							@endforelse
+							@endforelse --}}
 						</select>
 					</div>
 				</div>
@@ -281,13 +281,13 @@
 				<div class="col-md-12" style="background-color: #faff7e;">
 					<div class="form-group select-product-container">
 						<a href="{{ route('products.create') }}?modalInStock=1" data-reload="false" data-title="{{
-								_lang('Add Product') }}" class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+								_lang('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 						<label class="control-label">{{ _lang('Productos') }}</label>
-						<select class="form-control select2-ajax" data-value="products.id"
+						<select data-placeholder="{{ _lang('Buscar por IdProducto, Interno, Items name o marca-modelo...') }}" class="form-control select2-ajax" data-value="products.id"
 								data-display="items.item_name"
 								data-display2="IF(products.marca_modelo > 0, marcas.marca , 'Sin marca')" data-display3="IF(products.marca_modelo > 0,modelos.modelo, 'Sin modelo')"
 								data-table="products" data-where="9"  name="service" id="service">
-							<option value="">{{ _lang('Select Product') }}</option>
+								{{--<option value="">{{ _lang('Select Product') }}</option>--}}
 							{{--<option value="{{$item->product->id}}">{{ $item->item_name}}</option>--}}
 							@if ($idProduct)
 							<option selected value="{{$item->id}}">{{ $item->item->item_name}}</option>
@@ -350,13 +350,14 @@
 					<table id="order-table" class="table table-bordered">
 						<thead>
 							<tr>
+								<th>Id_Producto / Nro Oblea</th>
 								<th>{{ _lang('Name') }}</th>
 								<th>{{ _lang('Description') }}</th>
 								<th class="text-center wp-100">{{ _lang('Quantity') }}</th>
 								<th class="text-right">{{ _lang('Unit Cost').' $/usd' }}</th>
 								
 								<th class="text-right">{{ _lang('Sub Total').' $/usd' }}</th>
-								<th class="hide-col">{{ _lang('USD convertidos').' '.$currency }}</th>
+								<th class="text-right">{{ _lang('USD convertidos').' '.$currency }}</th>
 								<th class="text-right">Nro interno</th>
 								<th class="text-center">{{ _lang('Action') }}</th>
 							</tr>
@@ -367,11 +368,12 @@
 							<tr>
 								<th>{{ _lang('Total') }}</th>
 								<th></th>
+								<th></th>
 								<th class="text-center" id="total-qty">0</th>
 								<th></th>
 								
 								<th class="text-right" id="total">0.00</th>
-								<th class="hide-col"></th>
+								<th class="text-right"></th>
 								<th class="text-center"></th>
 								<th class="text-center"></th>
 								<input type="hidden" name="product_total" id="product_total" value="0">
@@ -557,7 +559,26 @@
         $('#product').prop('data-idCar',car.val());
 
 		limpiarItems($(this).val());
-        product.select2({
+		product.select2({
+				placeholder: 'Buscar...', // ¡Aquí puedes meter el placeholder que querías!
+				allowClear: true,
+			ajax: {
+				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+					  '&value=' + product.data('value') +
+					  '&display=' + product.data('display') + display2 + display3 + 
+					  '&where=' + product.data('where') +
+					  '&car_id=' + $(this).val() +
+					  '&option= products.car_id = ' + $(this).val(),
+        delay: 250,
+        dataType: 'json',
+        processResults: function (data) {
+			                 return {
+                    results: data 
+                };
+        }
+    }
+});
+        /*product.select2({
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
                 '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
@@ -571,13 +592,9 @@
         				});
 
 					   return { results: data_modified };	
-
-                    /*return {
-                        results: data
-                    };*/
                 }
             }
-        });
+        });*/
 
 
 
@@ -648,6 +665,7 @@
 
 */
 			function limpiarItems(nro_interno) {
+				return;
 				$('#nro_interno_tmp').val("");
                  if (nro_interno > 0) {
                     $.ajax({
@@ -815,6 +833,10 @@ $(document).on('change', '#product', function () {
                         company = 'PC-'
                     }
 					 product_price = (product_price!=0) ? product_price:1.00;
+					 
+					 let marca = item.marca_modelo ? item.marca_modelo.marca.marca : 'Sin marca';
+                    let modelo = item.marca_modelo ? item.marca_modelo.modelo.modelo : 'Sin marca';
+					 
                     //Tax Value calculation
                     let unit_cost = product_price;
                     let sub_total = product_price;
@@ -822,7 +844,8 @@ $(document).on('change', '#product', function () {
                     let tax_selector = $("#tax-selector").html();
 					//console.log(unit_cost);
 					let product_row = `<tr id="product-${product_id}">
-											<td><b>${item_name}</b></td>
+											<td><b>${item.id} / ${item.nro_oblea != null ? item.nro_oblea : ''}</b></td>
+											<td><b>${item_name} ${marca} ${modelo}</b></td>
 											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${item.description != null ? item.description : ''}"></td>
 											<td class="text-center quantity"> 1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center"></td>
 											<td class="text-right unit-cost"><input type="text" data-id="${product_id}" onChange="monto_en_usd(this,${product_id})" name="unit_cost[]" class="form-control input-unit-cost text-right" value="${unit_cost}"></td>
