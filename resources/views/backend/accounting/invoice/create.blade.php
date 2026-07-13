@@ -512,7 +512,7 @@
 		let $selectCar = $('#car_id');
 					
 			if (idCar !== '' && idCar !== null) {
-				console.log(nombreCar);
+				//console.log(nombreCar);
 				let nuevaOpcion = new Option(nombreCar, idCar, true, true);
 				$selectCar.append(nuevaOpcion).trigger('change.select2');
 				setTimeout(function() {
@@ -684,20 +684,6 @@
 			                 return {
                     results: data 
                 };
-            /*var selectedRaw = $('#nro_interno_tmp').val();
-            var selected = [];
-            
-            if (selectedRaw) {
-                selected = selectedRaw.toString().split(",").map(function(t) { 
-                    return parseInt(t.trim(), 10); 
-                });
-            }
-            var data_modified = $.map(data, function (obj) {
-                obj.disabled = ($.inArray(parseInt(obj.id, 10), selected) !== -1); 
-                return obj;
-            });
-
-            return { results: data_modified };  */
         }
     }
 });
