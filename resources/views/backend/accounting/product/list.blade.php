@@ -202,6 +202,9 @@
                     data: 'ubicacion',
                     name: 'ubicacion',
                     render: function(data, type, row) {
+					  if (type === 'export' || type === 'filter' || type === 'sort') {
+							return data !== null && data !== undefined ? data : '';
+						}
                         return `
                             <div class="input-group">
                                 <input type="text" class="form-control form-control-sm edit-ubicacion" value="${data || ''}" id="input-ubicacion-${row.id}">
@@ -292,6 +295,7 @@
 						title: "invoices",
 						filename: "invoices",
                         exportOptions: {
+							orthogonal: 'export', 
                             columns: [ ':not(.act):visible' ],	
                             modifier: {
                                 search: 'applied',
