@@ -890,6 +890,7 @@
 		 //var table_reload = $(this).data('table_reload');
 		 var current_modal = $(this).closest('.modal');
 		 $(current_modal).find(".alert-danger").html("");
+		 var data_select = $(this).data('select');
 		 
 		 var elem = $(this);
 		 $(elem).find("button[type=submit]").prop("disabled",true);
@@ -926,6 +927,14 @@
 						$(current_modal).find(".alert-secondary").html(json['message']);
 						$(current_modal).find(".alert-secondary").removeClass('d-none');
 						$(current_modal).find(".alert-danger").addClass('d-none');
+						
+						if (typeof data_select !== 'undefined') {
+							var select_value = json['data'][target_select.data('value')];
+							var select_display = json['data'][target_select.data('display')];
+
+							var newOption = new Option(select_display, select_value, true, true);
+							target_select.append(newOption).trigger('change');
+						}
 						
 						
 						if (typeof data_value !== 'undefined') {

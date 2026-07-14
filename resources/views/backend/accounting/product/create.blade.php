@@ -497,7 +497,6 @@
 					  $btnModelo.attr('href', urlBase + '?idMarca=' + idMarca);
 					  
 					} else {
-						// Deshabilitar el acceso si no hay marca
 						$btnModelo.css({ 'pointer-events': 'none', 'opacity': '0.5' }).attr('href', '#');
 					} 
 					
@@ -820,13 +819,11 @@ $('#miFormulario').submit(function(e) {
             $(elem).find("button[type=submit]").prop("disabled", false);	
             $("#preloader").css("display", "none"); 
 
-            // CORRECCIÓN: Se usa 'response' en lugar de 'json'
+            
             if (response['result'] == "success") {
                 // Limpiar alertas
                 $(current_modal).find(".alert-secondary").html(response['message']).removeClass('d-none');
                 $(current_modal).find(".alert-danger").addClass('d-none');
-                
-                // CORRECCIÓN: Usar '#idMarca' para que coincida con tu HTML
                 var nuevaOpcion = new Option(response['marca'], response['id'], true, true);
                 $('#marca').append(nuevaOpcion).trigger('change');
                 
