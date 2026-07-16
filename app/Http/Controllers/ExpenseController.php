@@ -35,14 +35,16 @@ class ExpenseController extends Controller
 	 */
 	public function index()
 	{
-		$compan_id = company_id();
+		$company_id =company_id_arr();
+		//$compan_id = company_id();
 		//$month     = date('m');
 		//$year      = date('Y');
-
+		
 		$monthly_expense = Transaction::selectRaw("IFNULL(SUM(base_amount),0) as total")
 			->where("dr_cr", "dr")
 			->where("status", 1)
-			->where("company_id", $compan_id)
+			->whereIn('company_id', $company_id)
+			//->where("company_id", $compan_id)
 			//->whereMonth("trans_date", $month)
 			//->whereYear("trans_date", $year)
 			->first()->total;
@@ -52,8 +54,8 @@ class ExpenseController extends Controller
 
 	public function get_table_data(Request $request)
 	{
-
-
+		$company_id =company_id_arr();
+		
 		$currency = currency();
 
 		$transactions = Transaction::with("account")->with("expense_type")
@@ -62,8 +64,9 @@ class ExpenseController extends Controller
 			->with("tipo_comprobante")
 			->select('transactions.*')
 
-			->where(function ($e) {
-				$e->where('transactions.company_id', company_id())
+			->where(function ($e) use ($company_id) {
+				$e->whereIn('company_id', $company_id)
+				//$e->where('transactions.company_id', company_id())
 					->orWhere('transactions.company_id', 3)
 					->orWhere('transactions.company_id', 4)
 					->orWhere('transactions.company_id', 5);
@@ -226,7 +229,7 @@ class ExpenseController extends Controller
 			->setRowId(function ($trans) {
 				return "row_" . $trans->id;
 			})
-			->rawColumns(['status', 'action', 'amount'])
+			->rawColumns(['status', 'action', 'amount','note'])
 			->make(true);
 	}
 
@@ -252,7 +255,7 @@ class ExpenseController extends Controller
 	 */
 	public function store(Request $request)
 	{
-		$validator = Validator::make($request->all(), [
+		/*$validator = Validator::make($request->all(), [
 			'trans_date' => 'required',
 			'account_id' => 'required',
 			'chart_id' => 'required',
@@ -265,6 +268,42 @@ class ExpenseController extends Controller
 		if ($validator->fails()) {
 			if ($request->ajax()) {
 				return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+			} else {
+				return redirect('expense/create')
+					->withErrors($validator)
+					->withInput();
+			}
+		}*/
+		
+		$rules = [
+			'trans_date'        => 'required',
+			'account_id'        => 'required',
+			'chart_id'          => 'required',
+			'amount'            => 'required|numeric',
+			'payment_method_id' => 'required',
+			'reference'         => 'nullable|max:50',
+			'attachment'        => 'nullable|mimes:jpeg,png,jpg,doc,pdf,docx,zip',
+		];
+
+		$messages = [];
+		$rubro = ChartOfAccount::find($request->input('chart_id'));
+
+		if ($rubro && $rubro->id == 23) {
+			$rules['client_id']            = 'required';
+			$rules['idCotizacionSaldo']    = 'required';
+			$rules['idCotizacionMontoMax'] = 'required';
+			$rules['amount']               = 'required|numeric|lte:idCotizacionMontoMax'; // Aplicamos el límite
+
+			$messages['amount.lte'] = 'El monto no puede ser mayor al monto máximo permitido de la cotización.';
+		}
+		$validator = Validator::make($request->all(), $rules, $messages);
+
+		if ($validator->fails()) {
+			if ($request->ajax()) {
+				return response()->json([
+					'result'  => 'error', 
+					'message' => $validator->errors()->all()
+				]);
 			} else {
 				return redirect('expense/create')
 					->withErrors($validator)
@@ -284,11 +323,84 @@ class ExpenseController extends Controller
 
 
 
-
-		if ($rubro->name == 'Devolución') {
-
+		if ($rubro->id == 23) {
+			
+			/*$messages = [
+				'amount.lte' => 'El monto no puede ser mayor al monto máximo permitido de la cotización.',
+			];
 
 			$validator = Validator::make($request->all(), [
+				'client_id'            => 'required',
+				'idCotizacionSaldo'    => 'required',
+				'idCotizacionMontoMax' => 'required', // <-- Se agregó la coma que faltaba
+				'amount'               => 'required|numeric|lte:idCotizacionMontoMax', // <-- Regla 'lte' aplicada
+			], $messages);
+
+			if ($validator->fails()) {
+				if ($request->ajax()) {
+					return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+				} else {
+					return redirect('expense/create')
+						->withErrors($validator)
+						->withInput();
+				}
+			}*/
+			
+				$invoiceC =  Invoice::where("id", $request->input('idCotizacionSaldo'))->first();
+
+				//$type = 'co-';
+				$id_cotizacion = $request->input('idCotizacionSaldo');
+				$amount =  $request->input('amount');// * -1;
+				//$idCotizacionMontoMax $request->input('idCotizacionMontoMax') * -1;
+			
+				$transaction = new Transaction();
+				$transaction->trans_date = date('Y-m-d');
+				$transaction->account_id = $request->input('account_id');
+				$transaction->chart_id = $rubro->id ?? 0;
+				$transaction->type = 'expense';
+				$transaction->dr_cr = 'dr';
+				$transaction->amount = $request->input('amount');
+				$transaction->base_amount = convert_currency($transaction->account->account_currency, base_currency(), $transaction->amount);
+				$transaction->payer_payee_id = $request->input('client_id');
+
+				$transaction->payment_method_id = $request->input('payment_method_id');
+				$transaction->reference = $request->input('reference');
+				$transaction->razon_social = $request->input('razon_social');
+				$transaction->tipo_comprobante_id = $request->input('tipo_comprobante_id');
+				$transaction->imputar_a = $request->input('imputar_a');
+				$transaction->detalle_rubro = "Se reintegra dinero disponible";
+				$transaction->banco = $request->input('banco');
+				$transaction->cheque_nro = $request->input('cheque_nro');
+				$transaction->cheque_vencimiento = $request->input('cheque_vencimiento');
+				//$transaction->cheque_entregado_a = $request->input('cheque_entregado_a');
+				$transaction->note = ($request->input('note') ?? '') . '</br> Cotizacion '.$invoiceC->invoice_number.' Egreso por devolución a cliente Saldo a favor: ' . $transaction->base_amount;
+				//$transaction->note = 'Egreso por devolución a cliente - Saldo a favor: ' . ($esUsd ? 'USD ' . $monto : '$ ' . $monto);
+				//$transaction1->attachment = $attachment;
+				$transaction->usd = $request->input('usd');
+				$transaction->tasa = $request->input('tasa');
+				$transaction->trans_asoc = $invoiceC->id;
+				$transaction->company_id = $invoiceC->company_id;
+				$transaction->invoice_id=$invoiceC->id;
+				$transaction->transaccion_revertida_id=$invoiceC->id;
+				$transaction->status = $request->input('status', 0);
+				$transaction->save();
+			
+			/*
+		
+
+
+		// metodo para devolver dinero
+		
+	
+
+			*/
+			
+			
+
+		//if ($rubro->name == 'Devolución') {
+
+
+/*			$validator = Validator::make($request->all(), [
 
 				'client_id' => 'required',
 				'idCotizacionSaldo' => 'required'
@@ -528,7 +640,7 @@ class ExpenseController extends Controller
 					$trsEd->base_amount = $trsEd->base_amount - $t['monto'];
 					$trsEd->save();
 				}
-			}
+			}*/
 		} else {
 			$transaction = new Transaction();
 			$transaction->trans_date = $request->input('trans_date');
@@ -578,15 +690,6 @@ class ExpenseController extends Controller
 
 			$transaction->save();
 		}
-
-
-
-
-
-
-
-
-
 
 		// relacion de transaccion con auto
 		if ($request->input('idCar')) {

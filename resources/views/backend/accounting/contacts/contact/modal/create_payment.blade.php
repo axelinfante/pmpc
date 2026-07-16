@@ -220,7 +220,7 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
     $(document).ready(function () {
 	
 		
-		console.log(moneda)
+		//console.log(moneda)
 // tasa();
         function tasa () {
             let isCheck = $('#usd').is(':checked');

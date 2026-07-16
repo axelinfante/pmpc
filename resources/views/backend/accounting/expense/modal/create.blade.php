@@ -145,8 +145,8 @@ endif;
 				{{-- buscar cotizacion con saldo para retirar por el medio que sea --}}
 				<select class="form-control" name="idCotizacionSaldo" id="idCotizacionSaldo">
 					<option value="">Elige una cotizacion devolucion</option>
-					
 				</select>
+				<input type="hidden" name="idCotizacionMontoMax" id="idCotizacionMontoMax" value="0">
 			</div>
 
 			<div class="col-md-6">
@@ -211,7 +211,6 @@ endif;
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Status') }}</label>
 					<select class="form-control " name="status" required>
-						<option value="">{{ _lang('Select One') }}</option>
 						<option value="0">{{ 'Pendiente' }}</option>
 						<option value="1">{{ 'Resuelto'  }}</option>
 
@@ -266,17 +265,14 @@ endif;
 				url,
 				dataType: "json",
 				success:function(res) {
-					console.log(res);
+					//console.log(res);
 					html = `<option value="">Elige una cotizacion devolucion</option>`
 					res.cotizaciones.map(t => {
-
-						html += `<option value="${t.idCotizacion}">(${t.idCotizacion}) ${t.paid_dev}</option>`
+						html += `<option value="${t.idCotizacion}" data-monto="${t.paid_dev}">(${t.referencia}) ${t.paid_dev}</option>`;
+		//				html += `<option value="${t.idCotizacion}">(${t.idCotizacion}) ${t.paid_dev}</option>`
 
 					})
-
 					cotizacionSaldo.html(html);
-					
-
 					
 				}
 			})
@@ -286,9 +282,16 @@ endif;
 		idClient.change(function(e) {
 			// console.log(idClient);
 			if(idClient.val() != '' && idClient.val() > 0 ) {
-				getCotiConSaldo()
+				getCotiConSaldo();
+				$('#idCotizacionMontoMax').val(0) 
 			}
 		})
+		
+		cotizacionSaldo.on('change', function() {
+			let montoSeleccionado = $(this).find(':selected').data('monto');
+    		$('#idCotizacionMontoMax').val(montoSeleccionado || 0);
+		});
+
 
 		rubro.change(function(e) {
 			if(rubro.val() == 23) {
