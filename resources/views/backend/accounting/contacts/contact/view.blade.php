@@ -424,7 +424,8 @@
                                         <tr id="row_{{ $invoice->id }}">
                                             <td><input type="checkbox" class="row-checkbox"></td>
                                             <!-- Checkbox por fila -->
-                                            <td class='invoice_number'>{{ $invoice->invoice_number }}</td>
+                                            <td class='invoice_number'>
+											{{ $invoice->company_id == 1 ? 'PM-': 'PC-' }}{{ $invoice->invoice_number }}</td>
                                             <td class='due_date'>
                                                 {{ date($date_format, strtotime($invoice->invoice_date)) }}</td>
                                             <td >{!! $html !!}</td>
@@ -871,7 +872,8 @@
                 responsive: true,
                 bAutoWidth: false,
                 ordering: false,
-                dom: 'Bfrtip',
+                dom: "<'row'<'col-md-3'l><'col-md-5 mb-2'B><'col-md-4 justify-content-end'f>>tr<'row'<'col-md-5'i><'col-md-7 mt-2'p>>",
+				lengthMenu: [[25, 50, 100, 250], [25, 50, 100, 250]],
                 buttons: [{
                         extend: 'excelHtml5',
                         text: '<i class="fas fa-file-excel"></i> Exportar a Excel',
@@ -1035,7 +1037,8 @@
                 responsive: true,
                 bAutoWidth: false,
                 ordering: false,
-                dom: 'Bfrtip',
+				dom: "<'row'<'col-md-3'l><'col-md-5 mb-2'B><'col-md-4 justify-content-end'f>>tr<'row'<'col-md-5'i><'col-md-7 mt-2'p>>",
+				lengthMenu: [[25, 50, 100, 250], [25, 50, 100, 250]],
                 buttons: [{
                         extend: 'excelHtml5',
                         text: '<i class="fas fa-file-excel"></i> Exportar a Excel',
@@ -1153,6 +1156,7 @@
 			serverSide: true,
             /*responsive: true,*/
             bAutoWidth: false,
+			lengthMenu: [[25, 50, 100, 250], [25, 50, 100, 250]],
 			ajax: {
 			url: "{{ route('contacts.mov_resumen_saldo') }}",
             method: "POST",
@@ -1193,7 +1197,7 @@
                         $(win.document.body).css('margin', '35px 25px');
                     }
                 },
-				{
+				/*{
                     text: 'Retirar',
 			        className: 'btn btn-xs ajax-modal',
 					titleAttr: 'Add a new record',
@@ -1206,7 +1210,7 @@
 						id: "retirar-button",
 						"data-title": "Retiro de Saldo",
 					}
-				},
+				},*/
 				/*{
                     text: 'Abonar Saldo a deudas',
 			        className: 'btn ajax-modal',

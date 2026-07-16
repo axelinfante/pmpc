@@ -120,11 +120,14 @@ public function show()
     </tr>
   </tbody>
 </table>\' data-toggle="modal" data-target="#detailsModal"><i class="fa fa-info-circle" aria-hidden="true"></i></a>';
-			if 	($orden->items_pendientes){
+
+			return $editarBtn . ' ' . $ordenEntregaBtn . ' ' . $imprimirBtn . ' ' . $confirmarEntrega.' '.$botonqr.$orden->items_pendientes ?? '';
+			/*
+			 if 	($orden->items_pendientes){
 				return $imprimirBtn . ' '.$botonqr. ' '.$botondesarme.$orden->items_pendientes;
 			}else{
-                return $editarBtn . ' ' . $ordenEntregaBtn . ' ' . $imprimirBtn . ' ' . $confirmarEntrega.' '.$botonqr;
-				}
+               return $editarBtn . ' ' . $ordenEntregaBtn . ' ' . $imprimirBtn . ' ' . $confirmarEntrega.' '.$botonqr;
+				}*/
             })
 			 ->addColumn('fecha_venta', function ($orden) {
                 if (!isset($orden->cotizacion->invoice_date)) {

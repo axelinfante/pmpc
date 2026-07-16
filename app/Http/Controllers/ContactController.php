@@ -394,21 +394,40 @@ class ContactController extends Controller
 	public function cotizacionesConSaldo(Request $request)
 	{
 		$idClient = $request->id;
-		
-		$invoices = Invoice::where('client_id', $idClient)
+		$invoices = Invoice::from('invoices as t1')
+    ->select([
+        't1.*', // Selecciona los demás campos que necesites
+        DB::raw("CASE 
+            WHEN t1.company_id = 1 THEN CONCAT('PM-', t1.invoice_number) 
+            WHEN t1.company_id = 2 THEN CONCAT('PC-', t1.invoice_number) 
+            ELSE t1.invoice_number 
+        END AS referencia")
+    ])
+    ->where('t1.client_id', $idClient)
+    ->get(); 
+	
+		//$invoices = Invoice::where('client_id', $idClient)
 			//->where("company_id", $company_id)
-			->get();
+		//	->get();
 		//buscar el saldo y la cotizacion cancelada con saldo a favor
 		$result = [];
 		foreach ($invoices as $invoice) :
 
 
 			$paid = 0;
+			$retiro=0;
 			foreach ($invoice->transaction as $pagos) {
 				if ($pagos->type == 'income') {
 					$paid = $paid + $pagos->base_amount;
 				}
 			}
+			
+			foreach ($invoice->retiros as $retiros_cliente) {
+                                                if ($retiros_cliente->type == 'expense' && $retiros_cliente->dr_cr == 'dr') {
+                                                    $retiro = $retiro + $retiros_cliente->amount;
+                                                }
+                                            }
+			
 			$html = "";
 			$paid_dev = 0;
 			$product_return_ = DB::select("select invoices.id,invoices.invoice_number,invoice_items.product_id,products_returns.product_id as productoid, invoice_items.sub_total from `invoices` inner join `invoice_items` on `invoice_items`.`invoice_id` = `invoices`.`id` left join `products_returns` on products_returns.invoice_id=invoices.id and  products_returns.product_id=invoice_items.product_id AND products_returns.status='procesada' WHERE `invoices`.`related_to` = 'contacts' AND invoices.id IN ($invoice->id)
@@ -422,11 +441,12 @@ class ContactController extends Controller
 					}
 				}
 
-				$paid_to = $invoice->grand_total - ($paid + $paid_dev);
+				$paid_to = (($invoice->grand_total+$retiro) - ($paid + $paid_dev));
 				if ($paid_to < 0) {
 					$result[] = [
 						'idCotizacion' => $invoice->id,
-						'paid_dev' => $paid_to
+						'referencia' => $invoice->referencia,
+						'paid_dev' => abs($paid_to)
 					];
 				}
 			}
@@ -940,7 +960,7 @@ class ContactController extends Controller
                     ->addIndexColumn()
 					->editColumn('date', function ($data) {
 						$date_format = get_company_option('date_format', 'd/m/Y');
-						return date($date_format, strtotime($data->date))."2222";
+						return date($date_format, strtotime($data->date));
                     })
 					->editColumn('note', function ($data) {
 						return $data->note ?? '';
@@ -1049,7 +1069,7 @@ class ContactController extends Controller
                     ->addIndexColumn()
 					->editColumn('date', function ($data) {
 						$date_format = get_company_option('date_format', 'd/m/Y');
-						return date($date_format, strtotime($data->date))."";
+						return date($date_format, strtotime($data->date));
                     })
 					->editColumn('note', function ($data) {
 						return ($data->note ?? '') . ('</br>'.$data->adicional ?? '');
@@ -1123,7 +1143,41 @@ class ContactController extends Controller
 			
 			
 			  $sql = saldo_sql_list();
-
+			  
+		$sql .= "SELECT * 
+FROM (
+    SELECT 
+        t1.number, 
+        t1.referencia,
+        t1.clientesid, 
+        t1.date, 
+        t1.fecha_real, 
+        CASE 
+            WHEN t1.tipo = 'invoices' AND t1.invoice_status = 'Canceled' 
+            THEN CONCAT(IFNULL(t1.note, ''), ' - FACTURA ANULADA') 
+            ELSE t1.note 
+        END AS note, 
+        t1.movimiento, 
+        t1.debe, 
+        t1.haber, 
+        t1.status, 
+        t1.tipo,
+        t1.invoice_status,
+        -- El saldo se calcula correctamente cronológicamente (ASC) tras bambalinas
+        SUM(t1.debe - t1.haber) OVER (
+            ORDER BY t1.fecha_real ASC, t1.number ASC 
+            ROWS UNBOUNDED PRECEDING
+        ) AS saldo, 
+        SUM(t1.debe - t1.haber) OVER () AS gran_total_general, 
+        t1.adicional,
+        t1.documento_id
+    FROM datos_unificados t1   
+    WHERE t1.clientesid = ?
+) resultado_con_saldo
+ORDER BY 
+    fecha_real DESC, 
+    number DESC;";
+/*
  $sql .= " SELECT 
               t1.number, 
               t1.referencia,
@@ -1153,7 +1207,7 @@ class ContactController extends Controller
           ORDER BY 
               t1.date DESC, 
               t1.documento_id ASC, 
-              t1.number DESC";
+              t1.number DESC";*/
 
  $data = DB::select($sql, [$request->id]);
 	
@@ -1190,6 +1244,12 @@ class ContactController extends Controller
 						$clase = $saldo >= 0 ? "text-success" : "text-danger";			
 						return "<span class='float-right $clase'>" . decimalPlace($data->saldo ?? 0) . "</span>";
 						//return "<span class='float-right'>" . decimalPlace($data->saldo ?? 0) . "</span>";
+                    })
+					->editColumn('referencia', function ($data)  use ($currency) {
+						if($data->movimiento=='Devolucion'){
+							return ($data->referencia ?? '') . " (" . ($data->documento_id ?? '').")";
+						}
+						return $data->referencia ?? '';
                     })
 					->addColumn('action', function($data){
 						
@@ -1238,7 +1298,7 @@ class ContactController extends Controller
 	
 	 public function create_payment(Request $request, $id)
     {
-		
+		return;
 			/*$sql = saldo_sql_list();
 			$sql .= "select t1.number, t1.referencia,t1.clientesid,t1.date,t1.note,t1.movimiento, t1.debe, t1.haber,t1.status,t1.tipo,
 						  @acumulador:=(debe - abs(haber) + @acumulador) as saldo, SUM(debe - abs(haber)) OVER () AS gran_total_general
