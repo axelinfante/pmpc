@@ -123,6 +123,13 @@ class IncomeController extends Controller
 						. '</form>';
 				}
 			})
+			->filterColumn('trans_date', function ($query, $keyword) {
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('trans_date', '>=', $date_range[0])
+                            ->whereDate('trans_date', '<=', $date_range[1]);
+                    }
+			})
 			->setRowId(function ($trans) {
 				return "row_" . $trans->id;
 			})

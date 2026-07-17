@@ -1099,9 +1099,10 @@ $ordenes = Orden_desarme::with([
                 return $orden->falta;
             })
             ->editColumn('informo_ausencia', function ($orden) {
-                return $orden->informo_ausencia;
+                return $orden->informo_ausencia."--------";
             })->editColumn('obs_desarme_busqueda', function ($orden) {
-                return $orden->obs_desarme_busqueda;
+				
+                return ($orden->obs_desarme_busqueda ?? '')."<br/>".($orden->venta->note ?? '');
             })
             ->editColumn('fecha_desarmado_anulado', function ($orden) {
                 $date_format = get_company_option('date_format', 'Y-m-d');
@@ -1278,7 +1279,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;
             })
-            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado'])
+            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado','obs_desarme_busqueda'])
             ->make(true);
     }
 
