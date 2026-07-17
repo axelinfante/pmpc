@@ -2684,7 +2684,7 @@ if (!function_exists('saldo_sql_list')) {
             SELECT t2.id as number, t1.quotation_number as referencia, 0 as documento_id, t1.related_id as clientesid, t1.quotation_date as date, t2.trans_date as fecha_real, t2.note, 'pagos reserva' as movimiento, '0.00' as debe, amount as haber, t2.status, 'quotations' as tipo, '' AS adicional,
                    NULL as invoice_status
             FROM quotations t1 
-            LEFT JOIN transactions t2 ON t2.id_quotation=t1.id AND t2.type='income'
+            INNER JOIN transactions t2 ON t2.id_quotation=t1.id AND t2.type='income'
         ),
         devolucion AS (
             SELECT t1.id as number, t1.id as referencia, CASE WHEN t2.company_id = 1 THEN CONCAT('PM-', t2.invoice_number) 
@@ -2712,17 +2712,17 @@ if (!function_exists('saldo_sql_list')) {
                       ELSE t1.invoice_number END AS referencia, t1.id as documento_id, t1.related_id as clientesid, t1.invoice_date as date, t2.trans_date as fecha_real, t2.note, 'pagos invoice' as movimiento, '0.00' as debe, amount as haber, t2.status, 'invoices' as tipo, '' AS adicional,
                    t1.status as invoice_status
             FROM invoices t1 
-            LEFT JOIN transactions t2 ON t2.invoice_id=t1.id AND t2.type='income'
+            INNER JOIN transactions t2 ON t2.invoice_id=t1.id AND t2.type='income'
         ),
         retiros AS (	
             SELECT t1.id as number, CASE WHEN t2.company_id = 1 THEN CONCAT('PM-', t2.invoice_number) 
                       WHEN t2.company_id = 2 THEN CONCAT('PC-', t2.invoice_number) 
-                      ELSE t2.invoice_number END as referencia, t1.id as documento_id, payer_payee_id as clientesid, trans_date as date, trans_date as fecha_real, t1.note, 'retiros cliente' as movimiento, '0.00' AS debe, amount as haber, t1.status, 
+                      ELSE t2.invoice_number END as referencia, t1.id as documento_id, payer_payee_id as clientesid, trans_date as date, trans_date as fecha_real, t1.note, 'retiros cliente' as movimiento, amount AS debe, '0.00' as haber, t1.status, 
                    CASE WHEN t1.transaccion_revertida_id IS NOT NULL THEN 'retiros_coti' ELSE 'retiros' END as tipo, 
                    '' AS adicional,
                    NULL as invoice_status
             FROM transactions t1 
-            LEFT JOIN invoices t2 ON t1.invoice_id=t2.id AND t1.type='expense' AND t1.dr_cr = 'dr'
+            INNER JOIN invoices t2 ON t1.invoice_id=t2.id AND t1.type='expense' AND t1.dr_cr = 'dr'
             /*WHERE t1.type='expense' AND t1.dr_cr = 'dr'*/
         ),
         datos_unificados AS (

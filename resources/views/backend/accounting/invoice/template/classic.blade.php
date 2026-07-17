@@ -83,11 +83,16 @@
 
             @php
                 $paid = 0;
+				$paid_devuelto = 0;
                 foreach ($invoice->transaction as $pagos) {
                     //cc_expense representa pagos desde cuenta corriente...
                     if ($pagos->type == 'income' || $pagos->type == 'cc_expense') {
                         $paid = $paid + $pagos->base_amount;
                     }
+					// se agrega retiro de dinero
+					if ($pagos->type == 'expense' || $pagos->dr_cr == 'dr') {
+						$paid = $paid - $pagos->base_amount;
+					}
                 }
             @endphp
 
@@ -292,7 +297,7 @@
                                             <td>{{ _lang('Amount Due')}}</td>
                                             <td class="text-right">
                                                 @php
-                                                    $amount_due = $invoice->grand_total - $paid - ($salesReturnstotal ?? 0);
+                                                    $amount_due = ($invoice->grand_total - $paid - ($salesReturnstotal ?? 0));
                                                 @endphp
                                                 <span style="{{ $amount_due < 0 ? 'color: #ff0000; font-weight: bold;' : '' }}">
                                                     {{ decimalPlace($amount_due, $currency) }}
@@ -323,12 +328,13 @@
                                 <table class="table table-bordered" id="invoice-payment-history-table">
                                     <thead class="base_color">
                                         <tr>
-                                            <td colspan="5" class="text-center"><b>{{ _lang('Payment History') }}</b>
+                                            <td colspan="6" class="text-center"><b>{{ _lang('Payment History') }}</b>
                                             </td>
                                         </tr>
                                         <tr>
                                             <th>{{ _lang('Date') }}</th>
                                             <th>{{ _lang('Account') }}</th>
+                                            <th>{{ _lang('Movimiento') }}</th>
                                             <th class="text-right">{{ _lang('Amount') }}</th>
                                             <th class="text-right">{{ _lang('Tasa') }}</th>
                                             <th>{{ _lang('Payment Method') }}</th>
@@ -339,6 +345,8 @@
                                             <tr id="transaction-{{ $transaction->id }}">
                                                 <td>{{ date($date_format, strtotime($transaction->trans_date)) }}</td>
                                                 <td>{{ $transaction->account->account_title . ' - ' . $transaction->account->account_currency }}
+                                                </td>
+												<td>{{ $transaction->expense_type->name ?? ''  }}
                                                 </td>
                                                 <td class="text-right">
                                                     {{ decimalPlace($transaction->amount, currency($transaction->account->account_currency)) }}

@@ -135,7 +135,7 @@
 
 			<div class="col-md-6">
 			  <div class="form-group">
-				<label class="control-label">{{ _lang('Amount')." a descontar" }}</label>						
+				<label class="control-label">{{ _lang('Amount')." a cobrar" }}</label>						
 				<input type="text" class="form-control float-field" id="amount" name="amount" value="{{ old('amount') }}" required>
 			  </div>
 			</div>
