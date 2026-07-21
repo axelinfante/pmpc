@@ -399,7 +399,57 @@ var current_row;
 
 })(jQuery);
 
+
+// Función auxiliar para dar formato de moneda/número
+function formatearNumero(monto, locale = 'es-AR') {
+    let valor = parseFloat(monto) || 0;
+    return valor.toLocaleString(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
 function update_summary() {
+    // Declaración correcta de variables locales con 'let'
+    let total_quantity = 0;
+    let total_discount = 0;
+    let total_tax = 0;
+    let product_total = 0;
+
+    $("#order-table > tbody > tr").each(function () {
+        // '|| 0' evita que parseFloat devuelva NaN si el input está vacío
+        let qty = parseFloat($(this).find(".input-quantity").val()) || 0;
+        let discount = parseFloat($(this).find(".input-discount").val()) || 0;
+        let tax = parseFloat($(this).find(".input-product-tax").val()) || 0;
+        let subtotal = parseFloat($(this).find(".input-sub-total").val()) || 0;
+
+        total_quantity += qty;
+        total_discount += discount;
+        total_tax += tax;
+        product_total += subtotal;
+    });
+
+    // 1. Mostrar en HTML con formato visual limpio ($ 1.000.000,00)
+    $("#total-qty").html(total_quantity);
+    $("#total-discount").html(_currency + ' ' + formatearNumero(total_discount));
+    $("#total-tax").html(_currency + ' ' + formatearNumero(total_tax));
+    $("#total").html(_currency + ' ' + formatearNumero(product_total));
+
+    // 2. Asignar a inputs oculta/enviables manteniendo formato numérico limpio (1000000.00)
+    $("#product_total").val(product_total.toFixed(2));
+    $("#tax_total").val(total_tax.toFixed(2));
+
+    /** Conversión de Moneda **/
+    let grand_total = product_total + total_tax;
+
+    if (typeof client_currency !== 'undefined' && client_currency !== '') {
+        convert_currency(grand_total);
+    } else {
+        $("#converted_amount").html(_currency + ' ' + formatearNumero(grand_total));
+    }
+}
+
+/*function update_summary() {
     total_quantity = 0;
     total_discount = 0;
     total_tax = 0;
@@ -419,7 +469,7 @@ function update_summary() {
     $("#product_total").val(product_total.toFixed(2));
     $("#tax_total").val(total_tax.toFixed(2));
 
-    /** Convert Currency **/
+    //
     grand_total = product_total + total_tax;
     if (client_currency != '') {
         convert_currency(grand_total);
@@ -427,7 +477,7 @@ function update_summary() {
         $("#converted_amount").html(_currency + ' ' + grand_total.toFixed(2));
     }
 
-}
+}*/
 
 
 function convert_currency(amount) {
