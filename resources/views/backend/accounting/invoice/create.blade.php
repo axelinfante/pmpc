@@ -202,7 +202,7 @@
 
 			<div class="col-md-4 d-none" id="contacts">
 			  <div class="form-group">
-				<a href="{{ route('contacts.create') }}" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+				<a href="{{ route('contacts.create') }}" data-select="client_id" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 				<label class="control-label">{{ _lang('Select Client') }}</label>
 				<select data-placeholder="{{ _lang('Buscar por Dni o nombre...') }}" class="form-control select2-ajax" data-value="id" data-display="contact_name" data-display2="dni_cuit"
 						data-table="contacts" data-where="101" name="client_id" id="client_id" required>

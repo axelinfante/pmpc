@@ -81,9 +81,9 @@ class IncomeController extends Controller
 			->editColumn('payer.name', function ($trans) {
 				return isset($trans->payer->name) ? $trans->payer->name : '';
 			})
-			->editColumn('payer.name', function ($trans) {
+			/*->editColumn('payer.name', function ($trans) {
 				return isset($trans->payer->name) ? $trans->payer->name : '';
-			})
+			})*/
 			->editColumn('tipo_comprobante.descripcion', function ($trans) {
 				return isset($trans->tipo_comprobante->descripcion) ? $trans->tipo_comprobante->descripcion : '';
 			})
@@ -94,11 +94,22 @@ class IncomeController extends Controller
 				return $trans->tasa;
 			})
 			->editColumn('income_type.name', function ($trans) {
-				if ($trans->invoice_id == null || !$trans->Invoice) {
+				if ($trans->invoice_id !== null || $trans->Invoice) {
+					return $trans->income_type->name . "<br><a href='" . action('InvoiceController@show', $trans->invoice_id) . "' target='_blank'>" . $trans->Invoice->invoice_number ?? 'Ver comprobante' . "</a>";
+				}
+				
+				if ($trans->id_quotation !== null || $trans->Reserva) {
+					return $trans->income_type->name . "(Reserva) <br><a href='" . action('QuotationController@show', $trans->id_quotation) . "' target='_blank'>" . $trans->Reserva->quotation_number ?? 'Ver comprobante' . "</a>";
+				}
+				
+				return isset($trans->income_type->name) ? $trans->income_type->name : _lang('Transfer');
+				
+				/*if ($trans->invoice_id == null || !$trans->Invoice) {
 					return isset($trans->income_type->name) ? $trans->income_type->name : _lang('Transfer');
 				}
+				
 				// dd($trans->invoice);
-				return $trans->income_type->name . "<br><a href='" . action('InvoiceController@show', $trans->invoice_id) . "' target='_blank'>" . $trans->Invoice->invoice_number ?? 'Ver comprobante' . "</a>";
+				/*return $trans->income_type->name . "<br><a href='" . action('InvoiceController@show', $trans->invoice_id) . "' target='_blank'>" . $trans->Invoice->invoice_number ?? 'Ver comprobante' . "</a>";*/
 			})
 
 			->editColumn('tasa', function ($trans) {

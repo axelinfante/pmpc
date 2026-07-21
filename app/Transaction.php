@@ -83,6 +83,11 @@ class Transaction extends Model
     {
         return $this->belongsTo('App\Invoice', 'invoice_id');
     }
+	
+	public function Reserva()
+    {
+        return $this->belongsTo('App\Quotation', 'id_quotation');
+    }
 
     public function payment_method()
     {
