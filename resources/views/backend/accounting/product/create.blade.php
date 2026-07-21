@@ -354,13 +354,6 @@
                     let select= $("#item_id");
 
                     $(':input[type="submit"]').prop('disabled', false);
-                    //let item_id_actual=1;//select.val();
-                   // select.find("option").prop("disabled", false);
-                    //select.prop('selectedIndex', 0);
-                    //limpiarItems();
-                    //select.select2();
-                    //MostrarModelo();
-					
 					if ($('#nro_interno').val() > 0){
 						marca.prop("disabled", true);
 						modelo.prop("disabled", true);
@@ -375,116 +368,7 @@
 					}
                       MostrarModelo();
 					  $('#item_id').val(null).trigger('change');
-
-					  
-                 // Llamada AJAX para verificar pieza y obtener nro_motor
-				 
-            /*   if ($('#item_id').val() != '' && $('#nro_interno').val() > 0 ) {
-				   $('#item_id').trigger('change'); 
-                    $.ajax({
-                        url: "{{ url('vehiculo/verifica-pieza') }}" + "/" + $('#item_id').val() +
-                            "/" +
-                            nro_interno.val(),
-                        dataType: 'json',
-                        success: function(res) {
-                            if (($('#item_id option:selected').text() ==
-                                    'Motor Semiarmado Con Accesorios' ||
-                                    $('#item_id option:selected').text() ==
-                                    'Motor Semiarmado Sin Acesorios')) {
-                                $('#nro_motor').val(res.nro_motor);
-                            }
-                            if (res.existe_pieza) {
-                                $('#myForm').find(".print-error-msg").find("ul").html('');
-                                    $('#myForm').find(".print-error-msg").css('display','block');
-                                    $('#myForm').find(".print-error-msg").find("ul").append('<li>ATENCION: El vehiculo ya posee esta pieza registrada</li>');
-                                //alert('ATENCION: El vehiculo ya posee esta pieza registrada')
-                                $(':input[type="submit"]').prop('disabled', true);  
-                            }else{
-                                   MostrarModelo();
-                            }
-                        }
-                    });
-
-                }else{
-                     MostrarModelo();
-                }*/
-
-               /* 
-                $.ajax({
-                    url: "{{ url('vehiculo/getMarcaModeloByCar/') }}/" + nro_interno.val(),
-                    dataType: 'json',
-                    success: function(resMM) {
-                        marca.val(resMM.marca_modelo.idMarca);
-
-                        $('#marca_modelo').val(resMM.marca_modelo.id);
-                        marca.select2()
-                        $.ajax({
-                            url: "{{ route('modelosByMarca') . '/' }}" + resMM
-                                .marca_modelo.idMarca,
-                            dataType: 'json',
-                            success: function(res) {
-                                let html =
-                                    `<option value="">{{ _lang('Select One') }}</option>`;
-                                res.map(r => {
-                                    selected = '';
-                                    if (resMM.marca_modelo.idModelo == r
-                                        .idModelo) {
-                                        selected = 'selected'
-                                    }
-                                    html +=
-                                        `<option ${selected} value="${r.idModelo}">${r.modelo.modelo}</option>`;
-                                })
-                                result = res;
-
-                                modelo.html(html);
-                                // modelo.select2();
-
-                            }
-
-                        })
-
-
-
-                    }
-
-                })*/
-               
             })
-
-       /*     item_id.change(function(e) {
-                $(':input[type="submit"]').prop('disabled', false);  
-               if ($('#item_id').val() != '' && $('#nro_interno').val() > 0 ) {
-                    $.ajax({
-                        url: "{{ url('vehiculo/verifica-pieza') }}" + "/" +
-                            $('#item_id').val() + "/" +
-                            nro_interno.val(),
-                        dataType: 'json',
-                        success: function(res) {
-                            if (($('#item_id option:selected').text() ==
-                                    'Motor Semiarmado Con Accesorios' ||
-                                    $('#item_id option:selected').text() ==
-                                    'Motor Semiarmado Sin Acesorios')) {
-                                $('#nro_motor').val(res.nro_motor);
-                            }
-                            if (res.existe_pieza) {
-                                    $('#myForm').find(".print-error-msg").find("ul").html('');
-                                    $('#myForm').find(".print-error-msg").css('display','block');
-                                    $('#myForm').find(".print-error-msg").find("ul").append('<li>ATENCION: El vehiculo ya posee esta pieza registrada</li>');
-                                //alert(
-                                  //  'ATENCION: El vehiculo ya posee esta pieza registrada')
-                                      $(':input[type="submit"]').prop('disabled', true);
-                            }else{
-                                            //alert();
-                                            MostrarNroMotor();
-                                        }
-                        }
-                    });
-
-                }else{
-                                MostrarNroMotor();
-                            }
-                })*/
-            
 
             marca.change(function() {
 					var idMarca = $(this).val();
@@ -618,52 +502,6 @@
 
                 }
             }
-
-/*            $('#myForm').on('submit', function(event) {
-              event.preventDefault(); // Prevent the default action
-                $("#printsinQR").empty();
-				$('#myForm').find(".print-error-msg").find("ul").html('');
-                $('#myForm').find(".print-error-msg").css('display','none');
-              //const formData = $(this).serialize(); // Extract and serialize form data
-               var formData = new FormData(this);
-               $(':input[type="submit"]').prop('disabled', true);
-              $.ajax({
-                  url: $(this).attr("action"), // Provide the URL to the forms backend
-                  type: 'POST',
-                  data: formData,
-                 enctype: 'multipart/form-data',
-                  dataType: 'json',
-                 cache: false,
-                 contentType: false,
-                 processData: false,
-                  success: function(response) {
-                      //console.log('Form submitted successfully');
-                         //console.log(response.data.id);
-                
-						 
-
-            if(response.result == "success"){
-                                    if (response.data.id!=""){
-                                        $( "#printsinQR" ).load("{{ url('product/printsin-qr') }}/"+response.data.id);
-                                        $('#myModal').modal({show:true});
-                                        }
-                                        nro_interno.trigger('change');
-                            }else{
-                                    //$('#myForm').find(".print-error-msg").find("ul").html('');
-                                    $('#myForm').find(".print-error-msg").css('display','block');
-                                    $.each( response.message, function( key, value ) {
-                                        $('#myForm').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
-                                    });
-                                
-                            }
-
-                            setTimeout(function(){  $(':input[type="submit"]').prop('disabled', false); }, 5000); // Habilitar después de 5 segundos
-                  },
-                  error: function() {
-                      alert('Error submitting form');
-                  }
-              });
-              });*/
 
 
 $('#myForm').on('submit', function(e) {			  
@@ -1014,53 +852,28 @@ $('#miFormulario').submit(function(e) {
                 }
             });
 			
-
-    $('#item_id').select2({
-        placeholder: 'Escribe el modelo o producto...',
-        minimumInputLength: 0,
-        allowClear: true,
-        width: '100%',
-        ajax: {
-            url: "{{ route('products.buscar') }}",
-            dataType: 'json',
-            delay: 400, 
-            data: function (params) {
-                return {
-                    q: params.term,          
-                    page: params.page || 1,  
-                    nro_interno:  nro_interno.val()
+	$('#item_id').select2({
+				placeholder: 'Buscar ...',
+				allowClear: true,
+				width: '100%',
+  			    ajax: {
+				url: "{{ route('products.buscar') }}",
+				 data: function (params) {
+					return {
+						q: params.term,          
+						nro_interno:  nro_interno.val()
+					};
+				},
+				delay: 250,
+				dataType: 'json',
+				processResults: function (data) {
+			    return {
+                    results: data
                 };
-            },
-            processResults: function (data, params) {
-                return {
-                    results: data.items 
-                };
-            },
-            cache: true
-        },
-        language: {
-            noResults: function() {
-                return "No se encontraron resultados";
-            },
-            searching: function() {
-                return "Buscando..."; 
-            }
-        }
-    });
+			}
+		},
+});
 
-
-    $('#item_id').on('select2:select', function (e) {
-        let datosProducto = e.params.data; 
-        
-        if (!datosProducto.id) return; 
-
-        /*console.log("Procesando Selección:", {
-            id: datosProducto.id,
-            text: datosProducto.text,
-            wasDisabled: datosProducto.disabled 
-        });*/
-    });
-
-     })
+ })
     </script>
 @endsection

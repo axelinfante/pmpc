@@ -648,6 +648,7 @@
 		 var fullscreen = $(this).data("fullscreen");
 		 var reload = $(this).data("reload");
 		 target_select = $(this).parent().find(".select2-ajax");
+		 var data_select = $(this).data('select');
 	 
 		 $.ajax({
 			 url: link,
@@ -677,6 +678,11 @@
 				if(reload == false){
 					$("#main_modal .ajax-submit").attr('data-reload',false);
 				}
+
+				if (typeof data_select !== 'undefined') {
+					$("#main_modal .ajax-submit").attr('data-select',data_select);
+				}
+				
 				
 				//init Essention jQuery Library
 				if($('.ajax-submit').length){

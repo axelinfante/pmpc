@@ -275,10 +275,12 @@
     } else {
         initDropzone_{{ Str::slug($id, '_') }}();
     }
-
+ 
+   if (typeof $ !== 'undefined') {
     $(document).on('shown.bs.modal', function () {
         initDropzone_{{ Str::slug($id, '_') }}();
     });
+ } 
 
     if (window.Livewire) {
         document.addEventListener("livewire:navigated", () => { initDropzone_{{ Str::slug($id, '_') }}(); });

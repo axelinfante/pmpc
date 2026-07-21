@@ -955,6 +955,12 @@ public function store(Request $request)
             if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
                 $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
             };
+			
+			
+			if ($item->id == "1612"  || strtoupper($item->item_name)=="MOTOR SEMIARMADO") {
+                $product->nro_motor = $car->motor_nro ?? '';
+            };
+			
 
             $product->save();
             if (!empty($request->file())) {
@@ -2319,6 +2325,8 @@ if (isset($car)) {
     $operario = Puesto::where('predeterminada', '1')->where('company_id', ($car->company_id ?? company_id()))->first();
     
     $idsString = is_array($ids) ? implode(',', $ids) : $ids;
+	$nro_motor= $car->motor_nro ?? '';
+	
 
     if ($estado == 'despacho') {
         $marca_modelo_valor = !empty($car->idMarca_modelo) ? $car->idMarca_modelo : 'NULL';
@@ -2326,8 +2334,9 @@ if (isset($car)) {
      
         $now = now();
 
-        $sql = "INSERT INTO products (item_id, nro_interno, stock, description, product_price, tax_method, estado, company_id, idDeposito, ubicacion, carga_rapida, user_id, mercado_libre, created_at, marca_modelo)
-                SELECT items.id, {$nro_interno}, 1, '" . $request->input('description', '') . "', 0, 'exclusive', '" . $estado . "', " . $car->company_id . ", " . $request->input('idDeposito', 'NULL') . ", '" . $request->input('ubicacion', '') . "', " . $request->input('carga_rapida', 0) . ", " . auth()->user()->id . ", 0, '{$now}', {$marca_modelo_valor} AS marcamodelo 
+        $sql = "INSERT INTO products (item_id, nro_interno, stock, description, product_price, tax_method, estado, company_id, idDeposito, ubicacion, carga_rapida, user_id, mercado_libre, created_at, marca_modelo,nro_motor)
+                SELECT items.id, {$nro_interno}, 1, '" . $request->input('description', '') . "', 0, 'exclusive', '" . $estado . "', " . $car->company_id . ", " . $request->input('idDeposito', 'NULL') . ", '" . $request->input('ubicacion', '') . "', " . $request->input('carga_rapida', 0) . ", " . auth()->user()->id . ", 0, '{$now}', {$marca_modelo_valor} AS marcamodelo,
+				CASE WHEN items.id = 1612 THEN '{$nro_motor}' ELSE '' END
                 FROM items
                 WHERE id IN($idsString)";
         
@@ -2383,6 +2392,7 @@ if (isset($car)) {
             $product->company_id = $car->company_id ?? company_id();
             $product->mercado_libre = 0;
             $product->idDeposito = $request->input('idDeposito') ?? null;
+            $product->nro_motor = $item->id == "1612" ? $nro_motor : '';
             $product->ubicacion = $request->input('ubicacion') ?? '';
             $product->user_id = auth()->user()->id;
             $product->save();
@@ -2487,7 +2497,36 @@ return response()->json([
 
 public function buscar(Request $request): JsonResponse
 {
-				$search = $request->input('q');
+	 $search = $request->input('q');
+    $carId = $request->input('nro_interno');
+    $currentId = $request->input('current_id');
+	
+    $query = Item::query()
+        ->select('id', 'item_name as text')
+        ->where(function ($q) use ($currentId) {
+            $q->where('activo', 'Si')
+				->where('allCar', 1); 
+            $q->when($currentId, fn($query) => $query->orWhere('id', $currentId));
+        });
+    
+    if (empty($search)) {
+        $items = $query->orderBy('item_name', 'ASC')
+            ->limit(30) 
+            ->get(); 
+    } else {
+        $items = $query->where('item_name', 'LIKE', "%{$search}%")
+            ->orderBy('item_name', 'ASC')
+            ->get(); 
+    }
+       
+  
+    $productsInfo = $this->obtenerInfoProductos($items->pluck('id'), $carId);
+    $itemsFormateados = $this->formatearItems($items, $productsInfo);
+
+	return response()->json($itemsFormateados->values()->all());
+	//return $itemsFormateados;
+	
+			/*	$search = $request->input('q');
 				$carId = $request->input('nro_interno');
 				$currentId = $request->input('current_id'); 
 
@@ -2552,7 +2591,7 @@ public function buscar(Request $request): JsonResponse
 				return response()->json([
 					'items' => $itemsFormateados->values()->all(),
 					'more' => $itemsPaginados->hasMorePages()
-				]);
+				]);*/
 }
 
 public function printQR_multi(Request $request)
@@ -2569,5 +2608,50 @@ public function printQR_multi(Request $request)
 				$productos = Product::whereIn('id', $ids)->get();
 				return view('backend.accounting.product.etiquetaQr_mul', compact('productos'))->render();
 			}
+
+private function obtenerInfoProductos($itemIds, $carId)
+{
+    if (empty($carId) || $itemIds->isEmpty()) {
+        return collect();
+    }
+
+    return Product::select('item_id', 'estado', 'id as idproducto') 
+        ->whereIn('item_id', $itemIds)
+        ->where('nro_interno', $carId)
+        ->get()
+        ->keyBy('item_id');
+}
+
+/**
+ * Formatea los items aplicando las reglas de negocio
+ */
+private function formatearItems($items, $productsInfo)
+{
+    return $items->map(function ($item) use ($productsInfo) {
+        $mensaje = "";
+        $disabledRow = false;
+        
+        $product = $productsInfo->get($item->id);
+
+        if ($product) {
+            $estado = $product->estado ?? '';   
+            $id_producto = $product->idproducto ?? '';
+
+            if ($estado === "Anulado") {
+                $mensaje = " - $id_producto ($estado)";
+                $disabledRow = true; 
+            } else {
+                $mensaje = " ($id_producto)";
+                $disabledRow = true;  
+            }
+        }	
+
+        return [
+            'id'       => $item->id,
+            'text'     => $item->text . $mensaje,
+            'disabled' => $disabledRow
+        ];
+    });
+}			
 
 }

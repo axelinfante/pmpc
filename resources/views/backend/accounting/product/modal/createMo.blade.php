@@ -159,8 +159,31 @@ if ($('#item_id').hasClass("select2-hidden-accessible")) {
     $('#item_id').select2('destroy');
 }
 
-// 2. Ahora sí, lo inicializamos de forma limpia con el AJAX
-$('#item_id').select2({
+
+	$('#item_id').select2({
+				placeholder: 'Buscar ...',
+				allowClear: true,
+				width: '100%',
+				dropdownParent: $('#item_id').closest('.modal').length ? $('#item_id').closest('.modal') : $('.modal.show'), 
+				  ajax: {
+				url: "{{ route('products.buscar') }}",
+				 data: function (params) {
+					return {
+						q: params.term,          
+						nro_interno: current_nro_interno.val()
+					};
+				},
+				delay: 250,
+				dataType: 'json',
+				processResults: function (data) {
+			    return {
+                    results: data
+                };
+			}
+		},
+});
+
+/*$('#item_id').select2({
     placeholder: 'Escribe el modelo o producto...',
     minimumInputLength: 0,
     allowClear: true,
@@ -169,7 +192,7 @@ $('#item_id').select2({
     ajax: {
         url: "{{ route('products.buscar') }}",
         dataType: 'json',
-        delay: 400, 
+        delay: 250,
         data: function (params) {
             return {
                 q: params.term,          
@@ -188,15 +211,14 @@ $('#item_id').select2({
         noResults: function() { return "No se encontraron resultados"; },
         searching: function() { return "Buscando..."; }
     }
-});
+});*/
 
-    // 3. Evento change de nro_interno
     current_nro_interno.change(function(e) {
         let select = $("#item_id");
         $(':input[type="submit"]').prop('disabled', false);
         select.find("option").prop("disabled", false);
         
-        // Limpiamos el select2 silenciosamente
+        
         select.val(null).trigger('change.select2');
         limpiarItems();
 
@@ -226,10 +248,10 @@ $('#item_id').select2({
     });
 
     function limpiarItems() {
-        return; // Tu lógica actual se mantiene intacta
+        return; 
     }
 
-    // 4. Evento change de marca
+    
     marca.change(function () {
         modelo.html(`<option value="">{{ _lang('Select One') }}</option>`);
         $.ajax({
