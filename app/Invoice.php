@@ -65,5 +65,24 @@ class Invoice extends Model implements AuditableInvoice
         return $this->hasMany('App\Transaction','transaccion_revertida_id','id' );
     }
 	
+	
+	public function salesReturns()
+	{
+		return $this->hasMany(SalesReturn::class, 'invoice_id');
+	}
+
+	public function payments()
+	 {
+			return $this->hasMany(Transaction::class, 'invoice_id')
+				->where('type', 'income')
+				->where('dr_cr', 'cr');
+	}
+
+	public function retiros_cliente()
+	{
+		return $this->hasMany(Transaction::class, 'invoice_id')
+			->where('type', 'expense')
+			->where('dr_cr', 'dr');
+	}
 
 }

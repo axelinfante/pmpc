@@ -1254,8 +1254,8 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             }*/
 			
 			if (!empty($request->file('imagen'))) {
-				$path = public_path('uploads/vehiculos');
-				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
+				$path_img = public_path('uploads/vehiculos');
+				if(!file_exists($path_img) && !is_dir($path_img)) mkdir($path_img, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 
@@ -1265,8 +1265,8 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 			
 			
 			 if (!empty($request->file('imagen_recepcion'))) {
-				$path = public_path('uploads/vehiculos');
-				if(!file_exists($path) && !is_dir($path)) mkdir($path, 0755, true);
+				$path_img = public_path('uploads/vehiculos');
+				if(!file_exists($path_img) && !is_dir($path_img)) mkdir($path_img, 0755, true);
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 			

@@ -96,7 +96,7 @@
                 }
             @endphp
 
-            @include('backend.accounting.invoice.invoice-actions',array('invoice'=>$invoice,'paid' =>$paid))
+            @include('backend.accounting.invoice.invoice-actions',array('invoice'=>$invoice,'paid' => ($paid + ($salesReturnstotal ?? 0))))
 
             <div class="card clearfix">
 

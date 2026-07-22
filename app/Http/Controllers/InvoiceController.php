@@ -1261,58 +1261,45 @@ class InvoiceController extends Controller
 	
 	public function create_payment(Request $request, $id)
 {
-    // 1. Obtener la factura principal
-    $invoice = Invoice::where("id", $id)->first();
+ 
+	$invoice = Invoice::findOrFail($id);
 
-    // 2. Obtener TODAS las facturas del cliente con sus pagos
-    $invoices = Invoice::with(['transaction' => function($query) {
-        $query->where('type', 'income');
-    }])
-    ->where('client_id', $invoice->client_id)
-    ->get();
-
-    $invoiceIds = $invoices->pluck('id');
-
-    // 3. NUEVA FORMA: Ir directo a la tabla sales_return (igual que tu CTE)
-    // Sumamos el grand_total de las devoluciones asociadas a estas facturas
-    $salesReturns = DB::table('sales_return')
-        ->whereIn('invoice_id', $invoiceIds)
-        // ->where('status', 'procesada') // Descomenta esta línea si solo quieres contar las devoluciones procesadas
-        ->select('invoice_id', 'grand_total')
-        ->get();
-
-    // Agrupar por factura
-    $returnsByInvoice = $salesReturns->groupBy('invoice_id');
-
-    $result = [];
-
-    // 4. Calcular todo en memoria
-    foreach ($invoices as $inv) {
-        // Suma de pagos
-        $paid = $inv->transaction->sum('base_amount');
-        
-        // NUEVA FORMA: Sumar el grand_total de la devolución (coincide exactamente con tu SQL)
-        $paid_dev = $returnsByInvoice->get($inv->id, collect())->sum('grand_total');
-
-        // Calculamos el saldo (Factura - Pagos - Devoluciones)
-        $saldo = $inv->grand_total - ($paid + $paid_dev);
-
-        // Si es menor a 0, hay saldo a favor
-        if ($saldo < 0) {
-            $result[] = [
-                'idCotizacion' => $inv->id,
-                'paid_coti' => $inv->invoice_number, 
-                'paid_dev' => $saldo 
-            ];
-        }
-    }
-
-    // 5. Pago específico de la factura principal
-    $mainInvoicePaid = $invoices->find($id)->transaction->sum('base_amount');
+$result = Invoice::where('client_id', $invoice->client_id)
+    ->where('id', '!=', $id) 
+    ->withSum('payments as total_paid', 'base_amount')
+    ->withSum('salesReturns as total_dev', 'grand_total')
+	->withSum('retiros_cliente as total_retiro', 'amount')
+    ->get()
+    ->filter(function ($inv) {
+        $paid = $inv->total_paid ?? 0;
+        $paidDev = $inv->total_dev ?? 0;
+		$retiro = $inv->total_retiro ?? 0;
+        $saldo = ($inv->grand_total + $retiro) - ($paid + $paidDev);
+        $inv->saldo_calculado = $saldo;
+        return $saldo < 0;
+    })
+    ->map(function ($inv) {
+        return [
+            'idCotizacion' => $inv->id,
+            'paid_coti'    => $inv->invoice_number,
+            'paid_dev'     => $inv->saldo_calculado,
+        ];
+    })
+    ->values()
+    ->toArray();
+	
+ 
+    //$mainInvoicePaid = $invoices->find($id)->transaction->sum('base_amount');
+	//$mainInvoicePaid = $invoice->payments()->sum('base_amount');
+	//$mainInvoicePaid = (float) $invoice->payments()->sum('base_amount');
+	 $mainInvoiceReturn = (float) $invoice->payments()->sum('base_amount');
+	 $mainInvoicePaid = (float) $invoice->salesReturns()->sum('grand_total');
+	 $mainInvoiceRetiros = (float) $invoice->retiros_cliente()->sum('amount');
+	
 
     if ($request->ajax()) {
         return view('backend.accounting.invoice.modal.create_payment', compact('invoice', 'id', 'result'))
-               ->with(['paid' => $mainInvoicePaid]); 
+               ->with(['paid' => ($mainInvoicePaid+$mainInvoiceReturn),'retiro' => ($mainInvoiceRetiros)]); 
     }
 }
 
@@ -4917,7 +4904,7 @@ public function get_table_data(Request $request)
             ->union($projects);
 			
  
-        $invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
+      /*  $invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
             $join->on('invoices.related_id', '=', 'all_contacts.id')
                 ->on('invoices.related_to', '=', 'all_contacts.type');
         })
@@ -4960,8 +4947,75 @@ public function get_table_data(Request $request)
                 $query->whereRaw("DATE(invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [$date_range[0], $date_range[1]]);
             }
         });
+*/
+
+			$invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
+					$join->on('invoices.related_id', '=', 'all_contacts.id')
+						->on('invoices.related_to', '=', 'all_contacts.type');
+				})
+				->select('invoices.*', 'all_contacts.contact_name', 'all_contacts.id as contact_id')
+				->withSum('salesReturns as total_returns', 'grand_total')
+				->withSum('payments as total_paid', 'base_amount')
+				->withSum('retiros_cliente as total_retiro', 'amount')
+				->whereIn('invoices.company_id', (array) $company_id)
+				->orderBy('invoices.id', 'desc');
 
 
+			if (strtolower(auth()->user()->role->name ?? '') === 'vendedor') {
+				$invoices->where('invoices.user_id', auth()->id());
+			}
+
+			if ($aFacturar) {
+				$invoices->where('invoices.facturar', 1)
+						 ->whereNull('invoices.facturado');
+			}
+
+			$invoices->when($request, function ($query) use ($request) {
+				if ($request->filled('invoice_number')) {
+					$query->where('invoices.invoice_number', 'like', "%{$request->get('invoice_number')}%");
+				}
+
+				if ($request->filled('vendedor')) {
+					$query->where('invoices.user_id', $request->get('vendedor'));
+				}
+
+				if ($request->filled('revendedor')) {
+					$query->where('invoices.revendedor', $request->get('revendedor'));
+				}
+
+				if ($request->filled('company_id')) {
+					$query->where('invoices.company_id', $request->get('company_id'));
+				}
+
+				if ($request->filled('status')) {
+					$status = $request->get('status');
+					$statusArray = is_array($status) ? $status : json_decode($status, true);
+					if ($statusArray) {
+						$query->whereIn('invoices.status', $statusArray);
+					}
+				}
+
+				if ($request->filled('date_range')) {
+					$date_range = explode(" - ", $request->get('date_range'));
+					if (count($date_range) === 2) {
+						$query->whereRaw("DATE(invoices.invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [
+							trim($date_range[0]),
+							trim($date_range[1])
+						]);
+					}
+				}
+			});
+
+			//$results = $invoices->get();
+
+	/*$results->transform(function ($invoice) {
+    $invoice->total_returns = $invoice->total_returns ?? 0;
+    $invoice->total_paid    = $invoice->total_paid ?? 0;
+    
+    // Cálculo final del saldo pendiente
+    $invoice->balance_due = $invoice->grand_total - $invoice->total_returns - $invoice->total_paid;
+    
+    return $invoice;*/
 
         return Datatables::eloquent($invoices)
             ->addColumn('checkbox', function ($invoice) {
@@ -5146,7 +5200,8 @@ return $tabla_html;
 
                 return $html;*/
             })
-			            ->addColumn('action', function ($invoice) use ($aFacturar) {
+			    ->addColumn('action', function ($invoice) use ($aFacturar) {
+				$balance_due = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
 				if  ($invoice->status == 'Canceled')
 				{
 					return $html = 'Anulada'; 
@@ -5166,9 +5221,12 @@ return $tabla_html;
                         '"><i class="fas fa-usd"></i> ' . _lang('Comisión') . '</a>'
                         . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_observaciones', $invoice->id) .
                         '"><i class="fas fa-usd"></i> ' . _lang('Observaciones') . '</a>'
-                        . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>'
-                        . '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>'
-                        . '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
+                        . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>';
+					if ($balance_due > 0){
+						     $html .= '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>';
+					}
+                    
+                        $html .= '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
                         . '<a href="' . url('invoices/view_payment/' . $invoice->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>';
 
 
@@ -5216,9 +5274,11 @@ return $tabla_html;
                 return '';
             })
             ->editColumn('monto_adeudado', function ($invoice) use ($currency) {
-				$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
-				$invoicepaidtotal = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
-                $t = (($invoice->grand_total-$salesReturnstotal) - $invoicepaidtotal);
+				//$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+				//$invoicepaidtotal = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
+                //$t = (($invoice->grand_total-$salesReturnstotal) - $invoicepaidtotal);
+				//$t = (($invoice->grand_total ?? 0) - ($invoice->total_returns ?? 0) - ($invoice->total_paid ?? 0));
+				$t = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
                 $acc_currency = currency($invoice->client->currency);
                 if ($invoice->usd) {
                     $acc_currency = 'USD';
@@ -5234,7 +5294,9 @@ return $tabla_html;
                 //return $t;
             })
 			->editColumn('paid', function ($invoice) use ($currency) {
-				$t = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
+				//$t = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
+				//$t = abs((($invoice->total_retiro ?? 0) - ($invoice->total_paid ?? 0)));
+				$t = abs(($invoice->total_paid ?? 0)  - ($invoice->total_retiro ?? 0) );
                 $acc_currency = currency($invoice->client->currency);
                 if ($invoice->usd) {
                     $acc_currency = 'USD';
@@ -5311,7 +5373,8 @@ return $tabla_html;
                 return $comision;
             })
             ->editColumn('grand_total', function ($invoice) use ($currency) {
-				$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+				//$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
+				$salesReturnstotal = ($invoice->total_returns ?? 0);
                 $acc_currency = currency($invoice->client->currency);
                 // dump($invoice->is_usd);
                 if ($invoice->is_usd) {
