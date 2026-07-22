@@ -393,7 +393,7 @@ class ContactController extends Controller
 
 	public function cotizacionesConSaldo(Request $request)
 	{
-		$idClient = $request->id;
+	/*	$idClient = $request->id;
 		$invoices = Invoice::from('invoices as t1')
     ->select([
         't1.*', // Selecciona los demás campos que necesites
@@ -452,8 +452,45 @@ class ContactController extends Controller
 			}
 
 		endforeach;
-
+*/
 		// dd($result);
+		
+		$idClient = $request->id;
+		$invoices = Invoice::select([
+        'invoices.*',
+        DB::raw("CASE 
+            WHEN invoices.company_id = 1 THEN CONCAT('PM-', invoices.invoice_number) 
+            WHEN invoices.company_id = 2 THEN CONCAT('PC-', invoices.invoice_number) 
+            ELSE invoices.invoice_number 
+        END AS referencia")
+    ])
+    ->where('invoices.client_id', $idClient)
+    ->withSum('payments as total_paid', 'base_amount')
+    ->withSum('salesReturns as total_dev', 'grand_total')
+    ->withSum('retiros_cliente as total_retiro', 'amount')
+    ->get();
+
+
+	$result = $invoices->filter(function ($invoice) {
+        $paid = $invoice->total_paid ?? 0;
+        $paidDev = $invoice->total_dev ?? 0;
+        $retiro = $invoice->total_retiro ?? 0;
+    
+        $saldo = ($invoice->grand_total + $retiro) - ($paid + $paidDev);
+
+        $invoice->saldo_favor = abs($saldo);
+
+        return $saldo < 0;
+    })
+    ->map(function ($invoice) {
+        return [
+            'idCotizacion' => $invoice->id,
+            'referencia'   => $invoice->referencia,
+            'paid_dev'     => $invoice->saldo_favor,
+        ];
+    })
+    ->values()
+    ->toArray();
 
 		// $cotizConSaldo = $result;
 		return response()->json(['cotizaciones' => $result]);

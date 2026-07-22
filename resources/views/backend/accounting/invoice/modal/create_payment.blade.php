@@ -129,7 +129,7 @@
 			<div class="col-md-6">
 			  <div class="form-group">
 				<label class="control-label">{{ _lang('Pending Amount') }} (<b><span class="account_currency">{{ currency() }}</span></b>)</label>						
-				<input type="text" class="form-control float-field" value="{{ ($invoice->grand_total - $paid) }}" id="pending_amount" readOnly="true">
+				<input type="text" class="form-control float-field" value="{{ (($invoice->grand_total+$retiro) - $paid) }}" id="pending_amount" readOnly="true">
 			  </div>
 			</div>
 
