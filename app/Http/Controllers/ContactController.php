@@ -393,67 +393,6 @@ class ContactController extends Controller
 
 	public function cotizacionesConSaldo(Request $request)
 	{
-	/*	$idClient = $request->id;
-		$invoices = Invoice::from('invoices as t1')
-    ->select([
-        't1.*', // Selecciona los demás campos que necesites
-        DB::raw("CASE 
-            WHEN t1.company_id = 1 THEN CONCAT('PM-', t1.invoice_number) 
-            WHEN t1.company_id = 2 THEN CONCAT('PC-', t1.invoice_number) 
-            ELSE t1.invoice_number 
-        END AS referencia")
-    ])
-    ->where('t1.client_id', $idClient)
-    ->get(); 
-	
-		//$invoices = Invoice::where('client_id', $idClient)
-			//->where("company_id", $company_id)
-		//	->get();
-		//buscar el saldo y la cotizacion cancelada con saldo a favor
-		$result = [];
-		foreach ($invoices as $invoice) :
-
-
-			$paid = 0;
-			$retiro=0;
-			foreach ($invoice->transaction as $pagos) {
-				if ($pagos->type == 'income') {
-					$paid = $paid + $pagos->base_amount;
-				}
-			}
-			
-			foreach ($invoice->retiros as $retiros_cliente) {
-                                                if ($retiros_cliente->type == 'expense' && $retiros_cliente->dr_cr == 'dr') {
-                                                    $retiro = $retiro + $retiros_cliente->amount;
-                                                }
-                                            }
-			
-			$html = "";
-			$paid_dev = 0;
-			$product_return_ = DB::select("select invoices.id,invoices.invoice_number,invoice_items.product_id,products_returns.product_id as productoid, invoice_items.sub_total from `invoices` inner join `invoice_items` on `invoice_items`.`invoice_id` = `invoices`.`id` left join `products_returns` on products_returns.invoice_id=invoices.id and  products_returns.product_id=invoice_items.product_id AND products_returns.status='procesada' WHERE `invoices`.`related_to` = 'contacts' AND invoices.id IN ($invoice->id)
-            GROUP BY invoices.id,invoices.invoice_number,invoice_items.product_id");
-
-			if (isset($product_return_)) {
-				//$html='Anulado</br>';
-				foreach ($product_return_  as $pieza) {
-					if (!is_null($pieza->productoid)) {
-						$paid_dev = $paid_dev + $pieza->sub_total;
-					}
-				}
-
-				$paid_to = (($invoice->grand_total+$retiro) - ($paid + $paid_dev));
-				if ($paid_to < 0) {
-					$result[] = [
-						'idCotizacion' => $invoice->id,
-						'referencia' => $invoice->referencia,
-						'paid_dev' => abs($paid_to)
-					];
-				}
-			}
-
-		endforeach;
-*/
-		// dd($result);
 		
 		$idClient = $request->id;
 		$invoices = Invoice::select([
@@ -468,6 +407,7 @@ class ContactController extends Controller
     ->withSum('payments as total_paid', 'base_amount')
     ->withSum('salesReturns as total_dev', 'grand_total')
     ->withSum('retiros_cliente as total_retiro', 'amount')
+	->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
     ->get();
 
 
@@ -475,8 +415,11 @@ class ContactController extends Controller
         $paid = $invoice->total_paid ?? 0;
         $paidDev = $invoice->total_dev ?? 0;
         $retiro = $invoice->total_retiro ?? 0;
+        $retiro_origen = $invoice->total_retiro_origen ?? 0;
     
-        $saldo = ($invoice->grand_total + $retiro) - ($paid + $paidDev);
+        //$saldo = ($invoice->grand_total + $retiro + $retiro_origen) - ($paid + $paidDev);
+        $saldo = ($invoice->grand_total);
+		dd($saldo);
 
         $invoice->saldo_favor = abs($saldo);
 

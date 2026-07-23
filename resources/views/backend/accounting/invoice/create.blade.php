@@ -425,9 +425,9 @@
 
 			<div class="col-md-12" id="saldo-cc-container" style="display:none;">
 				<div class="form-check">
-					<input type="checkbox" name="usar_saldo_cuenta_corriente" id="usar_saldo_cc" class="form-check-input" value="1">
+					<!--<input type="checkbox" name="usar_saldo_cuenta_corriente" id="usar_saldo_cc" class="form-check-input" value="1">-->
 					<label class="form-check-label" for="usar_saldo_cc">
-						{{ _lang('Abonar con saldo de cuenta corriente') }}
+						{{ _lang('Saldo de cuenta corriente') }}
 						(Saldo disponible: <span id="saldo-cc-disponible">$0.00</span>)
 					</label>
 				</div>

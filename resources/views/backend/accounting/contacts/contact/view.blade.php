@@ -404,6 +404,13 @@
                                                     $retiro = $retiro + $retiros_cliente->amount;
                                                 }
                                             }
+											
+											foreach ($invoice->retiros_cliente_origen as $retiros_cliente_origen) {
+                                                if ($retiros_cliente_origen->type == 'income' && $retiros_cliente_origen->dr_cr == 'cr') {
+                                                    $retiro = $retiro + $retiros_cliente_origen->amount;
+                                                }
+                                            }
+											
                                             $html="";
                                             $paid_dev = 0;
                                             $product_return_ = DB::select("select invoices.id,invoices.invoice_number,invoice_items.product_id,products_returns.product_id as productoid, invoice_items.sub_total from `invoices` inner join `invoice_items` on `invoice_items`.`invoice_id` = `invoices`.`id` left join `products_returns` on products_returns.invoice_id=invoices.id and  products_returns.product_id=invoice_items.product_id /*AND products_returns.status='procesada'*/ WHERE `invoices`.`related_to` = 'contacts' AND invoices.id IN ($invoice->id)
