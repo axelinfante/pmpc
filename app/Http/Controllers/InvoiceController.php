@@ -572,7 +572,35 @@ class InvoiceController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $invoice = Invoice::where("id", $id)->with('transaction')->first(); //->where("company_id", company_id())
+		
+		$invoice = Invoice::with(['retiros_cliente_origen'])
+				->select(
+				'invoices.*', 
+				DB::raw("CASE 
+					WHEN invoices.company_id = 1 THEN CONCAT('PM-', invoices.invoice_number) 
+					WHEN invoices.company_id = 2 THEN CONCAT('PC-', invoices.invoice_number) 
+					ELSE invoices.invoice_number 
+				END AS referencia")
+			)
+			->withSum('salesReturns as total_returns', 'grand_total')
+			->withSum('payments as total_paid', 'base_amount')
+			->withSum('retiros_cliente as total_retiro', 'amount')
+			->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
+			->where('invoices.id', $id) 
+			->firstOrFail();
+
+		// Cálculos adicionales listos para la vista:
+		$invoice->total_returns = $invoice->total_returns ?? 0;
+		$invoice->total_paid    = $invoice->total_paid ?? 0;
+		$invoice->total_retiro  = $invoice->total_retiro ?? 0;
+		$invoice->total_retiro_origen  = $invoice->total_retiro_origen ?? 0;
+
+		// Saldo pendiente / a favor
+		$invoice->balance_due = ($invoice->grand_total + $invoice->total_retiro+$invoice->total_retiro_origen) - ($invoice->total_paid + $invoice->total_returns);
+		
+	//	$retiros_cliente_origen=$invoice->retiros_cliente_origen;
+		
+        //$invoice = Invoice::where("id", $id)->with('transaction')->first(); //->where("company_id", company_id())
 
         $invoice_taxes = InvoiceItemTax::where('invoice_id', $id)
             ->selectRaw('invoice_item_taxes.*,sum(invoice_item_taxes.amount) as tax_amount')
@@ -586,7 +614,7 @@ class InvoiceController extends Controller
         $desarmes = Orden_desarme::where('id_venta', $id)->get();
 
         $transactions = Transaction::where("invoice_id", $id)->where("amount", '>', 0)->get();
-		$salesReturns = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->get(); // Get all SalesReturns with items
+		$salesReturns = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->get(); 
 		$salesReturnstotal = SalesReturn::where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->sum('grand_total');
 		$allReturnItemIds = $salesReturns->pluck('sales_return_items')->flatten()->pluck('product_id')->toArray();
 		//$sales = SalesReturn::where("id",$invoice->client_id)->first();
@@ -596,14 +624,6 @@ class InvoiceController extends Controller
             if ($invoice->template == "") {
                 $template = "modern";
             }
-
-            /*if(! file_exists(resource_path("views/backend/accounting/invoice/template/$template.blade.php"))){
-            $template = InvoiceTemplate::where('id',5)
-            ->where('company_id',company_id())
-            ->first();
-
-            return view("backend.accounting.invoice.template.custom",compact('invoice','transactions','template', 'id'));
-            }*/
 
             return view("backend.accounting.invoice.template.$template", compact('invoice', 'invoice_taxes', 'transactions', 'id', 'desarmes','salesReturns','allReturnItemIds','salesReturnstotal'));
         }
@@ -1269,12 +1289,14 @@ $result = Invoice::where('client_id', $invoice->client_id)
     ->withSum('payments as total_paid', 'base_amount')
     ->withSum('salesReturns as total_dev', 'grand_total')
 	->withSum('retiros_cliente as total_retiro', 'amount')
+	->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
     ->get()
     ->filter(function ($inv) {
         $paid = $inv->total_paid ?? 0;
         $paidDev = $inv->total_dev ?? 0;
 		$retiro = $inv->total_retiro ?? 0;
-        $saldo = ($inv->grand_total + $retiro) - ($paid + $paidDev);
+		$retiro_origen = $inv->total_retiro_origen ?? 0;
+        $saldo = ($inv->grand_total + $retiro + $retiro_origen) - ($paid + $paidDev);
         $inv->saldo_calculado = $saldo;
         return $saldo < 0;
     })
@@ -1353,6 +1375,10 @@ $result = Invoice::where('client_id', $invoice->client_id)
 
     public function store_payment(Request $request)
     {
+		$pendientePorCobrar = $request->input('pending_amount') ?? 0; 
+		$saldoCliente       = $request->input('paid_dev') ?? 0; 
+		$montoMaximoPermitido = min($pendientePorCobrar, $saldoCliente);
+
         $validator = Validator::make($request->all(), [
             'invoice_id' => 'required',
             'account_id' => 'required',
@@ -1361,8 +1387,18 @@ $result = Invoice::where('client_id', $invoice->client_id)
             'payment_method_id' => 'required',
             'reference' => 'nullable|max:50',
             'attachment' => 'nullable|mimes:jpeg,png,jpg,doc,pdf,docx,zip',
-        ]);
-
+			'amount' => [
+			'required',
+			'numeric',
+			'gt:0',
+			'lte:' . $montoMaximoPermitido // No puede ser mayor al limite determinado
+			],
+        ], [
+			'amount.gt'  => 'El monto a abonar debe ser mayor a 0.',
+			'amount.lte' => "El monto a abonar ($" . number_format($request->amount, 2) . ") no puede ser mayor al pendiente por cobrar ($" . number_format($pendientePorCobrar, 2) . ") ni al saldo a favor del cliente ($" . number_format($saldoCliente, 2) . ")."
+		]);
+		
+		
         if ($validator->fails()) {
             if ($request->ajax()) {
                 return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
@@ -1402,12 +1438,19 @@ $result = Invoice::where('client_id', $invoice->client_id)
 
         // aqui la funcion para lo de pago desde la cotizacion
         $resultCo = [];
+		$trans_asoc=Null;
+		$trans_asoc_note='';
         //si el metodo es igual a pago desde cotizacion
         if ($request->input('payment_method_id') == 11) {
             //sacar el id de la cotizacion 0 = id cotizacion 1 =  valor
             $arr = explode('-', $request->input('idCotizacionSaldo'));
-
-            $invoiceC =  Invoice::where("id", $arr[0])->first();
+			$trans_asoc=$arr[0] ?? Null;
+			
+			$invoice_number = ($company_id == 1) ? 'PM-': 'PC-';
+			$invoice_number .= $invoice->invoice_number;
+			$trans_asoc_note="Abono saldo Cotizacion ".$invoice_number;
+          
+		  /*  $invoiceC =  Invoice::where("id", $arr[0])->first();
             $paid = 0;
             foreach ($invoiceC->transaction as $pagos) {
                 if ($pagos->type == 'income') {
@@ -1440,7 +1483,7 @@ $result = Invoice::where('client_id', $invoice->client_id)
 
 
                 // dd($transOld);
-            }
+            }*/
         }
 
 
@@ -1497,9 +1540,10 @@ $result = Invoice::where('client_id', $invoice->client_id)
                 $transaction->payment_method_id = $request->input('payment_method_id');
                 $transaction->invoice_id = $request->input('invoice_id');
                 $transaction->reference = $request->input('reference');
-                $transaction->note = $request->input('note');
+                $transaction->note = $request->input('note').$trans_asoc_note;
                 $transaction->attachment = $attachment;
                 $transaction->company_id = $company_id;
+                $transaction->transaccion_revertida_id = $trans_asoc;
 
                 $transaction->tasa = $request->input('tasa');
                 $transaction->usd = $request->input('usd');
@@ -1560,10 +1604,11 @@ $result = Invoice::where('client_id', $invoice->client_id)
                 $transaction->payment_method_id = $request->input('payment_method_id');
                 $transaction->invoice_id = $request->input('invoice_id');
                 $transaction->reference = $request->input('reference');
-                $transaction->note = $request->input('note');
+                $transaction->note = $request->input('note').$trans_asoc_note;
                 $transaction->attachment = $attachment;
                 $transaction->company_id = $company_id;
-
+				$transaction->transaccion_revertida_id = $trans_asoc;
+				
                 $transaction->tasa = $request->input('tasa');
                 $transaction->usd = $request->input('usd');
 
@@ -1600,13 +1645,14 @@ $result = Invoice::where('client_id', $invoice->client_id)
             $transaction->payment_method_id = $request->input('payment_method_id');
             $transaction->invoice_id = $request->input('invoice_id');
             $transaction->reference = $request->input('reference');
-            $transaction->note = $request->input('note');
+            $transaction->note = $request->input('note').$trans_asoc_note;
             $transaction->attachment = $attachment;
             $transaction->company_id = $company_id;
+			$transaction->transaccion_revertida_id = $trans_asoc;
 
             $transaction->tasa = $request->input('tasa');
             $transaction->usd = $request->input('usd');
-
+			
             $transaction->save();
 
             if (!empty($cheques) && isset($cheques[0])) {
@@ -1623,6 +1669,7 @@ $result = Invoice::where('client_id', $invoice->client_id)
             } else if (round($invoice->paid, 2) > 0 && (round($invoice->paid, 2) < $invoice->grand_total)) {
                 $invoice->status = 'Partially_Paid';
             }
+			
             $invoice->save();
 
 
@@ -1638,7 +1685,8 @@ $result = Invoice::where('client_id', $invoice->client_id)
             $mail->currency = currency();
             $idTrans = $transaction->id;
         }
-        if (!empty($resultCo)) {
+       
+	   /* if (!empty($resultCo)) {
             //sumar a grandtotal el monto completo de la cotizacion
             // $invoiceC->grand_total = $invoiceC->grand_total + ($resultCo['paid_dev']);
             // $invoiceC->save();
@@ -1698,7 +1746,7 @@ $result = Invoice::where('client_id', $invoice->client_id)
                 $trsEd->base_amount = $trsEd->base_amount - $t['monto'];
                 $trsEd->save();
             }
-        }
+        }*/
 
 
         try {
@@ -4949,7 +4997,7 @@ public function get_table_data(Request $request)
         });
 */
 
-			$invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
+			$invoices = Invoice::with(['retiros_cliente_origen'])->joinSub($all_contacts, 'all_contacts', function ($join) {
 					$join->on('invoices.related_id', '=', 'all_contacts.id')
 						->on('invoices.related_to', '=', 'all_contacts.type');
 				})
@@ -4957,6 +5005,7 @@ public function get_table_data(Request $request)
 				->withSum('salesReturns as total_returns', 'grand_total')
 				->withSum('payments as total_paid', 'base_amount')
 				->withSum('retiros_cliente as total_retiro', 'amount')
+				->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
 				->whereIn('invoices.company_id', (array) $company_id)
 				->orderBy('invoices.id', 'desc');
 
@@ -5201,7 +5250,11 @@ return $tabla_html;
                 return $html;*/
             })
 			    ->addColumn('action', function ($invoice) use ($aFacturar) {
-				$balance_due = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+					
+					
+				$balance_due = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+				
+				
 				if  ($invoice->status == 'Canceled')
 				{
 					return $html = 'Anulada'; 
@@ -5278,7 +5331,8 @@ return $tabla_html;
 				//$invoicepaidtotal = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
                 //$t = (($invoice->grand_total-$salesReturnstotal) - $invoicepaidtotal);
 				//$t = (($invoice->grand_total ?? 0) - ($invoice->total_returns ?? 0) - ($invoice->total_paid ?? 0));
-				$t = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+				$t = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+				
                 $acc_currency = currency($invoice->client->currency);
                 if ($invoice->usd) {
                     $acc_currency = 'USD';
@@ -5296,7 +5350,8 @@ return $tabla_html;
 			->editColumn('paid', function ($invoice) use ($currency) {
 				//$t = Transaction::where("type","income")->where("dr_cr","cr")->where("invoice_id",$invoice->id)->sum('base_amount');
 				//$t = abs((($invoice->total_retiro ?? 0) - ($invoice->total_paid ?? 0)));
-				$t = abs(($invoice->total_paid ?? 0)  - ($invoice->total_retiro ?? 0) );
+				$t = (($invoice->total_paid ?? 0)-(($invoice->total_retiro ?? 0)+($invoice->total_retiro_origen ?? 0)));/// abs(($invoice->total_paid ?? 0) - ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0) );
+				//+ (($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0))
                 $acc_currency = currency($invoice->client->currency);
                 if ($invoice->usd) {
                     $acc_currency = 'USD';

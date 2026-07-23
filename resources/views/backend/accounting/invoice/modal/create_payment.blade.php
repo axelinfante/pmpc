@@ -129,7 +129,7 @@
 			<div class="col-md-6">
 			  <div class="form-group">
 				<label class="control-label">{{ _lang('Pending Amount') }} (<b><span class="account_currency">{{ currency() }}</span></b>)</label>						
-				<input type="text" class="form-control float-field" value="{{ (($invoice->grand_total+$retiro) - $paid) }}" id="pending_amount" readOnly="true">
+				<input type="text" name="pending_amount" class="form-control float-field" value="{{ (($invoice->grand_total+$retiro) - $paid) }}" id="pending_amount" readOnly="true">
 			  </div>
 			</div>
 
@@ -157,6 +157,8 @@
 			  </div>
 			  <div>
 			  	<div >
+					<input type="hidden" id="paid_dev" name="paid_dev" value="0">
+
 					<select class="form-control" name="idCotizacionSaldo" id="idCotizacionSaldo">
 						<option value="">Elige una cotizacion</option>
 						@forelse($result as $cotizacion)
@@ -314,9 +316,12 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
 			selectCotizacionSaldo.prop('required', true)
 			selectCotizacionSaldo.change(function() {
 				let arr = $(this).val().split('-');
-				$('#amount').val(arr[1])
+				$('#amount').val(arr[1]);
+				$('#paid_dev').val(arr[1]);
+				
 			})
 		}else {
+			$('#paid_dev').val(0);
 			selectCotizacionSaldo.hide();
 			selectCotizacionSaldo.prop('required', false)
 		}
@@ -343,7 +348,7 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
     $(document).ready(function () {
 	
 		
-		console.log(moneda)
+		//console.log(moneda)
 // tasa();
         function tasa () {
             let isCheck = $('#usd').is(':checked');
@@ -441,7 +446,6 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
 			}
 			
 		}
-		console.log('a')
 		return parseFloat(valor_pesos).toFixed(2);
 		//$('#adeudadoPesos').html('Adeudado '+valor_pesos+' ARS');
 		
