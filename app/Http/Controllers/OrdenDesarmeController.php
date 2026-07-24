@@ -260,7 +260,8 @@ class OrdenDesarmeController extends Controller
             ->editColumn('informo_ausencia', function ($orden) {
                 return $orden->informo_ausencia;
             })->editColumn('obs_desarme_busqueda', function ($orden) {
-                return $orden->obs_desarme_busqueda;
+				return ($orden->obs_desarme_busqueda ?? '')."<br/>".($orden->venta->note ?? '')."<br/>".($orden->venta->descripcion ?? '');
+                //return $orden->obs_desarme_busqueda;
             })
             //            ->editColumn('fecha_desarmado_anulado', function ($orden) {
             //                $date_format = get_company_option('date_format','Y-m-d');
@@ -1102,7 +1103,7 @@ $ordenes = Orden_desarme::with([
                 return $orden->informo_ausencia."--------";
             })->editColumn('obs_desarme_busqueda', function ($orden) {
 				
-                return ($orden->obs_desarme_busqueda ?? '')."<br/>".($orden->venta->note ?? '');
+                return ($orden->obs_desarme_busqueda ?? '')."<br/>".($orden->venta->note ?? '')."<br/>".($orden->venta->descripcion ?? '');
             })
             ->editColumn('fecha_desarmado_anulado', function ($orden) {
                 $date_format = get_company_option('date_format', 'Y-m-d');
