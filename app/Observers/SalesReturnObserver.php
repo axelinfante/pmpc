@@ -24,7 +24,7 @@ class SalesReturnObserver
         // FIFO automático: reimputar saldo a favor a facturas impagas
         try {
             if ($salesReturn->customer_id && $salesReturn->grand_total > 0) {
-                CuentaCorriente::reimputarSaldoFavorFIFO($salesReturn->customer_id, null, $salesReturn->invoice_id);
+               // CuentaCorriente::reimputarSaldoFavorFIFO($salesReturn->customer_id, null, $salesReturn->invoice_id);
             }
         } catch (\Throwable $e) {
             \Log::error('Error en FIFO (created SalesReturn): ' . $e->getMessage(), [
@@ -42,6 +42,8 @@ class SalesReturnObserver
      */
     public function updated(SalesReturn $salesReturn)
     {
+
+    return; // Deshabilitado temporalmente para evitar problemas de reimputación
         // Si la devolución fue modificada, recalcular cuenta corriente
         // Verificar cambios en campos relacionados con montos
         if ($salesReturn->wasChanged(['grand_total', 'customer_id', 'invoice_id'])) {
