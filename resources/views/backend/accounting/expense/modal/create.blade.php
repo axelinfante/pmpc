@@ -52,7 +52,7 @@ endif;
 			<div class="col-md-6">
 			  <div class="form-group">
 			  <label class="control-label">Proveedor</label>
-				<input type="text" class="form-control" name="razon_social" value="{{ old('razon_social') }}" required>
+				<input type="text" class="form-control" id="razon_social" name="razon_social" value="{{ old('razon_social') }}" required>
 			  </div>
 			</div>
 
@@ -147,6 +147,9 @@ endif;
 					<option value="">Elige una cotizacion devolucion</option>
 				</select>
 				<input type="hidden" name="idCotizacionMontoMax" id="idCotizacionMontoMax" value="0">
+				<div id="advertencia-select" class="nota-advertencia" role="alert">
+							<strong>⚠️ Advertencia:</strong> Saldo a Favor cuando No exista un produto pendiente de revisión.
+						</div>
 			</div>
 
 			<div class="col-md-6">
@@ -280,12 +283,19 @@ endif;
 		
 
 		idClient.change(function(e) {
-			// console.log(idClient);
+			$('#razon_social').val('');
 			if(idClient.val() != '' && idClient.val() > 0 ) {
 				getCotiConSaldo();
 				$('#idCotizacionMontoMax').val(0) 
+				var razonSocialData = $(this).find('option:selected').text();
+				$('#razon_social').val(razonSocialData);
 			}
+			
 		})
+
+
+// Limpiar el campo
+
 		
 		cotizacionSaldo.on('change', function() {
 			let montoSeleccionado = $(this).find(':selected').data('monto');
