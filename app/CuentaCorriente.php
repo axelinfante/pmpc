@@ -978,6 +978,7 @@ class CuentaCorriente extends Model
      */
     public static function reimputarSaldoFavorFIFO($clientId, $notaFifo = 'reimputacion FIFO automatica', $exceptInvoiceId = null)
     {
+        return;
         try {
             $saldo = self::obtenerSaldoCliente($clientId);
 

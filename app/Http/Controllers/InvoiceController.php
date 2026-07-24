@@ -2026,7 +2026,8 @@ $validator = Validator::make($request->all(), [
 		
 		DB::beginTransaction();
 		try {
-						$estatus="Item inventario";
+			
+						$estatus="pendiente";
 						$salesReturns = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->get(); // Get all SalesReturns with items
 						$allReturnItemIds = $salesReturns->pluck('sales_return_items')->flatten()->pluck('product_id')->toArray();
 						$salesReturn = new SalesReturn();
@@ -2063,10 +2064,13 @@ $validator = Validator::make($request->all(), [
 									$salesReturnItem->company_id = $p_item->company_id;
 									$salesReturnItem->save();
 									//aumenta stock
-									$estatus_item='procesada';
+									//$estatus_item='procesada';
 									if ($estatus=="Item inventario"){
 										Product::where('id', $p_item->product_id)->update(['stock' => 1]);
+									}else{
+										Product::where('id', $p_item->product_id)->update(['stock' => 0]);
 									}	
+									
 									//
 									
 									$productReturn = new ProductReturn();
@@ -2075,7 +2079,7 @@ $validator = Validator::make($request->all(), [
 									$productReturn->product_id = $p_item->product_id;
 									$productReturn->quantity =  $p_item->quantity;
 									$productReturn->note = $observacion;
-									$productReturn->status = $estatus_item;
+									$productReturn->status = $estatus;
 									$productReturn->company_id = $p_item->company_id;
 									$productReturn->return_number =  $salesReturn->id;
 									$productReturn->save();
@@ -5029,19 +5033,19 @@ $totalC2 = $results->total_c2;*/
 			DB::commit();
 
 			// Recalcular despues de commit para que el FIFO vea el saldo correcto
-			if (isset($invoice) && $invoice) {
-			    \App\CuentaCorriente::recalcular($invoice->client_id);
-			}
+		//	if (isset($invoice) && $invoice) {
+		//	    \App\CuentaCorriente::recalcular($invoice->client_id);
+		//	}
 
 			// FIFO automático: reimputar saldo a favor a facturas impagas (excluir la factura anulada)
-			try {
+		/*	try {
 			    if (isset($invoice) && $invoice) {
 			        \App\CuentaCorriente::reimputarSaldoFavorFIFO($invoice->client_id, "reimputacion FIFO de coti {$invoice->invoice_number}", $invoice->id);
 			    }
 			} catch (\Throwable $e) {
 			    \Log::error('Error en FIFO reimputation: ' . $e->getMessage());
 			}
-
+*/
 			return redirect('invoices')->with('success', _lang('Invoice deleted sucessfully'));
 		} catch (Throwable $e) {
             DB::rollBack();
