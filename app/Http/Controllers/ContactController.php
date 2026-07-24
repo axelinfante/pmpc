@@ -405,21 +405,56 @@ class ContactController extends Controller
     ])
     ->where('invoices.client_id', $idClient)
     ->withSum('payments as total_paid', 'base_amount')
-    ->withSum('salesReturns as total_dev', 'grand_total')
+    //->withSum('salesReturns as total_dev', 'grand_total')
+	->withSum(['salesReturns as total_dev' => function ($query) {
+        // Excluimos devoluciones de la factura si la factura tiene un product_return 'pendiente'
+        $query->whereNotIn('invoice_id', function ($subQuery) {
+            $subQuery->select('invoice_id')
+                     ->from('products_returns')
+                     ->where('status', 'pendiente');
+        });
+    }], 'grand_total')
     ->withSum('retiros_cliente as total_retiro', 'amount')
 	->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
     ->get();
+	
+	$result = $invoices->filter(function ($inv) {
+        $paid         = (float) ($inv->total_paid ?? 0);
+        $paidDev      = (float) ($inv->total_dev ?? 0);
+        $retiro       = (float) ($inv->total_retiro ?? 0);
+        $retiroOrigen = (float) ($inv->total_retiro_origen ?? 0);
+
+        // Saldo calculado
+        $saldo = ($inv->grand_total + $retiro + $retiroOrigen) - ($paid + $paidDev);
+        $inv->saldo_calculado = abs($saldo);
+
+        // Retornamos únicamente si existe saldo a favor (menor a 0)
+        return $saldo < 0;
+    })
+    ->map(function ($inv) {
+        //$montoDeseable = abs($inv->saldo_calculado);
+
+        return [
+            'idCotizacion'   => $inv->id,
+             'referencia'   => $inv->referencia,
+            'paid_dev'       => $inv->saldo_calculado,
+            //'monto_deseable' => $montoDeseable,
+            //'mensaje'        => 'La factura #' . $inv->invoice_number . ' posee un saldo a favor disponible de $' . number_format($montoDeseable, 2) . '.',
+        ];
+    })
+    ->values()
+    ->toArray();
 
 
-	$result = $invoices->filter(function ($invoice) {
+	/*$result = $invoices->filter(function ($invoice) {
         $paid = $invoice->total_paid ?? 0;
         $paidDev = $invoice->total_dev ?? 0;
         $retiro = $invoice->total_retiro ?? 0;
         $retiro_origen = $invoice->total_retiro_origen ?? 0;
     
-        //$saldo = ($invoice->grand_total + $retiro + $retiro_origen) - ($paid + $paidDev);
-        $saldo = ($invoice->grand_total);
-		dd($saldo);
+        $saldo = ($invoice->grand_total + $retiro + $retiro_origen) - ($paid + $paidDev);
+        //$saldo = ($invoice->grand_total);
+		//dd($saldo);
 
         $invoice->saldo_favor = abs($saldo);
 
@@ -433,7 +468,7 @@ class ContactController extends Controller
         ];
     })
     ->values()
-    ->toArray();
+    ->toArray();*/
 
 		// $cotizConSaldo = $result;
 		return response()->json(['cotizaciones' => $result]);
