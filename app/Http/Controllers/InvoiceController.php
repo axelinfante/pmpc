@@ -1375,28 +1375,35 @@ $result = Invoice::where('client_id', $invoice->client_id)
 
     public function store_payment(Request $request)
     {
-		$pendientePorCobrar = $request->input('pending_amount') ?? 0; 
-		$saldoCliente       = $request->input('paid_dev') ?? 0; 
-		$montoMaximoPermitido = min($pendientePorCobrar, $saldoCliente);
+		
+$pendientePorCobrar = (float) ($request->input('pending_amount') ?? 0);
+$saldoCliente       = (float) ($request->input('paid_dev') ?? 0);
 
-        $validator = Validator::make($request->all(), [
-            'invoice_id' => 'required',
-            'account_id' => 'required',
-            'chart_id' => 'required',
-            'amount' => 'required|numeric',
-            'payment_method_id' => 'required',
-            'reference' => 'nullable|max:50',
-            'attachment' => 'nullable|mimes:jpeg,png,jpg,doc,pdf,docx,zip',
-			'amount' => [
-			'required',
-			'numeric',
-			'gt:0',
-			'lte:' . $montoMaximoPermitido // No puede ser mayor al limite determinado
-			],
-        ], [
-			'amount.gt'  => 'El monto a abonar debe ser mayor a 0.',
-			'amount.lte' => "El monto a abonar ($" . number_format($request->amount, 2) . ") no puede ser mayor al pendiente por cobrar ($" . number_format($pendientePorCobrar, 2) . ") ni al saldo a favor del cliente ($" . number_format($saldoCliente, 2) . ")."
-		]);
+$esReimputacion = (int) $request->input('payment_method_id') === 11;
+
+$limiteAplicable = $esReimputacion 
+    ? min($pendientePorCobrar, $saldoCliente) 
+    : $pendientePorCobrar;
+
+$validator = Validator::make($request->all(), [
+    'invoice_id'        => 'required',
+    'account_id'        => 'required',
+    'chart_id'          => 'required',
+    'payment_method_id' => 'required',
+    'reference'         => 'nullable|max:50',
+    'attachment'        => 'nullable|mimes:jpeg,png,jpg,doc,pdf,docx,zip',
+    'amount'            => [
+        'required',
+        'numeric',
+        'gt:0',
+        'lte:' . $limiteAplicable,
+    ],
+], [
+    'amount.gt'  => 'El monto a abonar debe ser mayor a 0.',
+    'amount.lte' => $esReimputacion 
+        ? 'El monto a aplicar ($' . number_format((float) ($request->amount ?? 0), 2) . ') supera el límite permitido ($' . number_format($limiteAplicable, 2) . ') entre el saldo a favor y lo pendiente.'
+        : 'El monto a abonar ($' . number_format((float) ($request->amount ?? 0), 2) . ') no puede ser mayor al saldo pendiente por cobrar ($' . number_format($pendientePorCobrar, 2) . ').',
+]);
 		
 		
         if ($validator->fails()) {
