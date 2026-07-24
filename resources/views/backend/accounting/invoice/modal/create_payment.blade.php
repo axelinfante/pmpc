@@ -167,6 +167,9 @@
 							<option value="">No disponible</option>
 						@endforelse
 					</select>
+						<div id="advertencia-select" class="nota-advertencia" role="alert">
+							<strong>⚠️ Advertencia:</strong> Saldo a Favor cuando No exista un produto pendiente de revisión.
+						</div>
 				</div>
 			  </div>
 			</div>
@@ -307,12 +310,14 @@
 // $(document).ready(function() {
 let selectCotizacionSaldo =$('#idCotizacionSaldo');
     selectCotizacionSaldo.hide();
+	$('#advertencia-select').hide();
 // });
 	const moneda = "{{ $invoice->is_usd == 1 ? 'usd' : 'ars'}}"
 	
 	$('#payment_method_id').change(function() {
 		if($(this).val() == 11) {
 			selectCotizacionSaldo.show();
+			$('#advertencia-select').show();
 			selectCotizacionSaldo.prop('required', true)
 			selectCotizacionSaldo.change(function() {
 				let arr = $(this).val().split('-');
@@ -322,6 +327,7 @@ let selectCotizacionSaldo =$('#idCotizacionSaldo');
 			})
 		}else {
 			$('#paid_dev').val(0);
+			$('#advertencia-select').hide();
 			selectCotizacionSaldo.hide();
 			selectCotizacionSaldo.prop('required', false)
 		}

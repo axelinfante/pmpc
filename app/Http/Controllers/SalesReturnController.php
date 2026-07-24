@@ -60,6 +60,31 @@ class SalesReturnController extends Controller
 				$join->on('sales_return.invoice_id', '=', 't1.invoice_id');
 		})->orderBy("id","desc")->get();									
 		
+		/*// Subconsulta limpia de invoice_id pendientes (evita errores de GROUP BY)
+$pendingInvoiceIds = ProductReturn::where('status', 'pendiente')
+    ->whereIn('company_id', (array) $company_id)
+    ->pluck('invoice_id')
+    ->unique();
+
+// Consulta principal filtrada
+$sales_returns = SalesReturn::whereIn('invoice_id', $pendingInvoiceIds)
+    ->orderBy('id', 'desc')
+    ->get();*/
+		
+		/*// Subconsulta corregida
+$product_returns = ProductReturn::select('invoice_id', DB::raw("MAX(status) as status"))
+    ->where('status', 'pendiente')
+    ->whereIn('company_id', (array) $company_id)
+    ->groupBy('invoice_id');
+
+// Left Join Subconsulta
+$sales_returns = SalesReturn::select('sales_return.*', 't1.status as product_return_status')
+    ->leftJoinSub($product_returns, 't1', function ($join) {
+        $join->on('sales_return.invoice_id', '=', 't1.invoice_id');
+    })
+    ->orderBy('sales_return.id', 'desc')
+    ->get();*/
+		
 /*        $sales_returns = SalesReturn::whereIn("company_id",$company_id)
 							 	    ->orderBy("id","desc")->get();*/
 									

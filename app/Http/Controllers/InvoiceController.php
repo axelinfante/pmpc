@@ -1283,8 +1283,50 @@ class InvoiceController extends Controller
 {
  
 	$invoice = Invoice::findOrFail($id);
+	
 
-$result = Invoice::where('client_id', $invoice->client_id)
+	$result = Invoice::where('client_id', $invoice->client_id)
+    ->where('id', '!=', $id) 
+    ->withSum('payments as total_paid', 'base_amount')
+    ->withSum(['salesReturns as total_dev' => function ($query) {
+        // Excluimos devoluciones de la factura si la factura tiene un product_return 'pendiente'
+        $query->whereNotIn('invoice_id', function ($subQuery) {
+            $subQuery->select('invoice_id')
+                     ->from('products_returns')
+                     ->where('status', 'pendiente');
+        });
+    }], 'grand_total')
+    ->withSum('retiros_cliente as total_retiro', 'amount')
+    ->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
+    ->get()
+    ->filter(function ($inv) {
+        $paid         = (float) ($inv->total_paid ?? 0);
+        $paidDev      = (float) ($inv->total_dev ?? 0);
+        $retiro       = (float) ($inv->total_retiro ?? 0);
+        $retiroOrigen = (float) ($inv->total_retiro_origen ?? 0);
+
+        // Saldo calculado
+        $saldo = ($inv->grand_total + $retiro + $retiroOrigen) - ($paid + $paidDev);
+        $inv->saldo_calculado = $saldo;
+
+        // Retornamos únicamente si existe saldo a favor (menor a 0)
+        return $saldo < 0;
+    })
+    ->map(function ($inv) {
+        //$montoDeseable = abs($inv->saldo_calculado);
+
+        return [
+            'idCotizacion'   => $inv->id,
+            'paid_coti'      => $inv->invoice_number,
+            'paid_dev'       => $inv->saldo_calculado,
+            //'monto_deseable' => $montoDeseable,
+            //'mensaje'        => 'La factura #' . $inv->invoice_number . ' posee un saldo a favor disponible de $' . number_format($montoDeseable, 2) . '.',
+        ];
+    })
+    ->values()
+    ->toArray();
+
+/*  $result = Invoice::where('client_id', $invoice->client_id)
     ->where('id', '!=', $id) 
     ->withSum('payments as total_paid', 'base_amount')
     ->withSum('salesReturns as total_dev', 'grand_total')
@@ -1292,23 +1334,33 @@ $result = Invoice::where('client_id', $invoice->client_id)
 	->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
     ->get()
     ->filter(function ($inv) {
-        $paid = $inv->total_paid ?? 0;
-        $paidDev = $inv->total_dev ?? 0;
-		$retiro = $inv->total_retiro ?? 0;
-		$retiro_origen = $inv->total_retiro_origen ?? 0;
-        $saldo = ($inv->grand_total + $retiro + $retiro_origen) - ($paid + $paidDev);
+        $paid         = (float) ($inv->total_paid ?? 0);
+        $paidDev      = (float) ($inv->total_dev ?? 0);
+        $retiro       = (float) ($inv->total_retiro ?? 0);
+        $retiroOrigen = (float) ($inv->total_retiro_origen ?? 0);
+
+        $saldo = ($inv->grand_total + $retiro + $retiroOrigen) - ($paid + $paidDev);
         $inv->saldo_calculado = $saldo;
+
         return $saldo < 0;
     })
     ->map(function ($inv) {
+        $montoDeseable = abs($inv->saldo_calculado);
+
         return [
-            'idCotizacion' => $inv->id,
-            'paid_coti'    => $inv->invoice_number,
-            'paid_dev'     => $inv->saldo_calculado,
+            'idCotizacion'   => $inv->id,
+            'paid_coti'      => $inv->invoice_number,
+            'paid_dev'       => $inv->saldo_calculado,
+            'monto_deseable' => $montoDeseable,
+            'mensaje'        => 'La factura #' . $inv->invoice_number . ' posee un saldo a favor disponible de $' . number_format($montoDeseable, 2) . '.',
         ];
     })
     ->values()
     ->toArray();
+	
+	dd($result);
+	/*$product_returns = ProductReturn::select('invoice_id','status')
+		->where('status','pendiente')->whereIn("company_id",$company_id)->groupBy('invoice_id'); */
 	
  
     //$mainInvoicePaid = $invoices->find($id)->transaction->sum('base_amount');
@@ -1376,7 +1428,7 @@ $result = Invoice::where('client_id', $invoice->client_id)
     public function store_payment(Request $request)
     {
 		
-$pendientePorCobrar = (float) ($request->input('pending_amount') ?? 0);
+/*$pendientePorCobrar = (float) ($request->input('pending_amount') ?? 0);
 $saldoCliente       = (float) ($request->input('paid_dev') ?? 0);
 
 $esReimputacion = (int) $request->input('payment_method_id') === 11;
@@ -1404,7 +1456,57 @@ $validator = Validator::make($request->all(), [
         ? 'El monto a aplicar ($' . number_format((float) ($request->amount ?? 0), 2) . ') supera el límite permitido ($' . number_format($limiteAplicable, 2) . ') entre el saldo a favor y lo pendiente.'
         : 'El monto a abonar ($' . number_format((float) ($request->amount ?? 0), 2) . ') no puede ser mayor al saldo pendiente por cobrar ($' . number_format($pendientePorCobrar, 2) . ').',
 ]);
-		
+	*/	
+	
+	
+				$pendientePorCobrar = (float) $request->input('pending_amount', 0);
+				$saldoCliente       = (float) $request->input('paid_dev', 0);
+				$paymentMethodId    = (int) $request->input('payment_method_id');
+
+
+				$cheques = [];
+				$amountToValidate = (float) $request->input('amount', 0);
+
+				if ($paymentMethodId === 3 && $request->filled('cheques_data')) {
+					$decodedCheques = json_decode($request->input('cheques_data'), true);
+
+					if (json_last_error() === JSON_ERROR_NONE && is_array($decodedCheques) && !empty($decodedCheques)) {
+						$cheques = $decodedCheques;
+						// Calculamos el total real de la grilla de cheques
+						$amountToValidate = (float) array_reduce($cheques, function ($carry, $item) {
+							return $carry + (float) ($item['importe'] ?? 0);
+						}, 0.0);
+					}
+				}
+
+				$esReimputacion  = $paymentMethodId === 11;
+				$limiteAplicable = $esReimputacion 
+					? min($pendientePorCobrar, $saldoCliente) 
+					: $pendientePorCobrar;
+
+				$request->merge(['amount' => $amountToValidate]);
+
+				$validator = Validator::make($request->all(), [
+					'invoice_id'        => 'required',
+					'account_id'        => 'required',
+					'chart_id'          => 'required',
+					'payment_method_id' => 'required',
+					'reference'         => 'nullable|max:50',
+					'attachment'        => 'nullable|mimes:jpeg,png,jpg,doc,pdf,docx,zip',
+					'cheques_data'      => Rule::requiredIf($paymentMethodId === 3),
+					'amount'            => [
+						'required',
+						'numeric',
+						'gt:0',
+						'lte:' . $limiteAplicable,
+					],
+				], [
+					'amount.gt'            => 'El monto a abonar debe ser mayor a 0.',
+					'amount.lte'           => $esReimputacion 
+						? 'El monto a aplicar ($' . number_format($amountToValidate, 2) . ') supera el saldo disponible o la deuda ($' . number_format($limiteAplicable, 2) . ').'
+						: 'El monto a abonar ($' . number_format($amountToValidate, 2) . ') no puede ser mayor al saldo pendiente ($' . number_format($pendientePorCobrar, 2) . ').',
+					'cheques_data.required' => 'Debe adjuntar al menos un cheque cuando el método de pago es Cheque.',
+				]);
 		
         if ($validator->fails()) {
             if ($request->ajax()) {
@@ -1422,15 +1524,30 @@ $validator = Validator::make($request->all(), [
             $attachment = time() . $file->getClientOriginalName();
             $file->move(public_path() . "/uploads/transactions/", $attachment);
         }
+		
+		//nuevo proceso
+		$cheques = [];
+		$chequeTotal = (float) $request->input('amount', 0);
 
-        $cheques = [];
+		if ((int) $request->input('payment_method_id') === 3 && $request->filled('cheques_data')) {
+			$decodedCheques = json_decode($request->input('cheques_data'), true);
+			if (json_last_error() === JSON_ERROR_NONE && is_array($decodedCheques) && !empty($decodedCheques)) {
+				$cheques = $decodedCheques;
+				$chequeTotal = array_reduce($cheques, function ($carry, $item) {
+					return $carry + (float) ($item['importe'] ?? 0);
+				}, 0.0);
+				//$amountInput = $chequeTotal;
+			}
+		}
+
+      /*   $cheques = [];
         $chequeTotal = $request->input('amount');
         if ($request->input('payment_method_id') == 3 && $request->input('cheques_data')) {
             $cheques = json_decode($request->input('cheques_data'), true);
             if (json_last_error() === JSON_ERROR_NONE && !empty($cheques)) {
                 $chequeTotal = array_sum(array_column($cheques, 'importe'));
             }
-        }
+        } */
 
         DB::beginTransaction();
 
