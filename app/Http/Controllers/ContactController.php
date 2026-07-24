@@ -1124,7 +1124,62 @@ class ContactController extends Controller
 			
 			  $sql = saldo_sql_list();
 			  
+			  
 		$sql .= "SELECT * 
+FROM (
+    SELECT 
+        t1.number, 
+        t1.referencia,
+        t1.clientesid, 
+        t1.date, 
+        t1.fecha_real, 
+		t1.payment_method_id,
+        CASE 
+            WHEN t1.tipo = 'invoices' AND t1.invoice_status = 'Canceled' 
+                THEN CONCAT(IFNULL(t1.note, ''), ' - FACTURA ANULADA') 
+            ELSE t1.note 
+        END AS note, 
+        t1.movimiento, 
+        t1.debe, 
+        CASE 
+            WHEN t1.payment_method_id = 11 THEN 0.00
+            ELSE t1.haber 
+        END AS haber, 
+        
+        t1.status, 
+        t1.tipo,
+        t1.invoice_status,
+        SUM(
+            t1.debe - (CASE WHEN t1.payment_method_id = 11 THEN 0.00 ELSE t1.haber END)
+        ) OVER (
+            ORDER BY 
+                t1.fecha_real ASC, 
+                t1.documento_id ASC, 
+                t1.number ASC
+            ROWS UNBOUNDED PRECEDING
+        ) AS saldo, 
+        SUM(
+            t1.debe - (CASE WHEN t1.payment_method_id = 11 THEN 0.00 ELSE t1.haber END)
+        ) OVER () AS gran_total_general, 
+       CASE 
+    WHEN t1.payment_method_id = 11 THEN 
+        CONCAT(
+            IFNULL(t1.adicional, ''), 
+            ' Abono=', 
+            FORMAT(IFNULL(t1.haber, 0.00), 2, 'es_ES')
+        )
+    ELSE t1.adicional 
+END AS adicional,
+        t1.documento_id
+    FROM datos_unificados t1   
+    WHERE t1.clientesid = ?
+) resultado_con_saldo
+ORDER BY 
+    fecha_real DESC, 
+    documento_id DESC,
+    number DESC;";
+			  
+		/*$sql .= "SELECT * 
 FROM (
     SELECT 
         t1.number, 
@@ -1157,6 +1212,61 @@ FROM (
 ORDER BY 
     fecha_real DESC, 
     number DESC;";
+	*/
+	/*
+	SELECT * 
+FROM (
+    SELECT 
+        t1.number, 
+        t1.referencia,
+        t1.clientesid, 
+        t1.date, 
+        t1.fecha_real, 
+        CASE 
+            WHEN t1.tipo = 'invoices' AND t1.invoice_status = 'Canceled' 
+                THEN CONCAT(IFNULL(t1.note, ''), ' - FACTURA ANULADA') 
+            ELSE t1.note 
+        END AS note, 
+        t1.movimiento, 
+        t1.debe, 
+        
+        -- Ajuste de Haber si el método de pago es 11 (Ajuste/Reimputación FIFO interna)
+        CASE 
+            WHEN t1.payment_method_id = 11 THEN 0.00
+            ELSE t1.haber 
+        END AS haber, 
+        
+        t1.status, 
+        t1.tipo,
+        t1.invoice_status,
+        
+        -- Cálculo de Saldo Acumulado Corrido (Cronología Estricta)
+        SUM(
+            t1.debe - (CASE WHEN t1.payment_method_id = 11 THEN 0.00 ELSE t1.haber END)
+        ) OVER (
+            ORDER BY 
+                t1.fecha_real ASC, 
+                t1.documento_id ASC, 
+                t1.number ASC
+            ROWS UNBOUNDED PRECEDING
+        ) AS saldo, 
+        
+        -- Gran Total Acumulado del Cliente
+        SUM(
+            t1.debe - (CASE WHEN t1.payment_method_id = 11 THEN 0.00 ELSE t1.haber END)
+        ) OVER () AS gran_total_general, 
+        
+        t1.adicional,
+        t1.documento_id
+    FROM datos_unificados t1   
+    WHERE t1.clientesid = ?
+) resultado_con_saldo
+ORDER BY 
+    fecha_real DESC, 
+    documento_id DESC,
+    number DESC;
+	*/
+	
 /*
  $sql .= " SELECT 
               t1.number, 

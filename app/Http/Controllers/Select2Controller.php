@@ -362,6 +362,7 @@ class Select2Controller extends Controller
     } else {
         $query->where(function ($str) use ($search) {
             $str->orWhere('marcas.marca', 'LIKE', "%$search%")
+                ->orWhere('items.item_name', 'LIKE', "%$search%")
                 ->orWhere('modelos.modelo', 'LIKE', "%$search%")
                 ->orWhere('products.nro_interno', 'LIKE', "%$search%")
                 ->orWhere('cars.motor_nro', 'LIKE', "%$search%")
