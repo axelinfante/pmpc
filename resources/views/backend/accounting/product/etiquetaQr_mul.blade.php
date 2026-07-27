@@ -14,6 +14,7 @@
             align-items: center;
             background-color: #f0f0f0;
             gap: 15px;
+            font-family: Arial, sans-serif;
         }
 
         /* Contenedor que agrupa todas las etiquetas en pantalla */
@@ -21,9 +22,9 @@
             display: flex;
             flex-direction: column;
             gap: 10px; /* Separación visual solo para la pantalla */
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
-            padding: 5px;
+            padding: 10px;
             border: 1px solid #ccc;
             background: #e0e0e0;
         }
@@ -31,30 +32,33 @@
         .print-container {
             width: 64mm;
             height: 32mm;
-            border: 1px solid #ccc;
+            border: 1px dashed #999;
             box-sizing: border-box;
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: flex-start;
             background-color: #fff;
-            padding: 2mm 3mm;
-            gap: 4mm;
+            padding: 1.5mm 2.5mm;
+            gap: 2.5mm;
+            overflow: hidden;
         }
 
         .print-container .qr-code {
             display: flex;
             align-items: center;
             justify-content: center;
-            flex: 0 0 20mm;
-            width: 20mm;
-            height: 20mm;
+            flex: 0 0 21mm;
+            width: 21mm;
+            height: 21mm;
         }
 
-        .print-container .qr-code svg {
+        .print-container .qr-code svg,
+        .print-container .qr-code img {
             display: block;
             width: 100%;
             height: 100%;
+            object-fit: contain;
         }
 
         .print-container .label-text {
@@ -64,17 +68,22 @@
             flex-direction: column;
             justify-content: center;
             text-align: left;
-            font-family: Arial, sans-serif;
+            overflow: hidden;
         }
 
         .print-container .label-text p {
-            margin: 0 0 3px 0;
-            line-height: 1.2;
-            font-size: 11px;
+            margin: 0 0 1px 0;
+            line-height: 1.1;
+            font-size: 8.5px;
             color: #000;
+            word-break: break-word;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        
         .print-container .label-text p strong {
-            font-size: 13px;
+            font-size: 10px;
         }
     </style>
 
@@ -84,14 +93,19 @@
             
             @foreach($productos as $producto)
                 @php
-                    $company = '';
-                    $interno = $company . $producto->nro_interno;
-                    $macar_modelo = ($producto->marcaModelo->marca->marca ?? '') ." ".($producto->marcaModelo->modelo->modelo ?? '');
-                    
-                    // String optimizado para lectura ultra rápida
-                    $qrDataClean = "{$producto->id}|{$producto->nro_interno}|{$macar_modelo}|{$producto->nro_oblea}";
-                    
-                    // Generar QR limpio en formato SVG
+                      $company = ($producto->company_id == 1) ? 'PM-' : 'PC-';
+            $interno = $company . $producto->nro_interno;
+            $marcaModelo = trim(($producto->marcaModelo->marca->marca ?? '') . " " . ($producto->marcaModelo->modelo->modelo ?? ''));
+            
+            $deposito = $producto->deposito->nombre ?? 'N/A';			
+			$ultimoInvoiceItem = $producto->invoiceItems->last(); // O la primera con ->first();
+			$factura = $ultimoInvoiceItem->invoice ?? null;
+			$cotizacion = $factura->invoice_number 
+                ?? 'N/A';
+			
+			$vendedor = $factura->vendedor->name 
+              ?? 'N/A';
+                    $qrDataClean = "{$producto->id}|{$producto->nro_interno}|{$cotizacion}|{$deposito}|{$vendedor}";
                     $qrCodeOutput = QrCode::size(150)->format('svg')->margin(0)->generate($qrDataClean);
                 @endphp
 
@@ -100,10 +114,14 @@
                         {!! $qrCodeOutput !!}
                     </div>
                     <div class="label-text">
-                        <p><strong>ID: {!! $producto->id !!}</strong></p>
-                        <p>{!! $producto->item->item_name ?? 'Sin Nombre' !!}</p>
-                        <p>{!! $macar_modelo !!}</p>
-                        <p>Int: {!! $interno !!}</p>
+                        <p><strong>ID: {{ $producto->id }}</strong> | Cot: <strong>#{{ $cotizacion }}</strong></p>
+                <p>{{ $producto->item->item_name ?? 'Sin Nombre' }}</p>
+                @if(!empty($marcaModelo))
+                    <p>{{ $marcaModelo }}</p>
+                @endif
+                <p>Int: {{ $interno }}</p>
+                <p>Dep: {{ $deposito }}</p>
+                <p>Vend: {{ $vendedor }}</p>
                     </div>
                 </div>
             @endforeach
@@ -111,37 +129,36 @@
         </div>
 
         <div>
-            <button onclick="imprimirLote()" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">
-                Imprimir Lote ({{ count($productos) }} etiquetas)
+            <button type="button" onclick="imprimirLote()" style="padding: 10px 22px; font-weight: bold; cursor: pointer;">
+                🖨️ Imprimir Lote ({{ count($productos) }} etiquetas)
             </button>
         </div>
     </div>
-</body>
 
 <script>
     function imprimirLote() {
-        // Obtenemos el HTML de todas las etiquetas juntas
         const contenidoLote = document.getElementById('loteParaImprimir').innerHTML;
-        const ventanaImpresion = window.open('', '_blank');
+        const ventanaImpresion = window.open('', '_blank', 'width=500,height=400');
 
         ventanaImpresion.document.write(`
+            <!DOCTYPE html>
             <html>
             <head>
                 <title>Impresión en Serie</title>
                 <style>
-                    /* Configuración de la bobina de la impresora */
                     @page {
                         size: 64mm 32mm;
                         margin: 0;
                     }
                     
-                    body {
+                    html, body {
+                        width: 64mm;
                         margin: 0;
                         padding: 0;
                         background-color: #fff;
+                        -webkit-print-color-adjust: exact;
                     }
 
-                    /* Forzar el salto de página físico después de cada etiqueta */
                     .print-container {
                         width: 64mm;
                         height: 32mm;
@@ -150,12 +167,13 @@
                         flex-direction: row;
                         align-items: center;
                         justify-content: flex-start;
-                        padding: 2mm 3mm;
-                        gap: 4mm;
-                        border: none;
+                        padding: 1.5mm 2.5mm;
+                        gap: 2.5mm;
+                        border: none !important;
                         background-color: #fff;
+                        overflow: hidden;
                         
-                        /* TRUCO MAESTRO: Esto le dice a la impresora térmica dónde termina cada etiqueta */
+                        /* Fuerza el salto físico de página tras cada etiqueta en la impresora térmica */
                         page-break-after: always;
                         break-after: page;
                     }
@@ -164,12 +182,13 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        flex: 0 0 22mm;
-                        width: 22mm;
-                        height: 22mm;
+                        flex: 0 0 21mm;
+                        width: 21mm;
+                        height: 21mm;
                     }
 
-                    .print-container .qr-code svg {
+                    .print-container .qr-code svg,
+                    .print-container .qr-code img {
                         width: 100%;
                         height: 100%;
                         display: block;
@@ -182,17 +201,22 @@
                         flex-direction: column;
                         justify-content: center;
                         font-family: Arial, sans-serif;
+                        overflow: hidden;
                     }
 
                     .print-container .label-text p {
-                        margin: 0 0 2px 0;
+                        margin: 0 0 1px 0;
                         line-height: 1.1;
-                        font-size: 10px;
+                        font-size: 8.5px;
                         color: #000;
+                        word-break: break-word;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
                     }
 
                     .print-container .label-text p strong {
-                        font-size: 12px;
+                        font-size: 10px;
                     }
                 </style>
             </head>
@@ -204,12 +228,12 @@
 
         ventanaImpresion.document.close();
         
-        // Pequeño delay para asegurar que los múltiples SVG rendericen en el DOM de la nueva ventana
-        setTimeout(() => {
+        ventanaImpresion.onload = function() {
             ventanaImpresion.focus();
             ventanaImpresion.print();
             ventanaImpresion.close();
-        }, 350);
+        };
     }
 </script>
+</body>
 </html>

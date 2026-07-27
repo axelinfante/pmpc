@@ -106,7 +106,8 @@
                                             <th >Producto</th>
                                             <th>{{ _lang('nº oblea') }}</th>
                                             <th >Id_Producto</th>
-                                            <th >Vendedor</th>
+                                            <th>Vendedor</th>
+                                            <th >Deposito</th>
                                             <th >Estado</th>
                                             <th >Stock</th>
 											<th class="notexport">Accion <input type="checkbox" id="qr_master" class="ml-1"></th>
@@ -237,11 +238,12 @@ $(document).ready(function() {
         'input',
         'input',
         'input',
+        'input',
         'none'
 		],  
 		"columnDefs": [
     {
-        "targets": 7, 
+        "targets": 8, 
         "searchable": false,
         "orderable": false,
         "className": 'text-center',
@@ -267,6 +269,7 @@ $(document).ready(function() {
             { data: 'nro_oblea', name: 'nro_oblea' },
 			{ data: 'id_producto', name: 'id_producto' },
 			{ data: 'vendedor', name: 'vendedor' },
+			{ data: 'deposito', name: 'deposito' },
 			{ data: 'estado', name: 'estado' },
             { data: 'stock', name: 'stock' },
             { data: 'action', name: 'action', orderable: false, searchable: false },
@@ -444,7 +447,65 @@ $(document).ready(function() {
 				$('.chk-accion').prop('checked', $(this).prop('checked'));
 			});
 				
-			   }); 
+	$(document).on('click', '.btn-remove-product-item', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    var productId = $(this).data('id');
+    var formElement = document.getElementById('form-delete-' + productId);
+
+    if (!formElement) {
+        console.error("No se encontró el formulario: #form-delete-" + productId);
+        return false;
+    }
+
+    Swal.fire({
+        title: '¿Eliminar producto?',
+        text: "Ingrese la observación o motivo de la eliminación:",
+        input: 'textarea',
+        inputPlaceholder: 'Escriba aquí la observación...',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return '¡Debe ingresar una observación para poder eliminar!';
+            }
+        }
+    }).then((result) => {
+        const observacion = result.value ? result.value.trim() : '';
+
+        if (observacion !== '') {
+            var $form = $(formElement);
+
+            $.ajax({
+                url: $form.attr('action'),
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: $form.find('input[name="_token"]').val(),
+                    observacion: observacion
+                },
+                success: function(response) {
+                    setTimeout(function() {
+                        if (typeof _table !== 'undefined') {
+                            _table.ajax.reload(null, false);
+                        }
+                    }, 0);
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', 'No se pudo eliminar el producto.', 'error');
+                }
+            });
+        }
+    });
+
+    return false;
+});
+
+		}); 
 			   
 		async function ActualizarOblea(id) {
         inicioLoading();
@@ -463,11 +524,39 @@ $(document).ready(function() {
                 nro_oblea: nro_oblea 
             })
     })
-
-       
     const data = await response.json();
     closeLoading();
     }	   
+	
+		async function ActualizarCampo(id, campo) {
+			inicioLoading();
+			const itemId = id;
+			const valor = $("#" + campo + "_id-" + itemId).val();
+
+			try {
+				const response = await fetch('{{ route("actualizaStockitems") }}', {
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': "{{ csrf_token() }}"
+					},
+					method: 'POST',
+					body: JSON.stringify({ 
+						id: itemId, 
+						valor: valor, 
+						campo: campo 
+					})
+				});
+
+				const data = await response.json();
+				if (data.success) {
+					// Toast de éxito o confirmación
+				}
+			} catch (error) {
+				console.error("Error al actualizar:", error);
+			} finally {
+				closeLoading(); 
+			}
+		}
 	
 		function impresion_multiple(ids){
 			if (ids.length==0)
@@ -506,7 +595,12 @@ $(document).ready(function() {
 				});								
 								
 			//alert(ids)
-		}	
+		}
+
+		
+		
+		
+		
 		
 
 	</script>

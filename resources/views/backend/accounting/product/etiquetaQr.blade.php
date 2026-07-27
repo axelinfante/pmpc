@@ -20,24 +20,25 @@
         .print-container {
             width: 64mm;
             height: 32mm;
-            border: 1px solid #ccc;
+            border: 1px dashed #999;
             box-sizing: border-box;
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: flex-start;
             background-color: #fff;
-            padding: 2mm 3mm;
-            gap: 4mm;
+            padding: 1.5mm 2.5mm;
+            gap: 2.5mm;
+            overflow: hidden;
         }
 
         .print-container .qr-code {
             display: flex;
             align-items: center;
             justify-content: center;
-            flex: 0 0 20mm;
-            width: 20mm;
-            height: 20mm;
+            flex: 0 0 21mm;
+            width: 21mm;
+            height: 21mm;
         }
 
         .print-container .qr-code img,
@@ -55,17 +56,22 @@
             flex-direction: column;
             justify-content: center;
             text-align: left;
+            overflow: hidden;
         }
 
         .print-container .label-text p {
-            margin: 0 0 3px 0;
-            line-height: 1.2;
-            font-size: 11px;
+            margin: 0 0 1px 0;
+            line-height: 1.1;
+            font-size: 8.5px;
             color: #000;
             word-break: break-word;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        
         .print-container .label-text p strong {
-            font-size: 13px;
+            font-size: 10px;
         }
     </style>
 
@@ -73,56 +79,69 @@
         @php
             $company = ($producto->company_id == 1) ? 'PM-' : 'PC-';
             $interno = $company . $producto->nro_interno;
-            $macar_modelo = ($producto->marcaModelo->marca->marca ?? '') ." ".($producto->marcaModelo->modelo->modelo ?? '');
+            $marcaModelo = trim(($producto->marcaModelo->marca->marca ?? '') . " " . ($producto->marcaModelo->modelo->modelo ?? ''));
             
-            // OPTIMIZACIÓN CRUCIAL: Quitamos las cabeceras pesadas del CSV. Reducimos el string al mínimo.
-            // Si tu lector necesita procesarlo, usa separadores cortos como pipes (|) en lugar de CSV con títulos.
-            $qrDataClean = "{$producto->id}|{$producto->nro_interno}|{$macar_modelo}|{$producto->nro_oblea}";
-            
-            // Generamos en formato SVG (Vectores perfectos que no se pixelan jamás)
-            // Si tu librería da error con SVG, cambia ->format('svg') por ->format('png') y añade ->margin(0)
+            $deposito = $producto->deposito->nombre ?? 'N/A';			
+			$ultimoInvoiceItem = $producto->invoiceItems->last(); // O la primera con ->first();
+			$factura = $ultimoInvoiceItem->invoice ?? null;
+			$cotizacion = $factura->invoice_number 
+                ?? 'N/A';
+			
+			$vendedor = $factura->vendedor->name 
+              ?? 'N/A';
+		   $qrDataClean = "{$producto->id}|{$producto->nro_interno}|{$cotizacion}|{$deposito}|{$vendedor}";
             $qrCodeOutput = QrCode::size(150)->format('svg')->margin(0)->generate($qrDataClean);
         @endphp
 
         <div class="print-container" id="divParaImprimir">
             <div class="qr-code">
-                {{-- Si es SVG entra directo como HTML nativo, si cambiaste a PNG usa la etiqueta img base64 anterior --}}
                 {!! $qrCodeOutput !!}
             </div>
 
             <div class="label-text">
-                <p><strong>ID: {!! $producto->id !!}</strong></p>
-                <p>{!! $producto->item->item_name ?? 'Sin Nombre' !!}</p>
-                <p>{!! $macar_modelo !!}</p>
-                <p>Int: {!! $interno !!}</p>
+                <p><strong>ID: {{ $producto->id }}</strong> | Cot: <strong>#{{ $cotizacion }}</strong></p>
+                <p>{{ $producto->item->item_name ?? 'Sin Nombre' }}</p>
+                @if(!empty($marcaModelo))
+                    <p>{{ $marcaModelo }}</p>
+                @endif
+                <p>Int: {{ $interno }}</p>
+                <p>Dep: {{ $deposito }}</p>
+                <p>Vend: {{ $vendedor }}</p>
             </div>
         </div>
 
         <div style="margin-top: 15px;">
-            <button onclick="imprimirDiv()" style="padding: 8px 16px; cursor: pointer;">Imprimir Etiqueta</button>
+            <button type="button" onclick="imprimirDiv()" style="padding: 8px 18px; cursor: pointer; font-weight: bold;">
+                🖨️ Imprimir Etiqueta
+            </button>
         </div>
     </div>
-</body>
 
 <script>
     function imprimirDiv() {
-        const contenido = document.getElementById('divParaImprimir').outerHTML; // Usamos outerHTML para capturar la estructura limpia
-        const ventanaImpresion = window.open('', '_blank');
+        const contenido = document.getElementById('divParaImprimir').outerHTML;
+        const ventanaImpresion = window.open('', '_blank', 'width=400,height=300');
 
         ventanaImpresion.document.write(`
+            <!DOCTYPE html>
             <html>
             <head>
                 <title>Imprimir Etiqueta</title>
                 <style>
-                    /* Estilos puros para la impresora térmica / hojas de etiquetas */
                     @page {
                         size: 64mm 32mm;
                         margin: 0;
                     }
-                    body {
+                    html, body {
+                        width: 64mm;
+                        height: 32mm;
                         margin: 0;
                         padding: 0;
                         background-color: #fff;
+                        overflow: hidden;
+                        -webkit-print-color-adjust: exact;
+                    }
+                    body {
                         display: flex;
                         justify-content: center;
                         align-items: center;
@@ -135,17 +154,18 @@
                         flex-direction: row;
                         align-items: center;
                         justify-content: flex-start;
-                        padding: 2mm 3mm;
-                        gap: 4mm;
-                        border: none; /* Quitamos el borde para que no se imprima una línea negra en el contorno */
+                        padding: 1.5mm 2.5mm;
+                        gap: 2.5mm;
+                        border: none !important;
+                        overflow: hidden;
                     }
                     .print-container .qr-code {
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        flex: 0 0 22mm; /* Le damos un poco más de tamaño real al QR en la impresión */
-                        width: 22mm;
-                        height: 22mm;
+                        flex: 0 0 21mm;
+                        width: 21mm;
+                        height: 21mm;
                     }
                     .print-container .qr-code svg,
                     .print-container .qr-code img {
@@ -160,15 +180,20 @@
                         flex-direction: column;
                         justify-content: center;
                         font-family: Arial, sans-serif;
+                        overflow: hidden;
                     }
                     .print-container .label-text p {
-                        margin: 0 0 2px 0;
+                        margin: 0 0 1px 0;
                         line-height: 1.1;
-                        font-size: 10px;
+                        font-size: 8.5px;
                         color: #000;
+                        word-break: break-word;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
                     }
                     .print-container .label-text p strong {
-                        font-size: 12px;
+                        font-size: 10px;
                     }
                 </style>
             </head>
@@ -179,13 +204,13 @@
         `);
 
         ventanaImpresion.document.close();
-        
-        // Esperar un momento a que el SVG/Contenido renderice antes de lanzar el diálogo
-        setTimeout(() => {
+
+        ventanaImpresion.onload = function() {
             ventanaImpresion.focus();
             ventanaImpresion.print();
             ventanaImpresion.close();
-        }, 250);
+        };
     }
 </script>
+</body>
 </html>

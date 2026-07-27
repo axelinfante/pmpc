@@ -1458,7 +1458,50 @@ $validator = Validator::make($request->all(), [
 ]);
 	*/	
 	
-	
+		$pendientePorCobrar = (float) $request->input('pending_amount', 0);
+		$saldoCliente       = (float) $request->input('paid_dev', 0);
+		$paymentMethodId    = (int) $request->input('payment_method_id');
+
+		$cheques = [];
+		$amountToValidate = (float) $request->input('amount', 0);
+
+		if ($paymentMethodId === 3 && $request->filled('cheques_data')) {
+			$decodedCheques = json_decode($request->input('cheques_data'), true);
+
+			if (json_last_error() === JSON_ERROR_NONE && is_array($decodedCheques) && !empty($decodedCheques)) {
+				$cheques = $decodedCheques;
+				$amountToValidate = (float) array_reduce($cheques, function ($carry, $item) {
+					return $carry + (float) ($item['importe'] ?? 0);
+				}, 0.0);
+			}
+		}
+
+		$esReimputacion  = ($paymentMethodId === 11);
+		$limiteAplicable = round(min($pendientePorCobrar, $saldoCliente), 2);
+
+		$request->merge(['amount' => round($amountToValidate, 2)]);
+		$amountRules = ['required', 'numeric', 'gt:0'];
+		if ($esReimputacion) {
+			$amountRules[] = 'lte:' . $limiteAplicable;
+		}
+
+		$validator = Validator::make($request->all(), [
+			'invoice_id'        => 'required',
+			'account_id'        => 'required',
+			'chart_id'          => 'required',
+			'payment_method_id' => 'required',
+			'reference'         => 'nullable|max:50',
+			'attachment'        => 'nullable|mimes:jpeg,png,jpg,doc,pdf,docx,zip',
+			'cheques_data'      => Rule::requiredIf($paymentMethodId === 3),
+			'amount'            => $amountRules,
+		], [
+			'amount.gt'             => 'El monto a abonar debe ser mayor a 0.',
+			'amount.lte'            => 'El monto a aplicar ($' . number_format($amountToValidate, 2) . ') no puede ser mayor al saldo disponible del cliente ($' . number_format($saldoCliente, 2) . ') ni al total de la deuda ($' . number_format($pendientePorCobrar, 2) . ').',
+			'cheques_data.required' => 'Debe adjuntar al menos un cheque cuando el método de pago es Cheque.',
+		]);
+
+
+/*	
 				$pendientePorCobrar = (float) $request->input('pending_amount', 0);
 				$saldoCliente       = (float) $request->input('paid_dev', 0);
 				$paymentMethodId    = (int) $request->input('payment_method_id');
@@ -1507,7 +1550,7 @@ $validator = Validator::make($request->all(), [
 						: 'El monto a abonar ($' . number_format($amountToValidate, 2) . ') no puede ser mayor al saldo pendiente ($' . number_format($pendientePorCobrar, 2) . ').',
 					'cheques_data.required' => 'Debe adjuntar al menos un cheque cuando el método de pago es Cheque.',
 				]);
-		
+		*/
         if ($validator->fails()) {
             if ($request->ajax()) {
                 return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
