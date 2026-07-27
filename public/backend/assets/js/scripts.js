@@ -351,13 +351,13 @@
 		  confirmButtonText: $lang_confirm_button_text,
 		  cancelButtonText: $lang_cancel_button_text
 		}).then((result) => {
-			console.log(result);
+			//console.log(result);
 			let html = '<input name="informe" value="'+result.value+'">'
-			console.log(html);
+			//console.log(html);
 			
 // debugger
 
-			console.log($(this).closest('form').append(html));
+		//	console.log($(this).closest('form').append(html));
 			
 		  if (result.value) {
 			$(this).closest('form').submit();

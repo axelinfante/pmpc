@@ -1596,7 +1596,7 @@ public function store(Request $request)
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id, Request $request)
+    /* public function destroy($id, Request $request)
     {
         DB::beginTransaction();
         $product = Product::where("id", $id)->first();
@@ -1617,7 +1617,43 @@ public function store(Request $request)
         DB::commit();
 
         return redirect('products')->with('success', _lang('Deleted sucessfully'));
+    } */
+	
+	public function destroy($id, Request $request)
+{
+     $request->validate([
+        'observacion' => 'required|string|max:255',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        $product = Product::where("id", $id)->firstOrFail();
+        $this->grabarHistorial($request, $product);
+        $product->estado = "Anulado";
+        $product->stock = 0;
+        $product->save();
+        DB::commit();
+        if ($request->ajax()) {
+            return response()->json([
+                'status'  => 'success',
+                'message' => _lang('Deleted sucessfully')
+            ]);
+        }
+
+        return redirect('products')->with('success', _lang('Deleted sucessfully'));
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        if ($request->ajax()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+        return redirect()->back()->with('error', $e->getMessage());
     }
+}
 
     public function destroy_comunes($id)
     {
@@ -2057,7 +2093,7 @@ public function store(Request $request)
 
     public function printQR($id)
     {
-        //return view('backend.accounting.product.list', compact('products'));
+        
         $producto = Product::where('id', $id)->first();
         return view('backend.accounting.product.etiquetaQr', compact('producto'))->render();
     }
@@ -2160,7 +2196,8 @@ public function store(Request $request)
 					'items.activo',
 					'products.estado',
 					'invoices.invoice_number',
-					'users.name as vendedor'
+					'users.name as vendedor',
+					'lugar_entregas.nombre as deposito'
 				)
 				->leftJoin('products', function($join) use ($request) {
 					$join->on('products.item_id', '=', 'items.id')
@@ -2174,6 +2211,9 @@ public function store(Request $request)
 				})
 				->leftJoin('users', function($join) {
 					$join->on('invoices.user_id', '=', 'users.id');
+				})
+				->leftJoin('lugar_entregas', function($join) {
+					$join->on('products.idDeposito', '=', 'lugar_entregas.id');
 				})
 				->where(function($query) {
 					$query->where('items.item_type', 'product')
@@ -2192,11 +2232,11 @@ public function store(Request $request)
 				->orderBy('item_name', 'asc')
 				->get();
 	
-
-return DataTables::of($products)
-    ->addIndexColumn()
-    ->addColumn('selection', function ($row) {
-        $resultado = "";
+				$lugar_entregas = Lugar_entregas::all();
+		return DataTables::of($products)
+		->addIndexColumn()
+		->addColumn('selection', function ($row) {
+		$resultado = "";
 					if (!$row->product_id){
 						$resultado= '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="'.$row->item_id.'">';
 					}
@@ -2229,12 +2269,64 @@ return DataTables::of($products)
 					}
                     return ($row->product_id ?? '') . $texto;
                 })
-				->addColumn('estado', function ($row)  {
+				->editColumn('estado', function ($row) use ($request) {
+					if (!$row->product_id) {
+						return "";
+					}   
+
+					if (!isset($request->exportar)) {
+						
+						if (strtoupper($row->estado)!="ANULADO") {
+						
+						return '<div class="input-group d-flex justify-content-center">
+							<input id="estado_id-' . $row->product_id . '" style="min-width: 10px; max-width: 200px;" type="text" class="form-control" value="' . e($row->estado) . '">
+							<div class="input-group-append">
+								<button type="button" onClick="ActualizarCampo(' . $row->product_id . ', \'estado\')" class="btn btn-warning">
+									<i class="ti-check"></i>
+								</button>
+							</div>
+						</div>';
+						}
+					}
+
+					return $row->estado ?? '';
+				})
+				->editColumn('deposito', function ($row) use ($request, $lugar_entregas) {
+					if (!$row->product_id) {
+						return "";
+					}   
+
+					if (!isset($request->exportar)) {
+						$options = '<option value="">Seleccione...</option>';
+						//$options ='';
+					    foreach ($lugar_entregas as $lugar) {
+							$selected = ($row->deposito == $lugar->id || $row->deposito == $lugar->nombre) ? 'selected' : '';
+							$options .= '<option value="' . e($lugar->id) . '" ' . $selected . '>' . e($lugar->nombre) . '</option>';
+						}
+						return '<div class="input-group d-flex justify-content-center">
+							<select id="idDeposito_id-' . $row->product_id . '" style="min-width: 120px; max-width: 200px;" class="form-control">
+								' . $options . '
+							</select>
+							<div class="input-group-append">
+								<button type="button" onClick="ActualizarCampo(' . $row->product_id . ', \'idDeposito\')" class="btn btn-warning">
+									<i class="ti-check"></i>
+								</button>
+							</div>
+						</div>';
+					}
+
+					return $row->deposito ?? '';
+				})
+				
+				/*->addColumn('estado', function ($row)  {
                     return $row->estado ?? '';
-                })
+                })*/
 				->addColumn('stock', function ($row)  {
                     return $row->stock ?? '';
                 })
+				/*->editColumn('deposito', function ($row) {
+					return $row->nombre ?? '';
+					})*/
 				/* ->editColumn('vendedor', function ($row) {
 					return $row->invoice->vendedor->name ?? '' ;
 				})*/
@@ -2242,14 +2334,28 @@ return DataTables::of($products)
 					if (!$row->product_id){
 						return "";
 					}
-                     $resultado="";
-						$resultado .= "<a href='" . action('ProductController@printQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+                     //$resultado="";
+						$resultado = "<form id='form-delete-" . $row->product_id . "' action='" . action('ProductController@destroy', $row->product_id) . "' method='post' class='form-delete-inline'>";
+						$resultado .= csrf_field();
+						$resultado .= "<input name='_method' type='hidden' value='DELETE'>";
+						$resultado .= "<input type='hidden' name='observacion' class='input-observacion'>";
 
+						$resultado .= "<a href='" . action('ProductController@printQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
 						$resultado .= "<a href='" . action('ProductController@printsinQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+
+						if ((!$row->invoice_number) && (strtoupper($row->estado)!="ANULADO")) {
+							$resultado .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $row->product_id . "'><i class='ti-eraser'></i></button>";
+						}
+						
+						
+						//$result = "<button class='btn btn-success' data-id='$data->id' onClick='toggleStock(this)' >Habilitar</button> ";
+						
+					$resultado .= "</form>";
+
                     return $resultado;
                 })
 				
-    ->rawColumns(['selection','action','nro_oblea']) // Obligatorio para que DataTables dibuje el HTML del input
+    ->rawColumns(['selection','action','nro_oblea','estado','deposito']) // Obligatorio para que DataTables dibuje el HTML del input
     ->make(true);
 
 		}		

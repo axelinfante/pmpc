@@ -36,5 +36,12 @@ class InvoiceItem extends Model implements AuditableInvoiceItem
     {
         return $this->hasMany('App\InvoiceItemTax',"invoice_item_id");
     }
+	
+		
+	public function invoice()
+	{
+		return $this->belongsTo('App\Invoice', 'invoice_id')->withDefault();
+	}
+
 
 }
