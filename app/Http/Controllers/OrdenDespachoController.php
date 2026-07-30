@@ -185,8 +185,9 @@ public function show()
 				//return "({($orden->itemInvoice->product->id ?? '')}) ". ($orden->itemInvoice->item->item_name ?? '');
 				
 				$producto_completo=$orden->itemInvoice->item->item_name ?? '';
-				$producto_id=$orden->itemInvoice->product->id ?? ''; ($orden->itemInvoice->item->item_name ?? '');
-				return ($producto_completo) ? "($producto_id) $producto_completo":"";
+				$producto_id=$orden->itemInvoice->product->id ?? ''; //($orden->itemInvoice->item->item_name ?? '');
+				$nro_oblea= ($orden->itemInvoice->product->nro_oblea ?? '') ? " / nro_oblea = " . ($orden->itemInvoice->product->nro_oblea ?? '') : "";
+				return ($producto_completo) ? "($producto_id) $producto_completo $nro_oblea":"";
             })
             ->addColumn('cliente', function ($orden) {
                 $nombre = $orden->cotizacion->client->contact_name ?? '';
