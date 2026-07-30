@@ -205,30 +205,9 @@ Venta menos a 30000'  ? 'selected' : '' }}
 							</div>
 						</div>
 
-						@if(!$idCar || !$idProduct || true)
 
-							<div class="col-md-6 {{$class}}">
-								<div class="form-group select-product-container">
-
-									<label class="control-label">{{ _lang('Productos en stock') }}</label>
-									<select class="form-control select2-ajax" data-value="products.id"
-											data-display="items.item_name"
-											{{-- data-display2="marcas.marca"
-											data-display3="modelos.modelo" --}}
-											data-display2="IF(products.marca_modelo > 0, marcas.marca , 'Sin marca')" 
-											data-display3="IF(products.marca_modelo > 0,modelos.modelo, 'Sin modelo')"
-											data-table="products" data-where="9"  name="service" id="service">
-										<option value="">{{ _lang('Select Product') }}</option>
-										{{--<option value="{{$item->product->id}}">{{ $item->item_name}}</option>--}}
-
-									</select>
-								</div>
-							</div>
-
-
-						@endif
-
-						<div class="col-md-6 py-4 {{$class}}">
+					<input type="hidden" name="desamar_item" id="desamar_item" value="">
+						<!--<div class="col-md-6 py-4 {{$class}}">
 							<div class="form-group">
 								{{-- <label class="control-label">{{ _lang('¿Desarmar?') }}</label> --}}
 								{{-- <select class="form-control "  name="desarmar" id="desarmar">
@@ -248,18 +227,14 @@ Venta menos a 30000'  ? 'selected' : '' }}
 									</label>
 								  </div>
 							</div>
-						</div>
+						</div>-->
 						
-						<div class="col-12 " style="background-color: #f1f5fa">
+						<div class="col-12 " style="background-color: #ffa5a5;">
 							<div class="row">
 						{{-- @if($idCar || !$idProduct) --}}
 							<div class="col-md-6 {{$class}}">
 								<div class="form-group">
-									{{--<a href="{{ route('vehiculo.create') }}" data-reload="false" data-title="{{ _lang('Add Supplier') --}}
-									{{--}}" --}}
-									{{--class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>--}}
-
-									<label class="control-label">{{ _lang('Vehiculo') }}(Estados: BD / APTO / No Apto Autorizado)</label>
+								<!--<label class="control-label">{{ _lang('Vehiculo') }}(Estados: BD / APTO / No Apto Autorizado)</label>
 									<select class="form-control select2-ajax" data-value="cars.id" data-display="IF(cars.company_id = 1, CONCAT('PM-',cars.id), CONCAT('PC-',cars.id))"
 											{{-- data-display2="marcas.marca" data-display3="modelos.modelo" --}}
 											data-display2="IF(cars.idMarca_modelo > 0, marcas.marca , 'Sin marca')" data-display3="IF(cars.idMarca_modelo > 0,modelos.modelo, 'Sin modelo')"
@@ -274,7 +249,26 @@ Venta menos a 30000'  ? 'selected' : '' }}
 										($v->marca_modelo->modelo->modelo ?? '') .' '. $v->siniestro}}</option>
 										@empty
 										@endforelse
-									</select>
+									</select>-->
+								<label class="control-label">{{ _lang('Vehiculo') }}(Estados: BD / APTO / No Apto Autorizado / Compactado -> Debe colocar observacion)</label>
+						<select class="form-control select2-ajax" data-value="cars.id" data-display="IF(cars.company_id = 1, CONCAT('PM',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 10, '0')), CONCAT('PC',COALESCE(tipo_vehiculo,''),'-',LPAD(cars.id, 10, '0') ))"
+								data-display2="IF(cars.idMarca_modelo > 0, marcas.marca , 'Sin marca')" data-display3="IF(cars.idMarca_modelo > 0,modelos.modelo, 'Sin modelo')"
+								data-table="cars"
+								data-where="11" name="car_id" id="car_id">
+							<option value="">{{ _lang('- Select Car -') }}</option>
+							{{-- @forelse($vehiculos as $v)
+							@if($v->idEstado !=1)
+								<option {{old('car_id',$idCar ?? '') == $v->id? 'selected' :''}} value="{{
+										$v->id}}">{{ $v->id.' '.
+										($v->marca_modelo->marca->marca ??
+										 '').' '.
+										($v->marca_modelo->modelo->modelo ?? '') .' '. $v->siniestro}}</option>
+							
+							
+							@endif
+							@empty
+							@endforelse --}}
+						</select>
 								</div>
 							</div>
 						{{-- @endif --}}
@@ -282,40 +276,51 @@ Venta menos a 30000'  ? 'selected' : '' }}
 						{{-- @if($idCar || !$idProduct) --}}
 							<div class="col-md-6 {{$class}}">
 								<div class="form-group select-product-container">
+								<a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" disabled style="pointer-events: none;" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
+								}}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+								<!--</a
 									<a id="productLink" href="{{ route('products.create') }}?idCar={{$idCar}}"
 									   data-reload="false"
 									   data-title="{{
 								_lang
-								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+								('Add Product') }}" class="ajax-modal select2-add" disabled style="pointer-events: none;"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
 									<label class="control-label">{{ _lang('Producto en vehiculo') }}</label>
-
-									<select class="form-control" data-value="products.id" data-display="items.item_name"
+									<!--<select class="form-control" data-value="products.id" data-display="items.item_name"
 											data-table="products" data-where="9" data-option = "{{isset($idCar) ? "products.nro_interno = $idCar": ''}}" name="product" id="product">
 										<option value="">{{ _lang('Producto') }}</option>
-
-									</select>
+									</select>-->
+									<select class="form-control" data-value="id" data-display="item_name" 
+								data-table="items" data-where="100" data-option = '' name="product" id="product">
+							<option value="">{{ _lang('Select Product') }}</option>
+						</select>
+									
 								</div>
 							</div>
-						{{-- @else
-							<div class="col-md-6 {{$class}}">
-								<div class="form-group select-product-container">
-
-									<label class="control-label">{{ _lang('Select Product/Service') }}</label>
-									<select class="form-control" data-value="products.id" data-display="item_name"
-											data-table="items" data-where="2"  name="product" id="product">
-										<option value="">{{ _lang('Select Product') }}</option>
-										<option value="{{$item->product->id}}">{{ $item->item_name}}</option>
-
-									</select>
-								</div>
-							</div> --}}
-						{{-- @endif --}}
-
 							</div>
 						</div>
-
 						
+						<div style="height: 10px; clear: both; display: block; width: 100%;"></div>	
 
+						@if(!$idCar || !$idProduct || true)
+							<div class="col-md-12 {{$class}}" style="background-color: #faff7e;">
+								<div class="form-group select-product-container" >
+									<label class="control-label">{{ _lang('Productos en stock') }}</label>
+									<select class="form-control select2-ajax" data-value="products.id"
+											data-display="items.item_name"
+											{{-- data-display2="marcas.marca"
+											data-display3="modelos.modelo" --}}
+											data-display2="IF(products.marca_modelo > 0, marcas.marca , 'Sin marca')" 
+											data-display3="IF(products.marca_modelo > 0,modelos.modelo, 'Sin modelo')"
+											data-table="products" data-where="9"  name="service" id="service">
+										<option value="">{{ _lang('Select Product') }}</option>
+										{{--<option value="{{$item->product->id}}">{{ $item->item_name}}</option>--}}
+
+									</select>
+								</div>
+							</div>
+
+
+						@endif
 						
 
 						<div class="col-md-6 {{$class}}">
@@ -616,6 +621,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 	  </div>
 	</div>
   </div>
+  
 @endsection
 			
 @section('js-script')
@@ -660,8 +666,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 	}
 
     if(car.val()){
-
-        $('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
+        //$('#productLink_').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
 
 
@@ -693,7 +698,8 @@ Venta menos a 30000'  ? 'selected' : '' }}
         });
     }
     car.change(function() {
-
+		//$('#productLink').css('pointer-events', 'none').attr('disabled', true);
+		$('.select-product-container').find('#productLink').css('pointer-events', 'auto').removeClass('disabled');
         product.prop('data-option','products.nro_interno = ' + $(this).val());
        // console.log(product.prop('data-option'));
         //product.select2({});
@@ -708,23 +714,43 @@ Venta menos a 30000'  ? 'selected' : '' }}
             display3 = "&display3=" +  product.data('display3');
         }
 
-        $('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
+        //$('#productLink_').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
 
 
-        product.select2({
+        /*product.select2({
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
                 '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
                 '&option= products.nro_interno = ' + $(this).val(),
                 processResults: function (data) {
-
+					$('.select-product-container').find('#productLink').css('pointer-events', 'auto').removeClass('disabled');
                     return {
                         results: data
                     };
                 }
             }
-        });
+        });*/
+		
+		product.select2({
+				placeholder: 'Buscar ...',
+				allowClear: true,
+			ajax: {
+				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+					  '&value=' + product.data('value') +
+					  '&display=' + product.data('display') + display2 + display3 + 
+					  '&where=' + product.data('where') +
+					  '&car_id=' + $(this).val() +
+					  '&option= products.car_id = ' + $(this).val(),
+        delay: 250,
+        dataType: 'json',
+        processResults: function (data) {
+			    return {
+                    results: data
+                };
+        }
+    }
+});
 
 
 
@@ -806,6 +832,31 @@ Venta menos a 30000'  ? 'selected' : '' }}
 		row.remove();
 	    update_summary();
 	});
+	
+	/*$("#productLink_").click(function(e){
+  e.preventDefault();
+	$('#itemCreateModal').modal({show:true});
+	return false;
+  });
+  
+  $('#miFormulario').submit(function(e) {
+        e.preventDefault();
+        //var url = $(this).attr("action");
+        //let formData = new FormData(this);
+		let select_display = $('#item_name_m').val();
+		
+		var newOption = new Option(select_display, select_value, true, true);
+		$('#item_id').append(newOption).trigger('change');
+		$('#itemCreateModal').modal('hide');
+    });
+
+  $('#itemCreateModal').on('hidden.bs.modal', function () {
+    // Limpiar la validación al cerrar el modal
+    $('#miFormulario').parsley().reset();
+    // Limpiar los campos del formulario
+    $('#item_name_m').val('');
+  });*/
+
 
 </script>
 @endsection

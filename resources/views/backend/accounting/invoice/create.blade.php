@@ -258,7 +258,7 @@
 								_lang
 								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
 			<a id="productLink_" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>								
-								<input type="hidden" name="desamar_item" id="desamar_item" value"">
+								<input type="hidden" name="desamar_item" id="desamar_item" value="">
 						<label class="control-label">{{ _lang('Producto en vehiculo (Listado Predefinido)') }}</label>
 
 						<select class="form-control" data-value="items.id" data-display="items.item_name" 
@@ -622,20 +622,6 @@
 			    return {
                     results: data
                 };
-            /*var selectedRaw = $('#nro_interno_tmp').val();
-            var selected = [];
-            
-            if (selectedRaw) {
-                selected = selectedRaw.toString().split(",").map(function(t) { 
-                    return parseInt(t.trim(), 10); 
-                });
-            }
-            var data_modified = $.map(data, function (obj) {
-                obj.disabled = ($.inArray(parseInt(obj.id, 10), selected) !== -1); 
-                return obj;
-            });
-
-            return { results: data_modified };  */
         }
     }
 });
@@ -871,7 +857,7 @@ $(document).on('change', '#product', function () {
 					}
 			 },
 			 error: function (request, status, error) {
-				console.log(request.responseText);
+				//console.log(request.responseText);
 			 }
 		 });
 
