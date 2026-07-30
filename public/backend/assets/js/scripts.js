@@ -935,9 +935,9 @@
 						$(current_modal).find(".alert-danger").addClass('d-none');
 						
 						if (typeof data_select !== 'undefined') {
+							target_select = $("#"+data_select); // Ajusta según el ID de tu select principal				
 							var select_value = json['data'][target_select.data('value')];
 							var select_display = json['data'][target_select.data('display')];
-
 							var newOption = new Option(select_display, select_value, true, true);
 							target_select.append(newOption).trigger('change');
 						}

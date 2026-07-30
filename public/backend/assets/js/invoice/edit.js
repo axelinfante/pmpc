@@ -42,12 +42,12 @@ var current_row;
 		});
 	});
 
-	$(document).on('change', '#product,#service', function() {
+	/*$(document).on('change', '#product,#service', function() {
 	    var product_id = $(this).val();
-		
 		if( product_id == '' ){
 			return;
 		}
+		
 
 		//console.log(product_id);
 		
@@ -140,6 +140,7 @@ var current_row;
 				//${ showCar ?  $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}
 	            var product_row = `<tr id="product-${product['id']}">
 											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
+											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
 											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
 											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
 											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
@@ -156,6 +157,7 @@ var current_row;
 											<input type="hidden" name="invoiceitem_id[]" value="0">
 											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
 									</tr>`;
+									
 	            $("#order-table > tbody").append(product_row);
 	            update_summary();
 
@@ -165,6 +167,339 @@ var current_row;
 
 	        }
 	    });
+
+	});*/
+
+
+	$(document).on('change','#service', function() {
+	    var product_id = $(this).val();
+		if( product_id == '' ){
+			return;
+		}
+		
+
+		//console.log(product_id);
+		
+	    //if product has already in order table
+	    if ($("#order-table > tbody > #product-" + product_id).length > 0) {
+			var line = $("#order-table > tbody > #product-" + product_id);
+			var quantity = parseFloat($(line).find(".input-quantity").val());
+
+			//validacion de producto solamente se acepta 1
+			if (quantity==1) return "";
+			
+			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
+			$("#product").val("").trigger('change');;
+			
+			return;		
+	    }
+
+        let showCar = true;
+        // service es productos en stock
+        if ($(this).prop('id') == 'service'){
+            showCar = false
+        }
+        //productos en stock
+        let service = $(this);
+
+	    //Ajax request for getting product details
+	    $.ajax({
+	        method: "GET",
+	        url: _url + '/products/get_product/' + product_id,
+	        beforeSend: function() {
+	            $("#preloader").fadeIn(100);
+	        },
+	        success: function(data) {
+	            $("#preloader").fadeOut(100);
+	            var json = JSON.parse(data);
+	            var item = json['item'];
+	            var product = json['product'];
+	            //var tax = json['tax'];
+
+				//console.log(product);
+                if (service.prop('id') == 'service'){
+                    $('#service').data('company', product['company_id']);
+                }
+	            if (item['item_type'] == 'product') {
+	                var product_price = parseFloat(product['product_price']);
+
+	                // If Stock not available
+	                var available_quantity = json['available_quantity'];
+	                if( available_quantity < 1 ){
+	                		alert("Sorry, Out of Stock !");
+	                		$("#product").val("");
+	                		return;
+	                }
+
+	            } else if (item['item_type'] == 'service') {
+	                var product_price = parseFloat(product['cost']);
+	            }
+	            
+
+				let company = ''
+                if(product['company_id'] == 1) {
+                    company = 'PM-'
+                }
+
+                if(product['company_id'] == 2) {
+                    company = 'PC-'
+                }
+
+	            //Tax Value calculation
+	            var unit_cost = product_price;
+	            var sub_total = product_price;
+
+				
+				var tax_selector = $("#tax-selector").html();
+
+				let interno = product['nro_interno'];
+
+				let marca = 'Sin marca';
+                let modelo = 'Sin marca';
+                if(product.marca_modelo) {
+                    marca = product.marca_modelo.marca.marca;
+                    product.marca_modelo.modelo.modelo;
+                }
+
+
+				// <td class="text-right discount"><input type="text" name="discount[]" class="form-control input-discount text-right" value="0.00"></td>
+				// 							<td class="text-right tax"><select class="form-control selectpicker input-tax" name="tax[${product['id']}][]" title="${$lang_select_tax}" multiple="true">${tax_selector}</select></td>
+
+				
+				//${ showCar ?  $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}
+	            var product_row = `<tr id="product-${product['id']}">
+											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
+											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
+											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
+											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
+											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
+											<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="${product['id']}" onChange="monto_en_usd(this,${product['id']})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}"></td>
+											
+											<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly></td>
+											<td class="text-right usd"><input disabled id="usd_monto-${product['id']}" type="text" class="form-control input-usd text-right" ></td>
+											<td>
+											${company} ${interno}
+											<input type="hidden" name="autos[]" value="${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}">
+</td>
+											<input type="hidden" name="product_id[]" value="${product['id']}">
+											<input type="hidden" name="product_items_id[]" value="${product['item_id']}">											
+											<input type="hidden" name="invoiceitem_id[]" value="0">
+											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
+									</tr>`;
+									
+	            $("#order-table > tbody").append(product_row);
+	            update_summary();
+
+	            $("#product").val("").trigger('change');
+	            $("#service").val("").trigger('change');
+				$('.selectpicker').selectpicker('render');
+
+	        }
+	    });
+
+	});
+	
+	$(document).on('change', '#product', function() {
+	    var product_id = $(this).val();
+		if( product_id == '' ){
+			return;
+		}
+
+	    //if product has already in order table
+	    if ($("#order-table > tbody > #product-" + product_id).length > 0) {
+			var line = $("#order-table > tbody > #product-" + product_id);
+			var quantity = parseFloat($(line).find(".input-quantity").val());
+			if (quantity==1) return "";
+			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
+			$("#product").val("").trigger('change');;
+			return;		
+	    }
+
+					let textoVehiculo = $('#car_id option:selected').text();
+					let textoPieza    = $(this).find('option:selected').text();
+
+					let partes = textoVehiculo.split('-').map(p => p.trim());
+
+					let prefijo        = partes[0] || '';
+					let numeroSinCeros = parseInt(partes[1], 10) || 0; 
+					let internos_new   = `${prefijo}-${numeroSinCeros}`; 
+
+					let vehiculo = partes.slice(2).join(' - '); 
+
+					let product = {
+						id: product_id,
+						item_name: textoPieza,
+						marca_modelo: vehiculo,
+						item_id: product_id
+					};
+					
+					   var unit_cost = 1;
+					   var sub_total = 1;
+
+					let product_row = `
+						<tr id="product-${product.id}">
+							<td>
+								<button type="button" class="btn btn-danger btn-xs remove-product-directo">
+									<i class="fa fa-trash"></i>
+								</button>
+							</td>
+							<td></td>
+							<td><b>${product.item_name} ${product.marca_modelo}</b></td>
+							<td class="description">
+								<input type="text" name="product_new_description[]" class="form-control input-description" value="">
+							</td>
+							<td class="text-center quantity">
+								1 
+								<input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
+							</td>
+							<td class="text-right unit-cost">
+								<input type="text" name="unit_new_cost[]" data-id="${product.id}" onChange="monto_en_usd(this, ${product.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
+							</td>
+							<td class="text-right sub-total">
+								<input type="text" name="sub_new_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly>
+							</td>
+							<td class="text-right usd">
+								<input disabled id="usd_monto-${product.id}" type="text" class="form-control input-usd text-right">
+							</td>
+							<td>${internos_new}</td>
+							<input type="hidden" name="product_new_id[]" value="-1">
+							<input type="hidden" name="product_new_interno[]" value="${numeroSinCeros}">
+							<input type="hidden" name="product_new_items_id[]" value="${product.item_id}">
+							<input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
+						</tr>`;
+
+
+					$("#order-table > tbody").append(product_row);
+					update_summary();
+										
+										
+		/*								    if (item['item_type'] == 'product') {
+	                var product_price = parseFloat(product['product_price']);
+
+	                // If Stock not available
+	                var available_quantity = json['available_quantity'];
+	                if( available_quantity < 1 ){
+	                		alert("Sorry, Out of Stock !");
+	                		$("#product").val("");
+	                		return;
+	                }
+
+	            } else if (item['item_type'] == 'service') {*/
+			
+			/*
+			   var product_row = `<tr id="product-${product['id']}">
+											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
+											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
+											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
+											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
+											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
+											<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="${product['id']}" onChange="monto_en_usd(this,${product['id']})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}"></td>
+											
+											<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly></td>
+											<td class="text-right usd"><input disabled id="usd_monto-${product['id']}" type="text" class="form-control input-usd text-right" ></td>
+											<td>
+											${company} ${interno}
+											<input type="hidden" name="autos[]" value="${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}">
+</td>
+											<input type="hidden" name="product_id[]" value="${product['id']}">
+											<input type="hidden" name="product_items_id[]" value="${product['item_id']}">											
+											<input type="hidden" name="invoiceitem_id[]" value="0">
+											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
+									</tr>`;
+									
+	            $("#order-table > tbody").append(product_row);
+	            update_summary();
+				*/
+			
+      	    //Ajax request for getting product details
+	   /* $.ajax({
+	        method: "GET",
+	        url: _url + '/products/get_product/' + product_id,
+	        beforeSend: function() {
+	            $("#preloader").fadeIn(100);
+	        },
+	        success: function(data) {
+	            $("#preloader").fadeOut(100);
+	            var json = JSON.parse(data);
+	            var item = json['item'];
+	            var product = json['product'];
+	            //var tax = json['tax'];
+
+				//console.log(product);
+                if (service.prop('id') == 'service'){
+                    $('#service').data('company', product['company_id']);
+                }
+	            if (item['item_type'] == 'product') {
+	                var product_price = parseFloat(product['product_price']);
+
+	                // If Stock not available
+	                var available_quantity = json['available_quantity'];
+	                if( available_quantity < 1 ){
+	                		alert("Sorry, Out of Stock !");
+	                		$("#product").val("");
+	                		return;
+	                }
+
+	            } else if (item['item_type'] == 'service') {
+	                var product_price = parseFloat(product['cost']);
+	            }
+	            
+
+				let company = ''
+                if(product['company_id'] == 1) {
+                    company = 'PM-'
+                }
+
+                if(product['company_id'] == 2) {
+                    company = 'PC-'
+                }
+
+	            //Tax Value calculation
+	            var unit_cost = product_price;
+	            var sub_total = product_price;
+
+				
+				var tax_selector = $("#tax-selector").html();
+
+				let interno = product['nro_interno'];
+
+				let marca = 'Sin marca';
+                let modelo = 'Sin marca';
+                if(product.marca_modelo) {
+                    marca = product.marca_modelo.marca.marca;
+                    product.marca_modelo.modelo.modelo;
+                }
+
+
+	            var product_row = `<tr id="product-${product['id']}">
+											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
+											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
+											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
+											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
+											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
+											<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="${product['id']}" onChange="monto_en_usd(this,${product['id']})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}"></td>
+											
+											<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly></td>
+											<td class="text-right usd"><input disabled id="usd_monto-${product['id']}" type="text" class="form-control input-usd text-right" ></td>
+											<td>
+											${company} ${interno}
+											<input type="hidden" name="autos[]" value="${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}">
+</td>
+											<input type="hidden" name="product_id[]" value="${product['id']}">
+											<input type="hidden" name="product_items_id[]" value="${product['item_id']}">											
+											<input type="hidden" name="invoiceitem_id[]" value="0">
+											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
+									</tr>`;
+									
+	            $("#order-table > tbody").append(product_row);
+	            update_summary();
+
+	            $("#product").val("").trigger('change');
+	            $("#service").val("").trigger('change');
+				$('.selectpicker').selectpicker('render');
+
+	        }*/
+	    //});
 
 	});
 
@@ -361,7 +696,7 @@ var current_row;
 })(jQuery);
 
 
-function update_summary(){
+/*function update_summary(){
     total_quantity = 0;
     total_discount = 0;
     total_tax = 0;
@@ -381,7 +716,7 @@ function update_summary(){
     $("#product_total").val(product_total.toFixed(2));
     $("#tax_total").val(total_tax.toFixed(2));
     
-	/** Convert Currency **/
+	
 	grand_total = product_total + total_tax;
 	if(client_currency != ''){
 		 convert_currency(grand_total);
@@ -389,7 +724,7 @@ function update_summary(){
 		$("#converted_amount").html(_currency + ' ' + grand_total.toFixed(2));
 	}
 		
-} 
+} */
 
 function convert_currency(amount){
 	$.ajax({
@@ -418,4 +753,53 @@ function monto_en_usd (input, idProd ) {
     $('#usd_monto-'+idProd).val(usdConvertidos);
 
     // console.log(usdConvertidos);
+}
+
+// Función auxiliar para dar formato de moneda/número
+function formatearNumero(monto, locale = 'es-AR') {
+    let valor = parseFloat(monto) || 0;
+    return valor.toLocaleString(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function update_summary() {
+    // Declaración correcta de variables locales con 'let'
+    let total_quantity = 0;
+    let total_discount = 0;
+    let total_tax = 0;
+    let product_total = 0;
+
+    $("#order-table > tbody > tr").each(function () {
+        // '|| 0' evita que parseFloat devuelva NaN si el input está vacío
+        let qty = parseFloat($(this).find(".input-quantity").val()) || 0;
+        let discount = parseFloat($(this).find(".input-discount").val()) || 0;
+        let tax = parseFloat($(this).find(".input-product-tax").val()) || 0;
+        let subtotal = parseFloat($(this).find(".input-sub-total").val()) || 0;
+
+        total_quantity += qty;
+        total_discount += discount;
+        total_tax += tax;
+        product_total += subtotal;
+    });
+
+    // 1. Mostrar en HTML con formato visual limpio ($ 1.000.000,00)
+    $("#total-qty").html(total_quantity);
+    $("#total-discount").html(_currency + ' ' + formatearNumero(total_discount));
+    $("#total-tax").html(_currency + ' ' + formatearNumero(total_tax));
+    $("#total").html(_currency + ' ' + formatearNumero(product_total));
+
+    // 2. Asignar a inputs oculta/enviables manteniendo formato numérico limpio (1000000.00)
+    $("#product_total").val(product_total.toFixed(2));
+    $("#tax_total").val(total_tax.toFixed(2));
+
+    /** Conversión de Moneda **/
+    let grand_total = product_total + total_tax;
+
+    if (typeof client_currency !== 'undefined' && client_currency !== '') {
+        convert_currency(grand_total);
+    } else {
+        $("#converted_amount").html(_currency + ' ' + formatearNumero(grand_total));
+    }
 }

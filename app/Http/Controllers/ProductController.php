@@ -50,8 +50,9 @@ class ProductController extends Controller
     public function index(Request $request)
     {
 		$lugar_entregas = Lugar_entregas::all();
-        if (request()->ajax()) {
-            $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+         if (request()->ajax()) {
+           
+		   $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
             // Iniciamos la consulta base
             $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio','cars.motor_nro')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
@@ -72,16 +73,14 @@ class ProductController extends Controller
 					}
 				]);
 				
-              /*  ->with('category')
-                ->whereHas('item', function ($query) {
-                    $query->where("item_type", "product");
-                });*/
+             
             //$products->orderBy('products.nro_interno', 'asc');
             if ($request->columns['3']['search']['value'] != "") {
                 $products->orderBy('products.nro_interno', 'asc');
             } else {
                 $products->orderBy('products.id', 'desc');
             }
+			
 
             return DataTables::eloquent($products)
                 ->filterColumn('id', function ($query, $keyword) {
@@ -172,12 +171,7 @@ class ProductController extends Controller
                         $query->where('cars.motor_nro', 'like', "%{$keyword}%");
                     }
 
-                    /*if ($keyword=="todos") {
-                                          $query->where('cars.motor_nro','=', "")
-                                            ->orWhereNull('cars.motor_nro');
-                                }elseif($keyword!=""){
-                                           $query->where('cars.motor_nro', 'like', "%{$keyword}%");
-                                 }*/
+            
                 })
                 ->filterColumn('mercado_libre', function ($query, $keyword) {
                     if ($keyword == "Si") {
@@ -186,9 +180,6 @@ class ProductController extends Controller
                         $query->where('mercado_libre', 0)->orwherenull('mercado_libre');
                     }
                 })
-                /*   ->filterColumn('motor', function ($query, $keyword) {
-                $query->where('products.motor', 'like', "%{$keyword}");
-            })*/
                 ->filterColumn('deposito', function ($query, $keyword) {
                     $query->orWhereHas('deposito', function ($str) use ($keyword) {
 
@@ -204,12 +195,7 @@ class ProductController extends Controller
                             }
                         }
 
-                        /*if ($keyword=="todos") {
-                                                $str->where('nombre','=', "")
-                                                ->orWhereNull('nombre');
-                                            }elseif($keyword!=""){
-                                                $str->where('nombre', 'like', "%{$keyword}%");
-                                            }*/
+   
                     });
                 })
 
@@ -244,30 +230,26 @@ class ProductController extends Controller
                 })
 				->addColumn('reparaciones', function ($data) {
 					
-					// 1. Validamos que el producto realmente tenga devoluciones registradas
     if ($data->devoluciones->isEmpty()) {
         return '';
     }
 
     $htmlResult = '<div class="d-flex flex-column" style="gap: 12px; font-size: 0.85rem; max-width: 350px; text-align: left; color: #2c3e50;">';
 
-    // 2. Iteramos cada una de las devoluciones de este producto
     foreach ($data->devoluciones as $devolucion) {
         $notaLimpia = str_replace('undefined', '', $devolucion->note);
         $notaLimpia = trim($notaLimpia);
 
         if (empty($notaLimpia)) {
-            continue; // Si esta devolución en particular no tiene nota, saltamos a la siguiente
+            continue; 
         }
 
-        // 3. Separamos el texto por saltos de línea por si una sola nota tiene historial interno
         $lineas = preg_split('/\R+/', $notaLimpia);
 
         foreach ($lineas as $linea) {
             $linea = trim($linea);
             if (empty($linea)) continue;
 
-            // 4. Si la línea incluye el formato de fecha [11/06/2026 ...]
             if (preg_match('/^(\[.*?\]):(.*)$/', $linea, $matches)) {
                 $cabecera = htmlentities(trim($matches[1]), ENT_QUOTES, 'UTF-8');
                 $cuerpo = htmlentities(trim($matches[2]), ENT_QUOTES, 'UTF-8');
@@ -331,15 +313,8 @@ class ProductController extends Controller
                     $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
                     class='ti-eraser'></i></button>";
 
-                    /*$hist = Historial_product::where('product_id', $data->id)->first();
-                    if (!empty($hist)) {
-                        $result .= "<a href='" . route('historialProducto', $data->id) . "' class='btn btn-warning btn-xs '><i class='ti-list'></i></a>";
-                    }*/
 					$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
 					data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
-					
-                    /*$result .= "<button class='btn btn-warning' type='button' data-id='$data->id' onClick='toggleStock(this)' ><i class='fa fa-ban'></i></button> ";
-                    $result .= "</form>";*/
                     return $result;
                 })
 				->editColumn('nro_oblea', function ($data) use ($request) {
@@ -353,9 +328,8 @@ class ProductController extends Controller
 				})
 				->rawColumns(['mercado_libre','action','deposito','reparaciones'])
 				->tojson();
-        }
+        } 
 
-        
         $estados = Estado::select('*')->where('Activo', "Si")->orderBy('estado', 'asc')->get();
 
         return view('backend.accounting.product.list', compact(['lugar_entregas', 'estados']));

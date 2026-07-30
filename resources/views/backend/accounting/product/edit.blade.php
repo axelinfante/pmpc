@@ -26,7 +26,7 @@
                              <div class="col-md-12">
                                 <div class="form-group">
                                     <label class="control-label">{{ _lang('Nº interno') }}</label>
-                                    <select id="nro_interno" name="nro_interno" required class="form-control select2">
+                                    <select id="nro_interno" name="nro_interno" required class="form-control" readonly>
                                         <option value="0"  {{$product->nro_interno == 0 ? 'selected' : '' }}>Sin Interno</option>
                                         @foreach ($nro_interno_datos as $interno_row)
                                                         <option value="{{ $interno_row->id }}" {{$product->nro_interno == $interno_row->id ? 'selected' : '' }}>{{ nroInternoAlias($interno_row->company_id,$interno_row->tipo_vehiculo,$interno_row->id) }}</option>
@@ -38,13 +38,6 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label class="control-label">Productos</label>
-                                    <!--<select id="item_id" name="item_id" required class="form-control">
-                                        <option value="">Seleccionar</option>
-                                          @forelse ($items as $item)
-                                            <option value="{{ $item->id }}" {{$product->item_id == $item->id ? 'selected' : '' }}>{{ $item->item_name }}</option>
-                                            @empty
-                                        @endforelse
-                                    </select>-->
 								<select id="item_id" name="item_id" style="width: 100%;">
 										@if(isset($product->item_id))
 											<option value="{{ $product->item_id }}" selected>
@@ -323,37 +316,15 @@
             let result;
             let item_id = $('#item_id');
 			let item_seleccionado=item_id.val();
+			let nro_interno = $('#nro_interno');
 
-            /*if (item_id.val() != '') {
-                $.ajax({
-                    url: "{{ url('products/item/') }}/" + item_id.val(),
-                    dataType: 'json',
-                    success: function(res) {
-                        console.log(res);
-                        let contNroMotor = $('#contNroMotor');
-                        if (res && (res.item.item_name == 'Motor Semiarmado Con Accesorios' || res.item
-                                .item_name == 'Motor Semiarmado Sin Acesorios')) {
-                            contNroMotor.removeClass('d-none')
-                        } else {
-                            contNroMotor.addClass('d-none')
-                            $('#nro_motor').val('');
-                        }
-                        //result = res;
-
-
-
-                    }
-
-                })
-            }*/
-
-			if (item_id.val() != '') {
+/*			if (item_id.val() != '') {
 				item_id.change();
 			}
-	
+*/	
 	
          
-            item_id.change(function(e) {
+           /* item_id.change(function(e) {
 			//	console.log(item_seleccionado);
                 $.ajax({
                     url: "{{ url('products/item/') }}/" + item_id.val(),
@@ -375,7 +346,7 @@
                     }
 
                 })
-            })
+            })*/
      
 				marca.change(function() {
                 let modelo_id= modelo.val();
@@ -430,8 +401,30 @@
 
             marca.change();
 			
+			$('#item_id').select2({
+				placeholder: 'Buscar ...',
+				allowClear: true,
+				width: '100%',
+  			    ajax: {
+				url: "{{ route('products.buscar') }}",
+				 data: function (params) {
+					return {
+						q: params.term,          
+						nro_interno:  nro_interno.val()
+					};
+				},
+				delay: 250,
+				dataType: 'json',
+				processResults: function (data) {
+			    return {
+                    results: data
+                };
+			}
+		},
+});
 			
 			
+	/*		
 	  $('#item_id').select2({
         placeholder: 'Escribe el modelo o producto...',
         minimumInputLength: 2,
@@ -472,7 +465,7 @@
         let datosProducto = e.params.data; 
         if (!datosProducto.id) return; 
     });
-			
+			*/
 			
  $('#myForm').on('submit', function(e) {			  
     e.preventDefault();

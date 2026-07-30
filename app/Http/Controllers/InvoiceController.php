@@ -894,10 +894,99 @@ class InvoiceController extends Controller
 				 }
 		
 		}
-		
+		/*
+			$nro_interno= $request->input('nro_interno',null);
+           
+			
+			//$car = Cars::find($nro_interno);
+
+
+           
+		*/
+		//$car_id = $request->input('product_new_interno', $nro_interno);
+		//$car = Cars::find($nro_interno);
+		$car_id ="";
+		$car = null;
+		foreach ($request->product_new_id ?? [] as $key => $id_producto_new) {
+				$car_id_actual=$request->product_new_interno[$key] ?? null;
+				$item_id = $request->product_new_items_id[$key] ?? null;
+				$description = $request->product_new_description[$key];
+				$unit_cost = $request->unit_new_cost[$key];
+				$tax_amount = $request->product_new_tax[$key];
+				$sub_total = $request->sub_new_total[$key];
+				$marca_modelo = null;
+				
+				if ($car_id != $car_id_actual){
+					$car_id = $car_id_actual;
+					$car = Cars::find($car_id);
+				}
+				
+				if (isset($car)) {
+					$marca_modelo = $car->idMarca_modelo ?? null;
+				} else {
+						dd("No existe vehiculo");
+				}
+				
+				$product = new Product();
+				$product->item_id = $item_id;
+				$product->car_id =  null;
+				$product->marca_modelo = $marca_modelo;
+				$product->product_price = $unit_cost;
+				$product->nro_motor = null;
+				$product->nro_interno = $car->id;
+				$product->nro_oblea = null;
+				$product->tax_method = 'exclusive';
+				$product->description = $description;
+				$product->stock = 0;
+				//$product->anio = $request->input('anio');
+				$product->estado = "desarme";
+				$product->idDeposito = null;
+				$product->ubicacion = null;
+				$product->mercado_libre = 0;
+				$product->carga_rapida = 0;
+				$product->user_id = auth()->user()->id;
+			
+			if ($item_id  == "1612"  || strtoupper($product->item->item_name)=="MOTOR SEMIARMADO") {
+                $product->nro_motor = $car->motor_nro ?? '';
+            };
+				$product->save();
+				
+
+				$invoiceItem = new invoiceItem();
+				$invoiceItem->invoice_id = $invoice->id;
+				$invoiceItem->item_id = $item_id; //$product->item->id;
+				$invoiceItem->description = $description;
+				$invoiceItem->quantity = 1;
+				$invoiceItem->unit_cost = $unit_cost;
+				$invoiceItem->tax_amount = $tax_amount;
+				$invoiceItem->sub_total = $sub_total;
+				$invoiceItem->company_id = $company_id;
+				$invoiceItem->idCar = null;
+				$invoiceItem->product_id = $product->id;
+				$invoiceItem->save();
+				//$this->update_stock($invoiceItem,"sub");
+				
+				$orden_desarme = new Orden_desarme();
+                $orden_desarme->id_venta = $invoice->id;
+                $orden_desarme->fecha_venta = $invoice->invoice_date;
+                $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+                $orden_desarme->prioridad = "normal";
+                $orden_desarme->interno = $product->company_id . ($product->idCar ?? $product->nro_interno);
+                $orden_desarme->marca_modelo = $product->marca_modelo;
+                $orden_desarme->pieza = $product->item->id; 
+                $orden_desarme->product_id = $product->id ?? 0;
+                $orden_desarme->procesar = 1;
+                $operario = Puesto::where('predeterminada', '1')->where('company_id', $product->company_id)->first();
+                $orden_desarme->idCadete_operario =  $operario->user_id ?? 0;
+                $orden_desarme->save();
+			
+			// orden de despacho
+				$orden_despacho = OrdenDespacho::updateOrCreate(
+							['invoice_id' => $invoiceItem->invoice_id,'invoiceitem_id' => $invoiceItem->id],  
+							['description' => $invoiceItem->description, 'quantity' => $invoiceItem->quantity,'company_id' => $invoiceItem->company_id,'estatus' => 'pendiente'] 
+			);
+		}
 		//Invoiceitem_id
-
-
         //crear comision
         $montoAgregadoComision = 0;
         $percent = $this->comisiones[$request->comision];

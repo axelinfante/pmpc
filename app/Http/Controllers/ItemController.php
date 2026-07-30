@@ -73,7 +73,7 @@ class ItemController extends Controller
         if(! $request->ajax()){
             return redirect()->route('item.create')->with('success', _lang('Saved Successfully'));
         }else{
-            return response()->json(['result'=>'success','action'=>'store','message'=>_lang('Saved Successfully'),'data'=>$item->id]);
+            return response()->json(['result'=>'success','action'=>'store','message'=>_lang('Saved Successfully'),'data'=>$item]);
         }
 
     }
