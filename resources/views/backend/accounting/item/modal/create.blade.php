@@ -14,8 +14,8 @@
 						<div class="form-group">
 									<label for="allcar">Predefinido <span class="text-danger"></span></label>
 									<select class="form-control" name="allcar" id="allcar" required>
-										<option value="1" {{ old('allcar' ?? '') == '1' ? 'selected' : '' }} >Si</option>
 										<option value="0" {{ old('allcar' ?? '0') == '0' ? 'selected' : '' }} >No</option>
+										<option value="1" {{ old('allcar' ?? '') == '1' ? 'selected' : '' }} >Si</option>
 									</select>
 						</div>
 					</div>

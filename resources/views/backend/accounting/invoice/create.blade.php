@@ -257,11 +257,14 @@
 						   data-title="{{
 								_lang
 								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
-			<a id="productLink_" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>								
+			<!--<a id="productLink_" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
+				<a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
+								}}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+								
 								<input type="hidden" name="desamar_item" id="desamar_item" value="">
 						<label class="control-label">{{ _lang('Producto en vehiculo (Listado Predefinido)') }}</label>
 
-						<select class="form-control" data-value="items.id" data-display="items.item_name" 
+						<select class="form-control" data-value="id" data-display="item_name" 
 								data-table="items" data-where="100" data-option = '' name="product" id="product">
 							<option value="">{{ _lang('Select Product') }}</option>
 						</select>
@@ -575,7 +578,7 @@
 	}
     if(car.val() != '' ){
 
-        $('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
+        //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
 
 
@@ -650,7 +653,7 @@
             display3 = "&display3=" +  product.data('display3');
         }
 
-        $('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
+        //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
 
 		limpiarItems($(this).val());
@@ -819,7 +822,7 @@ function validar_summary() {
 
 
 
-$(document).on('change', '#product', function () {
+/*$(document).on('change', '#product', function () {
         var product_id = $(this).val();
         if (product_id == '') {
             return;
@@ -865,9 +868,82 @@ $(document).on('change', '#product', function () {
 		
     });
 	
+	*/
+	
+$(document).on('change', '#product', function() {
+	    var product_id = $(this).val();
+		if( product_id == '' ){
+			return;
+		}
+
+	    //if product has already in order table
+	    if ($("#order-table > tbody > #product-" + product_id).length > 0) {
+			var line = $("#order-table > tbody > #product-" + product_id);
+			var quantity = parseFloat($(line).find(".input-quantity").val());
+			if (quantity==1) return "";
+			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
+			$("#product").val("").trigger('change');;
+			return;		
+	    }
+
+					let textoVehiculo = $('#car_id option:selected').text();
+					let textoPieza    = $(this).find('option:selected').text();
+
+					let partes = textoVehiculo.split('-').map(p => p.trim());
+
+					let prefijo        = partes[0] || '';
+					let numeroSinCeros = parseInt(partes[1], 10) || 0; 
+					let internos_new   = `${prefijo}-${numeroSinCeros}`; 
+
+					let vehiculo = partes.slice(2).join(' - '); 
+
+					let product = {
+						id: product_id,
+						item_name: textoPieza,
+						marca_modelo: vehiculo,
+						item_id: product_id
+					};
+					
+					   var unit_cost = 1;
+					   var sub_total = 1;
+
+					let product_row = `
+						<tr id="product-${product.id}">
+							<td></td>
+							<td><b>${product.item_name} ${product.marca_modelo}</b></td>
+							<td class="description">
+								<input type="text" name="product_new_description[]" class="form-control input-description" value="">
+							</td>
+							<td class="text-center quantity">
+								1 
+								<input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
+							</td>
+							<td class="text-right unit-cost">
+								<input type="text" name="unit_new_cost[]" data-id="${product.id}" onChange="monto_en_usd(this, ${product.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
+							</td>
+							<td class="text-right sub-total">
+								<input type="text" name="sub_new_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly>
+							</td>
+							<td class="text-right usd">
+								<input disabled id="usd_monto-${product.id}" type="text" class="form-control input-usd text-right">
+							</td>
+							<td>${internos_new}</td>
+							<td class="text-center">
+												<button type="button" class="btn btn-danger btn-xs remove-product"><i class='fa fa-trash'></i></button>
+							</td>
+							<input type="hidden" name="product_new_id[]" value="-1">
+							<input type="hidden" name="product_new_interno[]" value="${numeroSinCeros}">
+							<input type="hidden" name="product_new_items_id[]" value="${product.item_id}">
+							<input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
+						</tr>`;
+
+
+					$("#order-table > tbody").append(product_row);
+					update_summary();
+	});	
 	
 	
-$("#productLink_").click(function(e){
+/*$("#productLink_").click(function(e){
   e.preventDefault();
 	$('#itemCreateModal').modal({show:true});
 	return false;
@@ -920,7 +996,7 @@ $('#miFormulario').submit(function(e) {
     $('#item_name_m').val('');
   });
 
-
+*/
 
 
 </script>
