@@ -203,7 +203,10 @@
             parallelUploads: {{ $maxFiles }},
             autoProcessQueue: false,
             previewTemplate: previewTemplate,
-			transformImages: true,
+			transformImages: false,
+            /* resizeWidth: null,
+            resizeHeight: null,
+            transformFile: null */
             headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
             init: function() {
                 const self = this;
