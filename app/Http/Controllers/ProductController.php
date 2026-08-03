@@ -201,12 +201,13 @@ class ProductController extends Controller
 
                 ->addColumn('id', function ($data) {
 
-                    if ($data->company_id == 1) {
+                   /*if ($data->company_id == 1) {
                         $in = 'PM-';
                     } else if ($data->company_id == 2) {
                         $in = 'PC-';
                     }
-                    return $in . $data->id;
+                    return $in . $data->id;*/
+					return $data->id;
                 })
 
 
@@ -299,19 +300,25 @@ class ProductController extends Controller
                     return ($data->mercado_libre==1) ? 'Si' : 'No';
                 })->addColumn('action', function ($data) {
 
-                    $result =  "<form action='" . action('ProductController@destroy', $data->id) . "' method='post'>";
-                    $result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
+                    //$result =  "<form id='form-delete-" . $data->id . "' action='" . action('ProductController@destroy', $data->id) . "' method='post'>";
+					$result = "<form id='form-delete-" . $data->id . "' action='" . action('ProductController@destroy', $data->id) . "' method='post' class='form-delete-inline'>";
+					$result .= csrf_field();
+					$result .= "<input name='_method' type='hidden' value='DELETE'>";
+					$result .= "<input type='hidden' name='observacion' class='input-observacion'>";
+                    
+					$result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
 
                     $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
 
                     $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
 
                     $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+					
+					$result .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $data->id . "'><i class='ti-eraser'></i></button>";
+						
 
-                    $result .= csrf_field();
-
-                    $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
-                    class='ti-eraser'></i></button>";
+/*                    $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
+                    class='ti-eraser'></i></button>";*/
 
 					$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
 					data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
@@ -1596,7 +1603,7 @@ public function store(Request $request)
 	public function destroy($id, Request $request)
 {
      $request->validate([
-        'observacion' => 'required|string|max:255',
+        'informe' => 'required|string|max:255',
     ]);
 
     DB::beginTransaction();

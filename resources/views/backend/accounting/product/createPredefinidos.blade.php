@@ -486,7 +486,7 @@ $(document).ready(function() {
                 data: {
                     _method: 'DELETE',
                     _token: $form.find('input[name="_token"]').val(),
-                    observacion: observacion
+                    informe: observacion
                 },
                 success: function(response) {
                     setTimeout(function() {
