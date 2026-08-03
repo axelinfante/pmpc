@@ -1041,7 +1041,7 @@
         
     }
 
-    $(document).on('click', '.save-ubicacion', function(e) {
+    /*$(document).on('click', '.save-ubicacion', function(e) {
     e.preventDefault();
     let id = $(this).data('id');
     let nuevaUbicacion = $('#input-ubicacion-' + id).val();
@@ -1077,7 +1077,40 @@
                     }
                 });
 			});
+	*/
 	
+	$(document).on('click', '.save-ubicacion', function() {
+		var itemId = $(this).data('id');
+		var valor = $('#input-ubicacion-' + itemId).val();
+		var campo = "ubicacion";
+		var btn = $(this);
+		event.preventDefault(); 
+		btn.disabled=true;
+			$.ajax({
+                url: "{{ route('actualizaStockitems') }}",
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    id: itemId,
+					campo : campo,
+					valor : valor
+                },
+                beforeSend: function() {
+                   inicioLoading();
+                },
+                success: function(res) {
+                    table.ajax.reload(null, false);
+					btn.disabled=false;
+					closeLoading();
+					if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: res.updated + ' productos actualizados.', icon: 'success' });
+                },
+                error: function(request, status, error) {
+					closeLoading();
+                    table.ajax.reload(null, false);
+					 if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: res.message || 'No se pudo actualizar.', icon: 'error' });
+                }
+            });
+	});
 	
 	$(document).on('click', '.btn-estado', function() {
 		var itemId = $(this).data('id');
@@ -1102,13 +1135,74 @@
                     table.ajax.reload(null, false);
 					btn.disabled=false;
 					closeLoading();
+					if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: res.updated + ' productos actualizados.', icon: 'success' });
                 },
                 error: function(request, status, error) {
 					closeLoading();
                     table.ajax.reload(null, false);
+					 if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: res.message || 'No se pudo actualizar.', icon: 'error' });
                 }
             });
 	});
+	
+	
+	$(document).on('click', '.btn-remove-product-item', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    var productId = $(this).data('id');
+    var formElement = document.getElementById('form-delete-' + productId);
+
+    if (!formElement) {
+        console.error("No se encontró el formulario: #form-delete-" + productId);
+        return false;
+    }
+
+    Swal.fire({
+        title: '¿Eliminar producto?',
+        text: "Ingrese la observación o motivo de la eliminación:",
+        input: 'textarea',
+        inputPlaceholder: 'Escriba aquí la observación...',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return '¡Debe ingresar una observación para poder eliminar!';
+            }
+        }
+    }).then((result) => {
+        const observacion = result.value ? result.value.trim() : '';
+
+        if (observacion !== '') {
+            var $form = $(formElement);
+
+            $.ajax({
+                url: $form.attr('action'),
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: $form.find('input[name="_token"]').val(),
+                    informe: observacion
+                },
+                success: function(response) {
+                    setTimeout(function() {
+                        if (typeof table !== 'undefined') {
+                            table.ajax.reload(null, false);
+                        }
+                    }, 0);
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', 'No se pudo eliminar el producto.', 'error');
+                }
+            });
+        }
+    });
+
+    return false;
+});
 	
 
 const observer = lozad('.lozad', {

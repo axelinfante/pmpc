@@ -886,9 +886,10 @@ $(document).on('change', '#product', function() {
 			return;		
 	    }
 
+					let InternoVehiculo = $('#car_id option:selected').val();
 					let textoVehiculo = $('#car_id option:selected').text();
 					let textoPieza    = $(this).find('option:selected').text();
-
+/*
 					let partes = textoVehiculo.split('-').map(p => p.trim());
 
 					let prefijo        = partes[0] || '';
@@ -896,11 +897,11 @@ $(document).on('change', '#product', function() {
 					let internos_new   = `${prefijo}-${numeroSinCeros}`; 
 
 					let vehiculo = partes.slice(2).join(' - '); 
-
+*/
 					let product = {
 						id: product_id,
 						item_name: textoPieza,
-						marca_modelo: vehiculo,
+						marca_modelo: textoVehiculo,
 						item_id: product_id
 					};
 					
@@ -927,12 +928,12 @@ $(document).on('change', '#product', function() {
 							<td class="text-right usd">
 								<input disabled id="usd_monto-${product.id}" type="text" class="form-control input-usd text-right">
 							</td>
-							<td>${internos_new}</td>
+							<td>${InternoVehiculo}</td>
 							<td class="text-center">
 												<button type="button" class="btn btn-danger btn-xs remove-product"><i class='fa fa-trash'></i></button>
 							</td>
 							<input type="hidden" name="product_new_id[]" value="-1">
-							<input type="hidden" name="product_new_interno[]" value="${numeroSinCeros}">
+							<input type="hidden" name="product_new_interno[]" value="${InternoVehiculo}">
 							<input type="hidden" name="product_new_items_id[]" value="${product.item_id}">
 							<input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
 						</tr>`;

@@ -314,11 +314,19 @@ var current_row;
 			$("#product").val("").trigger('change');;
 			return;		
 	    }
-
+		
+					let InternoVehiculo = $('#car_id option:selected').val();
 					let textoVehiculo = $('#car_id option:selected').text();
 					let textoPieza    = $(this).find('option:selected').text();
+					
+					let product = {
+						id: product_id,
+						item_name: textoPieza,
+						marca_modelo: textoVehiculo,
+						item_id: product_id
+					};
 
-					let partes = textoVehiculo.split('-').map(p => p.trim());
+				/*	let partes = textoVehiculo.split('-').map(p => p.trim());
 
 					let prefijo        = partes[0] || '';
 					let numeroSinCeros = parseInt(partes[1], 10) || 0; 
@@ -331,7 +339,7 @@ var current_row;
 						item_name: textoPieza,
 						marca_modelo: vehiculo,
 						item_id: product_id
-					};
+					};*/
 					
 					   var unit_cost = 1;
 					   var sub_total = 1;
@@ -361,9 +369,9 @@ var current_row;
 							<td class="text-right usd">
 								<input disabled id="usd_monto-${product.id}" type="text" class="form-control input-usd text-right">
 							</td>
-							<td>${internos_new}</td>
+							<td>${InternoVehiculo}</td>
 							<input type="hidden" name="product_new_id[]" value="-1">
-							<input type="hidden" name="product_new_interno[]" value="${numeroSinCeros}">
+							<input type="hidden" name="product_new_interno[]" value="${InternoVehiculo}">
 							<input type="hidden" name="product_new_items_id[]" value="${product.item_id}">
 							<input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
 						</tr>`;

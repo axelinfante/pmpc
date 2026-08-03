@@ -172,7 +172,7 @@ class InvoiceController extends Controller
         'client_id' => 'required',
         'invoice_date' => 'required',
         'due_date' => 'required',
-        'product_id' => 'required|array',       
+        'product_id' => 'nullable|array',       
         /*'product_id' => ['required','array', function ($attribute, $value, $fail) use ($request): void {
             $item = Product::selectRaw('GROUP_CONCAT(products.id) AS productos_observacion')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
@@ -304,6 +304,7 @@ class InvoiceController extends Controller
     $taxes = Tax::where('company_id', $company_id)->get();
 
     //Save Invoice Items
+	if (!empty($request->product_id) && is_array($request->product_id)) {
     for ($i = 0; $i < count($request->product_id); $i++) {
         //dd($request->product_id);
         $product = Product::where('id', $request->product_id[$i])->first();
@@ -481,7 +482,7 @@ class InvoiceController extends Controller
             
         
         }
-		
+	}
 		$car_id ="";
 		$car = null;
 		foreach ($request->product_new_id ?? [] as $key => $id_producto_new) {
