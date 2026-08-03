@@ -306,16 +306,32 @@
                     },
 				{   text: 'Cotizar por lote',
                     action: function(e, dt, node, config) {
-							const ids = Object.keys(selectedRows).map(key => key.split('-')[1])
-							let valorIdProd = ids.join(',');
-							
+							const ids = $('.row-checkbox:checked').map(function() {
+									return $(this).data('id');
+								}).get();
 
-							if (valorIdProd.length === 0) {
+							if (ids.length === 0) {
+								if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Seleccione al menos un producto.', icon: 'error' });}
+								return;
+							}
+							
+							let valorIdProd = ids.join(',');
+/*							const ids = Object.keys(selectedRows).map(key => key.split('-')[1])
+									if (ids.length === 0) {
+											if (typeof $.toast !== 'undefined') {
+												$.toast({ position: 'top-right', text: 'Por favor seleccione un valor.', icon: 'error' });
+											}
+									return;
+							}*/
+							
+							//console.log(valorIdProd);
+							//return;
+							/*if (valorIdProd.length === 0) {
 								if (typeof $.toast !== 'undefined') {
 									$.toast({ position: 'top-right', text: 'Por favor seleccione un valor.', icon: 'error' });
 								}
 								return
-							}
+							}*/
 					target_select = $(this).parent().find(".select2-ajax");
 		 
 		 
