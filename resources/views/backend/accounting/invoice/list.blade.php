@@ -173,7 +173,7 @@
             $('#invoice-table thead tr').clone(true).appendTo('#invoice-table thead');
             $('#invoice-table thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 13) {
+                if (i != 0 && i != 13 && i != 3 && i != 4 && i != 5) {
                     $(this).html(
                         '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' +
                         title + '" />');
@@ -188,10 +188,72 @@
                         }
 
                     });
-                } else {
+                } else if(i == 3) {
+					
+					$(this).html( '<input style="width:100%;" type="date" id="fecha_invoice_date" name="fecha_invoice_date" value="" class="form-control select-filter" />' );
+						$('#fecha_invoice_date').on('change', function () {
+							let val = $(this).val();
+							invoice_table.column(i).search(val ? val : '', true, false).draw();
+						});
+				}else if(i == 4) {
+					
+					$(this).html( '<input style="width:100%;" type="date" id="fecha_entrega_date" name="fecha_entrega_date" value="" class="form-control select-filter" />' );
+						$('#fecha_entrega_date').on('change', function () {
+							let val = $(this).val();
+							invoice_table.column(i).search(val ? val : '', true, false).draw();
+						});
+						/*let name_ingreso = "fechaentrega_vacio";
+							$(this).html( '<input type="checkbox" id="mostrar-todos-'+name_ingreso+'">vacios <input type="date" style="width:100%;" id="fecha_entrega_stock" name="fecha_entrega_stock" value="" class="form-control select-filter" />' );
+								let campoInput = $('#fecha_entrega_stock');
+								$('#mostrar-todos-'+name_ingreso).change(function () {
+								  let buscar= ($(this).is(':checked')) ? "todos":"";
+									if ($(this).is(':checked')) {
+										campoInput.hide();
+									} else {
+									   campoInput.val(''); 
+									   campoInput.show();
+									}
+
+									invoice_table
+									.column(i)
+									.search(buscar)
+									.draw();
+								});
+								campoInput.on('change', function () {
+									let val = $(this).val();
+									invoice_table.column(i).search(val ? val : '', true, false).draw();
+								});*/
+				}else if(i == 5) {
+					$(this).html( '<input style="width:100%;" type="date" id="fecha_pago_date" name="fecha_pago_date" value="" class="form-control select-filter" />' );
+						$('#fecha_pago_date').on('change', function () {
+							let val = $(this).val();
+							invoice_table.column(i).search(val ? val : '', true, false).draw();
+						});
+						/* let name_ingreso = "fechapago_vacio";
+							$(this).html( '<input type="checkbox" id="mostrar-todos-'+name_ingreso+'">vacios <input type="date" style="width:100%;" id="fecha_pago_stock" name="fecha_pago_stock" value="" class="form-control select-filter" />' );
+								let campoInput = $('#fecha_pago_stock');
+								$('#mostrar-todos-'+name_ingreso).change(function () {
+								  let buscar= ($(this).is(':checked')) ? "todos":"";
+									if ($(this).is(':checked')) {
+										campoInput.hide();
+									} else {
+									   campoInput.val(''); 
+									   campoInput.show();
+									}
+
+									invoice_table
+									.column(i)
+									.search(buscar)
+									.draw();
+								});
+								campoInput.on('change', function () {
+									let val = $(this).val();
+									invoice_table.column(i).search(val ? val : '', true, false).draw();
+								});*/
+				}else {
                     $(this).html('');
                 }
-
+			
             });
 
             var invoice_table = $('#invoice-table').DataTable({
@@ -319,8 +381,8 @@
                     text: 'Reset Filter',
                     action: function(e, dt, node, config) {
                         $('.filtros').val('');
-						$('.select-filter').val(null).trigger('change');
-							invoice_table.search('').columns().search('').draw();
+						//$('.select-filter').val(null).trigger('change');
+						invoice_table.search('').columns().search('').draw();
                       }
                     },
 				{

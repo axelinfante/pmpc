@@ -5650,24 +5650,34 @@ return $tabla_html;
                 }
             })
 			->editColumn('invoice_date', function ($invoice) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return date($date_format, strtotime($invoice->invoice_date));
+				return formatDate($invoice->invoice_date);
+                /*$date_format = get_company_option('date_format', 'Y-m-d');
+                return date($date_format, strtotime($invoice->invoice_date));*/
             })
             ->editColumn('fecha_entrega', function ($invoice) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
+               /* $date_format = get_company_option('date_format', 'Y-m-d');
                 if ($invoice->fecha_entrega)
                     return date($date_format, strtotime($invoice->fecha_entrega));
                 else
-                    return '';
+                    return '';*/
+				return formatDate($invoice->fecha_entrega);
+            })->editColumn('fecha_entrega', function ($invoice) {
+               /* $date_format = get_company_option('date_format', 'Y-m-d');
+                if ($invoice->fecha_entrega)
+                    return date($date_format, strtotime($invoice->fecha_entrega));
+                else
+                    return '';*/
+				return formatDate($invoice->fecha_entrega);
             })
 
 
             //ultima fecha de pago
             ->editColumn('fecha_pago', function ($invoice) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
+                //$date_format = get_company_option('date_format', 'Y-m-d');
                 $transactions = Transaction::where("invoice_id", $invoice->id)->orderBy('id', 'desc')->first();
                 if (isset($transactions)) {
-                    return date($date_format, strtotime($transactions->trans_date));
+					return formatDate($transactions->trans_date);
+                    //return date($date_format, strtotime($transactions->trans_date));
                 }
                 return '';
             })
@@ -5738,11 +5748,11 @@ return $tabla_html;
                 });
             })
 
-            ->filterColumn('fecha_pago', function ($query, $keyword) {
+           /*->filterColumn('fecha_pago', function ($query, $keyword) {
                 $query->orwhereHas('transaction', function ($str) use ($keyword) {
                     $str->where('trans_date', 'like', "%{$keyword}%");
                 });
-            })
+            })*/
             ->filterColumn('invoice_number', function ($query, $keyword) {
 
 
@@ -5782,7 +5792,50 @@ return $tabla_html;
                     $acc_currency = 'USD';
                 }
                 return "<span class='float-right'>" . decimalPlace(($invoice->grand_total-$salesReturnstotal), $acc_currency) . "</span>";
-            })
+            })->filterColumn('invoice_date', function ($query, $keyword) {
+                    if ($keyword != '') {
+                        $date_range = explode(' - ', $keyword);
+                        if (count($date_range) == 2) {
+                            $query->whereDate('invoices.invoice_date', '>=', $date_range[0])
+                                ->whereDate('invoices.invoice_date', '<=', $date_range[1]);
+                        } else {
+                            $query->whereDate('invoices.invoice_date', '=', $keyword);
+                        }
+                    }
+                })
+                ->filterColumn('fecha_entrega', function ($query, $keyword) {
+					if ($keyword == "todos") {
+                        $query->where('invoices.fecha_entrega', '=', "")
+                            ->orWhereNull('invoices.fecha_entrega');
+                    } elseif ($keyword != "") {
+						 $date_range = explode(' - ', $keyword);
+                    if (count($date_range) == 2) {
+                        $query->whereDate('invoices.fecha_entrega', '>=', $date_range[0])
+                            ->whereDate('invoices.fecha_entrega', '<=', $date_range[1]);
+                    } else {
+                        $query->whereDate('invoices.fecha_entrega', '=', $keyword);
+                    }
+                    }
+                })
+				->filterColumn('fecha_pago', function ($query, $keyword) {
+					$query->orWhereHas('transaction', function ($str) use ($keyword) {
+							if ($keyword === "todos") {
+								$str->where(function ($q) {
+									$q->where('transactions.trans_date', '=', "")
+									  ->orWhereNull('transactions.trans_date');
+								});
+							} elseif ($keyword !== "") {
+								$date_range = explode(' - ', $keyword);
+								
+								if (count($date_range) === 2) {
+									$str->whereDate('transactions.trans_date', '>=', $date_range[0])
+										->whereDate('transactions.trans_date', '<=', $date_range[1]);
+								} else {
+									$str->whereDate('transactions.trans_date', '=', $keyword);
+								}
+							}
+						});
+                })
             ->setRowId(function ($invoice) {
                 return "row_" . $invoice->id;
             })
