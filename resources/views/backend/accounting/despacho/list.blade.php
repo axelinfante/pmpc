@@ -79,6 +79,8 @@
 <script src="{{ asset('public/dropzone/dropzone.min.js') }}" defer></script>
     <script>
 		var lugarentregas_tables = <?php echo json_encode($lugar_entregas); ?>;
+		var acciones = <?php echo json_encode(config('constants.acciones')); ?>;
+	
         var adminDesarme =
             {{ strTolower(auth()->user()->role->name) == 'administrativo de despacho' || strTolower(auth()->user()->role->name) == 'gerencial' ? 'true' : 'false' }};
     </script>
@@ -392,6 +394,26 @@
 							select.append( '<option value="-1">VACIOS</option>' );
 							for (const row_xx of lugarentregas_tables) {
 									select.append( '<option value="'+row_xx.id+'">'+row_xx.nombre+'</option>' )
+							}
+							
+								$('.select2').select2({
+									multiple: true,
+									closeOnSelect: false//,
+								  }); 
+							
+							
+							}if (colIdx == 13) {
+								
+								var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
+								.appendTo(cell.empty())
+								.on( 'change', function () {
+											var val = $(this).val();
+											table.column( colIdx ).search(val ? val : '', false, false).draw();
+								} );
+								
+							select.append( '<option value="-1">VACIOS</option>' );	
+							for (const row_a of acciones) {
+									select.append( '<option value="'+row_a+'">'+row_a+'</option>' )
 							}
 							
 								$('.select2').select2({

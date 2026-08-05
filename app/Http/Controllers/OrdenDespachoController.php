@@ -486,8 +486,25 @@ public function show()
             })
             ->filterColumn('observaciones', function ($query, $keyword) {
                 $query->where('observaciones', 'like', "%{$keyword}%");
-            })
-			
+            }) 
+			->filterColumn('acciones_cotizacion', function ($query, $keyword) {
+				if (!empty($keyword)) {
+						$ids = explode(",", $keyword);
+
+						$query->whereHas('cotizacion', function ($str) use ($ids) {
+							$str->where(function ($q) use ($ids) {
+								if (in_array("-1", $ids)) {
+									$q->whereNull('acciones')
+									  ->orWhere('acciones', '=', '');
+										$ids = array_diff($ids, ['-1']);
+								}
+								if (!empty($ids)) {
+									$q->orWhereIn('acciones', $ids);
+								}
+							});
+						});
+					}
+				})
 		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente', 'acciones_cotizacion'])
          ->make(true);
 		

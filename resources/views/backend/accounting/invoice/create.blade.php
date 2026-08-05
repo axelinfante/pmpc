@@ -67,7 +67,7 @@
 					<select class="form-control select2" multiple name="acciones[]" id="acciones" data-placeholder="{{ _lang('Seleccionar acciones') }}">
 						<option value=""></option> 
 						
-						<option value="flete">{{ _lang('Flete') }}</option>
+						<option value="Flete">{{ _lang('Flete') }}</option>
 						<option value="Despacho con guía">{{ _lang('Despacho con guía') }}</option>
 						
 						<option value="Retira en Penta">{{ _lang('Retira en Penta') }}</option>
