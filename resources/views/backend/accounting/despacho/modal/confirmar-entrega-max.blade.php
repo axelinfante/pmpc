@@ -16,7 +16,7 @@
 				</div>
           <div class="form-group">
             <label>Fecha de Entrega</label>
-            <input type="date" class="form-control" name="fecha_entrega_max" id="modal_fecha_entrega_max" required>
+            <input type="date" class="form-control" name="fecha_entrega_max" id="modal_fecha_entrega_max" value="{{ now()->format('Y-m-d') }}" required>
           </div>
 		  
 		  <div class="form-group">

@@ -585,15 +585,21 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
         $('#modalConfirmarEntrega').on('show.bs.modal', function(event) {
             var button = $(event.relatedTarget);
             $('#modal_orden_id').val(button.data('id'));
-            $('#modal_fecha_entrega').val(button.data('fecha') ?? '');
+            //$('#modal_fecha_entrega').val(button.data('fecha') ?? '');
             $('#modal_forma_entrega').val(button.data('forma') ?? '');
             $('#modal_despachado_por').val(button.data('despachado') ?? '');
         });
 		
-	
-	$('#main_modal').on('hidden.bs.modal', function () {
+		$('#modalConfirmarEntrega').on('hidden.bs.modal', function () {
+			// Limpiar la validación al cerrar el modal
+			$('#miFormularioEntrega').parsley().reset();
+			// Limpiar los campos del formulario
 			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
-		});
+		}); 
+	
+	/*$('#main_modal').on('hidden.bs.modal', function () {
+			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
+		});*/
 		 
 		 
 		$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
