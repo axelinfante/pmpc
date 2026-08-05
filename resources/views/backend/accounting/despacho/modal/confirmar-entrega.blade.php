@@ -1,7 +1,7 @@
 <!-- Modal -->
 <div class="modal fade" id="modalConfirmarEntrega" tabindex="-1" role="dialog" aria-labelledby="modalLabel">
   <div class="modal-dialog" role="document">
-    <form method="POST" action="{{ route('orden-despacho.confirmar-entrega') }}">
+    <form id = "miFormularioEntrega" method="POST" action="{{ route('orden-despacho.confirmar-entrega') }}">
       @csrf
       <input type="hidden" name="orden_id" id="modal_orden_id">
 
@@ -14,7 +14,7 @@
           
           <div class="form-group">
             <label>Fecha de Entrega</label>
-            <input type="date" class="form-control" name="fecha_entrega" id="modal_fecha_entrega" required>
+            <input type="date" class="form-control" name="fecha_entrega" id="modal_fecha_entrega" value="{{ now()->format('Y-m-d') }}" required>
           </div>
 
           <div class="form-group">

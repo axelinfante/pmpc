@@ -79,6 +79,8 @@
 <script src="{{ asset('public/dropzone/dropzone.min.js') }}" defer></script>
     <script>
 		var lugarentregas_tables = <?php echo json_encode($lugar_entregas); ?>;
+		var acciones = <?php echo json_encode(config('constants.acciones')); ?>;
+	
         var adminDesarme =
             {{ strTolower(auth()->user()->role->name) == 'administrativo de despacho' || strTolower(auth()->user()->role->name) == 'gerencial' ? 'true' : 'false' }};
     </script>
@@ -400,6 +402,26 @@
 								  }); 
 							
 							
+							}if (colIdx == 13) {
+								
+								var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
+								.appendTo(cell.empty())
+								.on( 'change', function () {
+											var val = $(this).val();
+											table.column( colIdx ).search(val ? val : '', false, false).draw();
+								} );
+								
+							select.append( '<option value="-1">VACIOS</option>' );	
+							for (const row_a of acciones) {
+									select.append( '<option value="'+row_a+'">'+row_a+'</option>' )
+							}
+							
+								$('.select2').select2({
+									multiple: true,
+									closeOnSelect: false//,
+								  }); 
+							
+							
 							}else{
 								
 								var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
@@ -563,15 +585,21 @@ $('#orden-despacho-table').on('processing.dt', function (e, settings, processing
         $('#modalConfirmarEntrega').on('show.bs.modal', function(event) {
             var button = $(event.relatedTarget);
             $('#modal_orden_id').val(button.data('id'));
-            $('#modal_fecha_entrega').val(button.data('fecha') ?? '');
+            //$('#modal_fecha_entrega').val(button.data('fecha') ?? '');
             $('#modal_forma_entrega').val(button.data('forma') ?? '');
             $('#modal_despachado_por').val(button.data('despachado') ?? '');
         });
 		
-	
-	$('#main_modal').on('hidden.bs.modal', function () {
+		$('#modalConfirmarEntrega').on('hidden.bs.modal', function () {
+			// Limpiar la validación al cerrar el modal
+			$('#miFormularioEntrega').parsley().reset();
+			// Limpiar los campos del formulario
 			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
-		});
+		}); 
+	
+	/*$('#main_modal').on('hidden.bs.modal', function () {
+			$('#orden-despacho-table').DataTable().ajax.reload(null, false);
+		});*/
 		 
 		 
 		$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
