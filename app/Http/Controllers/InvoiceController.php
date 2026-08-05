@@ -48,6 +48,7 @@ use App\OrdenDespacho;
 use App\Transaciones_cotizaciones;
 use App\Puesto;
 use OwenIt\Auditing\Models\Audit;
+use Illuminate\Support\Facades\Cache;
 
 use function PHPUnit\Framework\isNull;
 use Illuminate\Validation\Rule;
@@ -164,6 +165,20 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
 {
+	
+	$lockKey = 'create_invoice_lock_' . auth()->user()->id;
+    $lock = Cache::lock($lockKey, 5);
+
+    if (!$lock->get()) {
+        if ($request->ajax()) {
+            return response()->json([
+                'result' => 'error', 
+                'message' => ['Por favor espere unos segundos...']
+            ]);
+        }
+        return redirect()->back()->withErrors(['error' => 'Por favor espere.']);
+    }
+	
     @ini_set('max_execution_time', 0);
     @set_time_limit(0);
 
@@ -195,6 +210,7 @@ class InvoiceController extends Controller
     ]);
 
     if ($validator->fails()) {
+		   $lock->release();
         if ($request->ajax()) {
             return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
         } else {
@@ -468,6 +484,7 @@ class InvoiceController extends Controller
             //dd($stock);
 
             if ($stock->stock < 1) { //$request->quantity[$i]
+			    $lock->release();
                 DB::rollBack();
                 return back()->with('error', $invoiceItem->item->item_name . ' ' . _lang('Stock is not available!'));
             }
@@ -631,7 +648,7 @@ class InvoiceController extends Controller
 
     //$this->orden_desarme($invoice, $desarme, $prioridad);
     DB::commit();
-
+   $lock->release();
     // Pagar desde saldo a favor automáticamente (si hay saldo disponible)
     /*try {
         \App\CuentaCorriente::pagarFacturaDesdeSaldoAFavor($invoice->id, $invoice->client_id);
