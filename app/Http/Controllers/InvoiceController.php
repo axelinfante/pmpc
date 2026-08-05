@@ -361,7 +361,7 @@ class InvoiceController extends Controller
         //$invoiceItem->tax_method = $request->tax_method[$i];
         //$invoiceItem->tax_id = $request->tax_id[$i];
         $invoiceItem->tax_amount = $request->product_tax[$i];
-        $invoiceItem->sub_total = $request->sub_total[$i];
+        $invoiceItem->sub_total = $request->unit_cost[$i];
         $invoiceItem->idCar = $request->autos[$i] ?? null;
         $invoiceItem->product_id = $product->id;
         $invoiceItem->company_id = $company_id;
@@ -539,6 +539,7 @@ class InvoiceController extends Controller
 				$product->ubicacion = null;
 				$product->mercado_libre = 0;
 				$product->carga_rapida = 0;
+				$product->company_id = $car->company_id;
 				$product->user_id = auth()->user()->id;
 			
 			if ($item_id  == "1612"  || strtoupper($product->item->item_name)=="MOTOR SEMIARMADO") {
@@ -554,7 +555,7 @@ class InvoiceController extends Controller
 				$invoiceItem->quantity = 1;
 				$invoiceItem->unit_cost = $unit_cost;
 				$invoiceItem->tax_amount = $tax_amount;
-				$invoiceItem->sub_total = $sub_total;
+				$invoiceItem->sub_total = $unit_cost;
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = null;
 				$invoiceItem->product_id = $product->id;
@@ -940,7 +941,7 @@ class InvoiceController extends Controller
 				$invoiceItem->quantity = $request->quantity[$key];
 				$invoiceItem->unit_cost = $request->unit_cost[$key];
 				$invoiceItem->tax_amount = $request->product_tax[$key];
-				$invoiceItem->sub_total = $request->sub_total[$key];
+				$invoiceItem->sub_total = $request->unit_cost[$key];
 				$invoiceItem->save();
 				
 
@@ -956,7 +957,7 @@ class InvoiceController extends Controller
 				//$invoiceItem->tax_method = $request->tax_method[$i];
 				//$invoiceItem->tax_id = $request->tax_id[$i];
 				$invoiceItem->tax_amount = $request->product_tax[$key];
-				$invoiceItem->sub_total = $request->sub_total[$key];
+				$invoiceItem->sub_total = $request->unit_cost[$key];
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = $request->autos[$key] ?? null;
 				$invoiceItem->product_id = $id_producto;//$product->id;
@@ -1046,6 +1047,7 @@ class InvoiceController extends Controller
 				$product->ubicacion = null;
 				$product->mercado_libre = 0;
 				$product->carga_rapida = 0;
+				$product->company_id = $car->company_id;
 				$product->user_id = auth()->user()->id;
 			
 			if ($item_id  == "1612"  || strtoupper($product->item->item_name)=="MOTOR SEMIARMADO") {
@@ -1061,7 +1063,7 @@ class InvoiceController extends Controller
 				$invoiceItem->quantity = 1;
 				$invoiceItem->unit_cost = $unit_cost;
 				$invoiceItem->tax_amount = $tax_amount;
-				$invoiceItem->sub_total = $sub_total;
+				$invoiceItem->sub_total = $unit_cost;
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = null;
 				$invoiceItem->product_id = $product->id;
