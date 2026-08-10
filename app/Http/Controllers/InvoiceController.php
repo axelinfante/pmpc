@@ -5621,7 +5621,8 @@ return $tabla_html;
 				
 				if  ($invoice->status == 'Canceled')
 				{
-					return $html = 'Anulada'; 
+					return '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>';
+                				//return $html = 'Anulada'; 
 				}
                 if (!$aFacturar) {
                     $class = 'd-none';
