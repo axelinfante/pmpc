@@ -267,6 +267,7 @@
 						return $.inArray(data.id, selectedIds) !== -1;
 					 },
 				modifier: { selected: true },
+				columns: ':visible:not(.not-export)',
 				format: {
 					body: function (data, row, column, node) {
 						   if ($(node).find('select').length) {
@@ -313,6 +314,8 @@
 				{
                         extend: 'pdf',
                         text: 'Exportar a PDF',
+						orientation: 'landscape', // Cambia a horizontal
+						pageSize: 'A4', // Combina bien con tamaño A4 o Carta
 						exportOptions: exportFormatter,
                         /*exportOptions: {
                             columns: ':visible:not(.not-export)',
@@ -330,6 +333,8 @@
                     {
                         extend: 'excel',
                         text: 'Exportar a Excel',
+						//orientation: 'landscape', // Cambia a horizontal
+						//pageSize: 'A4', // Combina bien con tamaño A4 o Carta
                         exportOptions: exportFormatter,
                     },
                     {
