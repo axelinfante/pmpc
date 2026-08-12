@@ -1734,6 +1734,108 @@ public function store(Request $request)
     //productos anulados (se coloca stock 0)
     public function anulados(Request $request)
     {
+
+		$lugar_entregas = Lugar_entregas::select('nombre')->get()->map(function ($item) {
+			return [
+				'id'   => $item->nombre,
+				'text' => $item->nombre,
+			];
+		});
+
+if ($request->ajax()) {
+
+     $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+
+    // Aseguramos que solo seleccione campos necesarios y precargue relaciones
+    $products = Product::query()
+        ->select('products.*', 'cars.tipo_vehiculo', 'cars.dominio')
+        ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+        ->with([
+            'category', 
+            'item', 
+            'deposito', 
+            'marcaModelo.marca', 
+            'marcaModelo.modelo'
+        ])
+        ->whereIn('products.company_id', (array)$company_id)
+        ->whereNull('products.car_id')
+        ->where('products.stock', 0)
+		->where('products.estado', 'Anulado')
+		// ->whereDoesntHave('invoiceItems')
+        ->whereHas('item', function ($query) {
+            $query->where('item_type', 'product');
+        })
+        ->orderByDesc('products.id');
+
+    return DataTables::eloquent($products)
+        ->filterColumn('productsid', function ($query, $keyword) {
+            $query->where('products.id', 'like', "%{$keyword}%");
+        })
+        ->filterColumn('created_at', function ($query, $keyword) {
+            if (!empty($keyword)) {
+                $date_range = explode(" - ", $keyword);
+                if (count($date_range) === 2) {
+                    $query->whereBetween('products.created_at', [$date_range[0], $date_range[1]]);
+                }
+            }
+        })
+        ->filterColumn('fecha_ingreso_a_stock', function ($query, $keyword) {
+            $query->where('products.fecha_ingreso_a_stock', 'like', "%{$keyword}%");
+        })
+        ->filterColumn('nro_interno', function ($query, $keyword) {
+            $query->where('products.nro_interno', 'like', "%{$keyword}%");
+        })
+        ->filterColumn('dominio', function ($query, $keyword) {
+            $query->where('cars.dominio', 'like', "%{$keyword}%");
+        })
+        ->filterColumn('productItem', function ($query, $keyword) {
+            $query->whereHas('item', function ($subQuery) use ($keyword) {
+                $subQuery->where('item_name', 'like', "%{$keyword}%");
+            });
+        })
+        ->filterColumn('marca', function ($query, $keyword) {
+            $query->whereHas('marcaModelo.marca', function ($subQuery) use ($keyword) {
+                $subQuery->where('marca', 'like', "%{$keyword}%");
+            });
+        })
+        ->filterColumn('modelo', function ($query, $keyword) {
+            $query->whereHas('marcaModelo.modelo', function ($subQuery) use ($keyword) {
+                $subQuery->where('modelo', 'like', "%{$keyword}%");
+            });
+        })
+        ->filterColumn('motor', function ($query, $keyword) {
+            $query->where('products.motor', 'like', "%{$keyword}%");
+        })
+        ->filterColumn('deposito', function ($query, $keyword) {
+            $query->whereHas('deposito', function ($subQuery) use ($keyword) {
+                if ($keyword === "") {
+                    $subQuery->whereNull('nombre')->orWhere('nombre', '');
+                } else {
+                    $subQuery->where('nombre', 'like', "%{$keyword}%");
+                }
+            });
+        })
+        ->addColumn('productsid', function ($data) {
+            $prefixes = [1 => 'PM-', 2 => 'PC-'];
+            return ($prefixes[$data->company_id] ?? '') . $data->id;
+        })
+        ->addColumn('created_at', fn($data) => formatDate($data->created_at))
+        ->addColumn('fecha_ingreso_a_stock', fn($data) => formatDate($data->fecha_ingreso_a_stock))
+        ->addColumn('interno', fn($data) => nroInternoAlias($data->company_id, $data->tipo_vehiculo, $data->nro_interno))
+        ->addColumn('productItem', fn($data) => $data->item->item_name ?? null)
+        ->addColumn('marca', fn($data) => $data->marcaModelo->marca->marca ?? '')
+        ->addColumn('modelo', fn($data) => $data->marcaModelo->modelo->modelo ?? '')
+        ->addColumn('deposito', fn($data) => $data->deposito->nombre ?? '')
+        ->addColumn('dominio', fn($data) => $data->dominio ?? '')
+        ->addColumn('action', function ($data) {
+            return "<button class='btn btn-success' data-id='{$data->id}' onClick='toggleStock(this)'>Habilitar</button>";
+        })
+		->make(true);
+        //->toJson();
+}
+		
+		
+		
         // $productosNoVendidosSinStock = Product::query()
         //     // 1. Condición: El stock debe ser 0
         //     ->where('stock', 0)
@@ -1744,7 +1846,7 @@ public function store(Request $request)
 
         //     // 3. Obtener la colección de resultados
         //     ->get();
-		$lugar_entregas = Lugar_entregas::all()->map(function ($item) {
+		/*$lugar_entregas = Lugar_entregas::all()->map(function ($item) {
 					return [
 						'id'   => $item->nombre,    
 						'text' => $item->nombre,
@@ -1867,13 +1969,9 @@ public function store(Request $request)
                     $result = "<button class='btn btn-success' data-id='$data->id' onClick='toggleStock(this)' >Habilitar</button> ";
                     return $result;
                 })->tojson();
-        }
+        }*/
 
-        // 3. Retorna la vista específica para stock 0 y no vendidos
         return view('backend.accounting.product.anulados', compact("lugar_entregas"));
-
-        // dd($productosNoVendidosSinStock)
-
     }
 
     //anular modifica el stock a 0 de lo controario modifica a 1
@@ -1886,6 +1984,7 @@ public function store(Request $request)
             $product->estado = "habilitado";
             $product->stock = 1;
         } else {
+			$product->estado = "Anulado";
             $product->stock = 0;
         }
         $product->save();
@@ -2160,8 +2259,223 @@ public function store(Request $request)
         }
     }
 	
-	
 	public function table_detalle(Request $request)
+    {
+		if ($request->ajax()) {
+				$isExport = isset($request->exportar);
+
+			$evaluarMostrar = function ($row) use ($isExport) {
+				return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO') && ((float) ($row->stock ?? 0) > 0);
+			};
+
+			$query = Item::select(
+					'products.id as product_id', 
+					'items.id as item_id',       
+					'products.stock', 
+					'products.nro_oblea',
+					DB::raw("CONCAT(items.item_name, CASE WHEN items.allCar = 0 OR items.allCar IS NULL THEN ' (*)' ELSE '' END) as item_name"),
+					'items.allCar',
+					'items.activo',
+					'products.estado',
+					'invoices.invoice_number',
+					'users.name as vendedor',
+					'lugar_entregas.nombre as deposito',
+					DB::raw("GROUP_CONCAT(
+    DISTINCT CASE 
+        WHEN invoices.invoice_number IS NOT NULL OR users.name IS NOT NULL 
+        THEN CONCAT(COALESCE(invoices.invoice_number, ''), '||', COALESCE(users.name, '')) 
+        ELSE NULL 
+    END 
+    SEPARATOR ';;'
+) as facturas_vendedores")
+					//DB::raw("GROUP_CONCAT(DISTINCT invoices.invoice_number SEPARATOR ', ') as datos_facturas"),
+					//DB::raw("GROUP_CONCAT(DISTINCT products.id SEPARATOR ', ') as productos_asociados")
+				)
+				->leftJoin('products', function($join) use ($request) {
+					$join->on('products.item_id', '=', 'items.id')
+						 ->where('products.nro_interno', $request->nro_interno); 
+				})
+				->leftJoin('invoice_items', 'invoice_items.product_id', '=', 'products.id')
+				->leftJoin('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+				->leftJoin('users', 'invoices.user_id', '=', 'users.id')
+				->leftJoin('lugar_entregas', 'products.idDeposito', '=', 'lugar_entregas.id')
+				->where(function($query) {
+					$query->where('items.item_type', 'product')
+						  ->where('items.activo', 'Si');
+					$query->where(function($subQuery) {
+						$subQuery->where('items.allCar', 1)
+							->orWhere(function($q) {
+								$q->where(function($allCarQuery) {
+									$allCarQuery->where('items.allCar', 0)
+												->orWhereNull('items.allCar');
+								})
+								->where('products.stock', '>', 0);
+							});
+					});
+				})
+				->groupBy('items.id', 'products.id')
+				->orderBy('item_name', 'asc');
+
+				$lugar_entregas = Lugar_entregas::all();
+
+    return DataTables::of($query)
+        ->addIndexColumn()
+        ->addColumn('selection', function ($row) {
+            if (!$row->product_id) {
+                return '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="' . $row->item_id . '">';
+            }
+            return "";
+        })
+		->filterColumn('nro_oblea', function ($query, $keyword) {
+                    $query->where('products.nro_oblea', 'like', "%{$keyword}%");
+                })
+		->filterColumn('id_producto', function ($query, $keyword) {
+                    $query->where('products.id', 'like', "%{$keyword}%");
+              })
+		->filterColumn('vendedor', function ($query, $keyword) {
+                    $query->where('users.name', 'like', "%{$keyword}%");
+              })
+		->filterColumn('deposito', function ($query, $keyword) {
+                    $query->where('lugar_entregas.nombre', 'like', "%{$keyword}%");
+              })
+			 ->filterColumn('estado', function ($query, $keyword) {
+                    $query->where('products.estado', 'like', "%{$keyword}%");
+              })	
+		->editColumn('vendedor', function ($row) use ($evaluarMostrar) {
+			if (!$row->product_id || empty($row->facturas_vendedores)) {
+					return ""; 
+				}
+			$registros = array_filter(explode(';;', $row->facturas_vendedores));
+
+			if (empty($registros)) {
+				return "";
+			}
+
+			$html = '<div style="display: flex; flex-direction: column; gap: 3px;">';
+			
+			foreach ($registros as $registro) {
+				$partes = explode('||', $registro);
+				$factura = trim($partes[0] ?? '');
+				$vendedor = trim($partes[1] ?? '');
+				if (empty($factura) && empty($vendedor)) {
+					continue;
+				}
+				$html .= '<div style="line-height: 1.2;">';
+				if (!empty($vendedor)) {
+					$html .= '<strong>' . e($vendedor) . '</strong> ';
+				}
+				if (!empty($factura)) {
+					$html .= '<span class="badge badge-info"><i class="fa fa-file-text-o"></i> ' . e($factura) . '</span>';
+				}
+				$html .= '</div>';
+			}
+			
+			$html .= '</div>';
+
+			return $html;
+			
+          
+        })			  
+        ->editColumn('nro_oblea', function ($row) use ($evaluarMostrar) {
+            if (!$row->product_id) {
+                return "";
+            }   
+
+			 if ($evaluarMostrar($row)) { 
+                return '<div class="input-group d-flex justify-content-center">
+                    <input id="prod_id-' . $row->product_id . '" style="min-width: 10px; max-width: 200px;" type="text" class="form-control" value="' . e($row->nro_oblea) . '">
+                    <div class="input-group-append">
+                        <button type="button" onClick="ActualizarOblea(' . $row->product_id . ')" class="btn btn-warning">
+                            <i class="ti-check"></i>
+                        </button>
+                    </div>
+                </div>';
+            }
+            return $row->nro_oblea ?? '';
+        })
+        ->addColumn('id_producto', function ($row) {
+            return ($row->product_id ?? '');
+        })
+        ->editColumn('estado', function ($row) use ($evaluarMostrar) {
+            if (!$row->product_id) {
+                return "";
+            }   
+
+            if ($evaluarMostrar($row)) {
+                return '<div class="input-group d-flex justify-content-center">
+                    <input id="estado_id-' . $row->product_id . '" style="min-width: 10px; max-width: 200px;" type="text" class="form-control" value="' . e($row->estado) . '">
+                    <div class="input-group-append">
+                        <button type="button" onClick="ActualizarCampo(' . $row->product_id . ', \'estado\')" class="btn btn-warning">
+                            <i class="ti-check"></i>
+                        </button>
+                    </div>
+                </div>';
+            }
+
+            return $row->estado ?? '';
+        })
+        ->editColumn('deposito', function ($row) use ($evaluarMostrar, $lugar_entregas) {
+            if (!$row->product_id) {
+                return "";
+            }   
+
+            if ($evaluarMostrar($row)) {
+                $options = '<option value="">Seleccione...</option>';
+                foreach ($lugar_entregas as $lugar) {
+                    $selected = ($row->deposito == $lugar->id || $row->deposito == $lugar->nombre) ? 'selected' : '';
+                    $options .= '<option value="' . e($lugar->id) . '" ' . $selected . '>' . e($lugar->nombre) . '</option>';
+                }
+                return '<div class="input-group d-flex justify-content-center">
+                    <select id="idDeposito_id-' . $row->product_id . '" style="min-width: 120px; max-width: 200px;" class="form-control">
+                        ' . $options . '
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" onClick="ActualizarCampo(' . $row->product_id . ', \'idDeposito\')" class="btn btn-warning">
+                            <i class="ti-check"></i>
+                        </button>
+                    </div>
+                </div>';
+            }
+
+            return $row->deposito ?? '';
+        })
+        ->addColumn('stock', function ($row) {
+            return $row->stock ?? '';
+        })
+        ->addColumn('action', function ($row) use ($evaluarMostrar) {
+            if (!$row->product_id) {
+                return "";
+            }
+
+		if ($evaluarMostrar($row)) {
+            $resultado = "<form id='form-delete-" . $row->product_id . "' action='" . action('ProductController@destroy', $row->product_id) . "' method='post' class='form-delete-inline'>";
+            $resultado .= csrf_field();
+            $resultado .= "<input name='_method' type='hidden' value='DELETE'>";
+            $resultado .= "<input type='hidden' name='observacion' class='input-observacion'>";
+
+            $resultado .= "<a href='" . action('ProductController@printQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a> ";
+            $resultado .= "<a href='" . action('ProductController@printsinQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a> ";
+
+            //if (!$row->invoice_number && $evaluarMostrar($row)) {
+                $resultado .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $row->product_id . "'><i class='ti-eraser'></i></button>";
+            //}
+
+				$resultado .= "</form>";
+
+				return $resultado;
+			}
+			return "";	
+        })
+        ->orderColumn('item_name', function ($query, $order) {
+            $query->orderBy('items.item_name', $order);
+        })
+        ->rawColumns(['selection', 'action', 'nro_oblea', 'estado', 'deposito','vendedor'])
+        ->make(true);
+		}		
+	}
+
+
+	/*public function table_detalle(Request $request)
     {
 		
         if ($request->ajax()) {
@@ -2298,19 +2612,10 @@ public function store(Request $request)
 
 					return $row->deposito ?? '';
 				})
-				
-				/*->addColumn('estado', function ($row)  {
-                    return $row->estado ?? '';
-                })*/
 				->addColumn('stock', function ($row)  {
                     return $row->stock ?? '';
                 })
-				/*->editColumn('deposito', function ($row) {
-					return $row->nombre ?? '';
-					})*/
-				/* ->editColumn('vendedor', function ($row) {
-					return $row->invoice->vendedor->name ?? '' ;
-				})*/
+			
 				->addColumn('action', function ($row) {
 					if (!$row->product_id){
 						return "";
@@ -2340,7 +2645,7 @@ public function store(Request $request)
     ->make(true);
 
 		}		
-    }
+    }*/
 	
 	  public function table_detalle_post(Request $request)
     {
