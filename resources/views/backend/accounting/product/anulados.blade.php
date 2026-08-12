@@ -27,6 +27,7 @@ table.dataTable {
 
                 <hr>
                 <!--<table id="table-data-product" class="table-bordered"> -->
+				<div class="table-responsive">
 				<table id="table-data-product" class="table table-bordered table-striped">
                         <thead>
                             <tr>
@@ -49,7 +50,7 @@ table.dataTable {
                         <tbody>
                         </tbody>
                     </table>
-
+				</div>
 
             </div>
         </div>
@@ -65,6 +66,8 @@ table.dataTable {
         $(function() {
               $('#table-data-product').css('width', '100%');
                 table = $('#table-data-product').appTable({
+					processing: true,
+					serverSide: true,
                     title:"Productos Anulados",
                     ajax: "{{ url('products/anulados') }}", 
                     visibleButtonsFilter:true, 
