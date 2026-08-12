@@ -28,7 +28,7 @@ table.dataTable {
                 <hr>
                 <!--<table id="table-data-product" class="table-bordered"> -->
 				<div class="table-responsive">
-				<table id="table-data-product" class="table table-bordered table-striped">
+				<table id="table-data-product" class="table table-bordered">
                         <thead>
                             <tr>
                                 <th>ID de producto</th>
