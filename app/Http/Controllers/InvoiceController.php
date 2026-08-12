@@ -167,7 +167,7 @@ class InvoiceController extends Controller
 {
 	
 	$lockKey = 'create_invoice_lock_' . auth()->user()->id;
-    $lock = Cache::lock($lockKey, 5);
+    $lock = Cache::lock($lockKey, 10);
 
     if (!$lock->get()) {
         if ($request->ajax()) {
@@ -5311,55 +5311,10 @@ public function get_table_data(Request $request)
 
         $all_contacts = DB::table('contacts')
             ->select('id', 'contact_name', DB::raw('"contacts" as type'))
-			->whereIn('company_id', $company_id)
+			//->whereIn('company_id', $company_id)
             //->where('company_id', $company_id)
             ->union($projects);
 			
- 
-      /*  $invoices = Invoice::joinSub($all_contacts, 'all_contacts', function ($join) {
-            $join->on('invoices.related_id', '=', 'all_contacts.id')
-                ->on('invoices.related_to', '=', 'all_contacts.type');
-        })
-            ->select("invoices.*", "all_contacts.contact_name", "all_contacts.id as contact_id")
-			->whereIn('company_id', $company_id)
-            // ->where('invoices.company_id', $company_id)
-            ->orderBy('invoices.id', 'desc');
-        if (strTolower(auth()->user()->role->name) == 'vendedor') {
-            $invoices->where('invoices.user_id', auth()->id());
-        }
-        if ($aFacturar) {
-            $invoices->where('invoices.facturar', 1)->where('invoices.facturado', null);
-        }
-
-        $invoices->when($request, function ($query) use ($request) {
-            if ($request->has('invoice_number')) {
-                $query->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
-            }
-
-            if ($request->has('vendedor')) {
-                $query->where('user_id', $request->get('vendedor'));
-            }
-
-            if ($request->has('revendedor')) {
-                $query->where('revendedor', $request->get('revendedor'));
-            }
-
-            if ($request->has('company_id')) {
-                $query->where('company_id', $request->get('company_id'));
-            }
-
-            if ($request->has('status')) {
-                $query->whereIn('status', json_decode($request->get('status')));
-            }
-
-            if ($request->has('date_range')) {
-                $date_range = explode(" - ", $request->get('date_range'));
-                //dd($date_range );
-                //$query->whereBetween('invoice_date', [$date_range[0], $date_range[1]]);
-                $query->whereRaw("DATE(invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [$date_range[0], $date_range[1]]);
-            }
-        });
-*/
 
 			$invoices = Invoice::with(['retiros_cliente_origen'])->joinSub($all_contacts, 'all_contacts', function ($join) {
 					$join->on('invoices.related_id', '=', 'all_contacts.id')

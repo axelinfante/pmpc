@@ -304,23 +304,24 @@ var current_row;
 		if( product_id == '' ){
 			return;
 		}
-
+			let InternoVehiculo = $('#car_id option:selected').val();
 	    //if product has already in order table
-	    if ($("#order-table > tbody > #product-" + product_id).length > 0) {
-			var line = $("#order-table > tbody > #product-" + product_id);
+	    if ($("#order-table > tbody > #product-" + InternoVehiculo+product_id).length > 0) {
+			if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto ya se encuentra agregado', icon: 'error' });}
+		/*	var line = $("#order-table > tbody > #product-" + product_id);
 			var quantity = parseFloat($(line).find(".input-quantity").val());
 			if (quantity==1) return "";
 			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
-			$("#product").val("").trigger('change');;
+			$("#product").val("").trigger('change');*/
 			return;		
 	    }
 		
-					let InternoVehiculo = $('#car_id option:selected').val();
+					
 					let textoVehiculo = $('#car_id option:selected').text();
 					let textoPieza    = $(this).find('option:selected').text();
 					
 					let product = {
-						id: product_id,
+						id: InternoVehiculo+product_id,
 						item_name: textoPieza,
 						marca_modelo: textoVehiculo,
 						item_id: product_id
