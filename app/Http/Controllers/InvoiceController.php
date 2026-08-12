@@ -167,7 +167,7 @@ class InvoiceController extends Controller
 {
 	
 	$lockKey = 'create_invoice_lock_' . auth()->user()->id;
-    $lock = Cache::lock($lockKey, 5);
+    $lock = Cache::lock($lockKey, 10);
 
     if (!$lock->get()) {
         if ($request->ajax()) {

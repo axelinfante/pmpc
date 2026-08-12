@@ -106,7 +106,7 @@ class QuotationController extends Controller
 
         $all_contacts = DB::table('contacts')
             ->select('id', 'contact_name', DB::raw('"contacts" as type'))
-            ->whereIn('company_id', $company_id)
+            //->whereIn('company_id', $company_id)
             ->union($leads);
 
         $quotations = Quotation::joinSub($all_contacts, 'all_contacts', function ($join) {

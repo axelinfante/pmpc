@@ -676,25 +676,7 @@
         }
     }
 });
-     /*    product.select2({
-            ajax: {
-                url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
-                '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
-                '&option= products.car_id = ' + $(this).val(),
-				delay: 250,
-                processResults: function (data) {
-					selected=$('#nro_interno_tmp').val();
-					selected = selected.toString().split(",").map(function(t){return parseInt(t)})
- 					var data_modified = $.map(data, function (obj) {
-							 	obj.disabled = ($.inArray(obj.id, selected) != -1) ? true:false; // or use logical statement
-          				return obj;
-        				});
-
-					   return { results: data_modified };	
-
-                }
-            }
-        }); */
+   
 
 
 
@@ -744,28 +726,7 @@
 	}
 })
 
-/*if($(this).prop('id') == 'service') {
-	if ($(this).val()!= '') {
-		$.ajax({
-			url :_url + '/products/get-company/'+$(this).val(),
-			async: false,
-			dataType: 'json',
-			success: function(data) {
-				console.log(data.company);
-				$('#service').data('company', data.company);
-				$('#car_id').data('company', data.company);
-				//console.log(car.data('company'));
-				$('#company_id').val( data.company);
-				$('#company_id_s').val( data.company);
-			},
-			error: function(error) {
-				// console.log('Error: Al cargar empresa' )
-			}
-		});
-	}
-	}
 
-*/
 			function limpiarItems(nro_interno) {
 				return;
 				$('#nro_interno_tmp').val("");
@@ -793,13 +754,15 @@
 
 				if (Number.isNaN(product_total_)) { // Verifica si NO es NaN
 						e.preventDefault();
-						alert("Precio de Producto no pueden tener un valor menor 0");
+						//alert("Precio de Producto no pueden tener un valor menor 0");
+						if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Precio de Producto no pueden tener un valor menor 0', icon: 'error' });}
               			return false; //for old browsers 
 				} 
 
 				 if (validar_summary() === false) {
 					e.preventDefault();
-						alert("Producto no pueden tener valor 0");
+						//alert("Producto no pueden tener valor 0");
+						if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto no pueden tener valor 0', icon: 'error' });}
               			return false; //for old browsers 
     			}
     //$(this).submit(); 
@@ -820,55 +783,6 @@ function validar_summary() {
     
 }
 
-
-
-/*$(document).on('change', '#product', function () {
-        var product_id = $(this).val();
-        if (product_id == '') {
-            return;
-        }
-		
-        let car_id = car.val();
-		var link = "{{ url('products') }}";
-
-		var myformData = new FormData();        
-					myformData.append('_token', $('meta[name="csrf-token"]').attr('content'));
-					myformData.append('car_id', car_id);
-					myformData.append("item_id", product_id);
-					myformData.append("estado_prod", 'desarme');
-
-		 $.ajax({
-			 method: "POST",
-			 url: link,
-			 data: myformData,
-			 mimeType:"multipart/form-data",
-			 contentType: false,
-			 cache: false,
-			 processData:false,
-			 beforeSend: function(){
-				$("#preloader").css("display","block");  
-			 },success: function(data){
-				$("#preloader").css("display","none"); 
-				var json = JSON.parse(data);
-				if(json['result'] == "success"){
-
-						$('#desamar_item').val("si");
-						var select_value = json['data']["products.id"];
-						var select_display = json['data']["items.item_name"];
-						var newOption = new Option(select_display, select_value, true, true);
-						$('#service').append(newOption).trigger('change');
-					}
-			 },
-			 error: function (request, status, error) {
-				//console.log(request.responseText);
-			 }
-		 });
-
-
-		
-    });
-	
-	*/
 	
 $(document).on('change', '#product', function() {
 	    var product_id = $(this).val();
@@ -876,17 +790,19 @@ $(document).on('change', '#product', function() {
 			return;
 		}
 
+			let InternoVehiculo = $('#car_id option:selected').val();
 	    //if product has already in order table
-	    if ($("#order-table > tbody > #product-" + product_id).length > 0) {
-			var line = $("#order-table > tbody > #product-" + product_id);
+	    if ($("#order-table > tbody > #product-" + InternoVehiculo+product_id).length > 0) {
+			if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto ya se encuentra agregado', icon: 'error' });}
+			/*var line = $("#order-table > tbody > #product-" +InternoVehiculo+product_id);
 			var quantity = parseFloat($(line).find(".input-quantity").val());
 			if (quantity==1) return "";
 			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
-			$("#product").val("").trigger('change');;
+			$("#product").val("").trigger('change');*/
 			return;		
 	    }
 
-					let InternoVehiculo = $('#car_id option:selected').val();
+					
 					let textoVehiculo = $('#car_id option:selected').text();
 					let textoPieza    = $(this).find('option:selected').text();
 /*
@@ -899,7 +815,7 @@ $(document).on('change', '#product', function() {
 					let vehiculo = partes.slice(2).join(' - '); 
 */
 					let product = {
-						id: product_id,
+						id: InternoVehiculo+product_id,
 						item_name: textoPieza,
 						marca_modelo: textoVehiculo,
 						item_id: product_id
@@ -942,63 +858,6 @@ $(document).on('change', '#product', function() {
 					$("#order-table > tbody").append(product_row);
 					update_summary();
 	});	
-	
-	
-/*$("#productLink_").click(function(e){
-  e.preventDefault();
-	$('#itemCreateModal').modal({show:true});
-	return false;
-  });			  
-        
-$('#miFormulario').submit(function(e) {
-        e.preventDefault();
-         
-        var url = $(this).attr("action");
-        let formData = new FormData(this);
-		let select_display = $('#item_name_m').val();
-    
-        $.ajax({
-                type:'POST',
-                url: url,
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: (json) => {
-				if(json['result'] == "success"){
-						var select_value = json['data'];
-						var newOption = new Option(select_display, select_value, true, true);
-						$('#item_id').append(newOption).trigger('change');
-						$('#itemCreateModal').modal('hide');
-					
-				}else{
-					$('#miFormulario').find(".print-error-msg").find("ul").html('');
-                    $('#miFormulario').find(".print-error-msg").css('display','block');
-                    $.each( json['message'], function( key, value ) {
-					//	console.log(value);
-                        $('#miFormulario').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
-                    });
-				  }
-				},
-                error: function(response){
-                    $('#ajax-form').find(".print-error-msg").find("ul").html('');
-                    $('#ajax-form').find(".print-error-msg").css('display','block');
-                    $.each( response.responseJSON.errors, function( key, value ) {
-                        $('#ajax-form').find(".print-error-msg").find("ul").append('<li>'+value+'</li>');
-                    });
-                }
-           });
-        
-    });
-
-  $('#itemCreateModal').on('hidden.bs.modal', function () {
-    // Limpiar la validación al cerrar el modal
-    $('#miFormulario').parsley().reset();
-    // Limpiar los campos del formulario
-    $('#item_name_m').val('');
-  });
-
-*/
-
 
 </script>
 @endsection
