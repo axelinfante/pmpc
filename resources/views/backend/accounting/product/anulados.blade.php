@@ -1,6 +1,6 @@
 @extends('layouts.app')
 <style>
-table.dataTable {
+/*table.dataTable {
             table-layout: fixed !important;
             width: 100% !important;
         }
@@ -8,7 +8,7 @@ table.dataTable {
             white-space: normal !important;
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
-        }
+        }*/
 </style>
 
 @section('content')
@@ -27,13 +27,14 @@ table.dataTable {
 
                 <hr>
                 <!--<table id="table-data-product" class="table-bordered"> -->
+				<div class="col-12">
 				<div class="table-responsive">
 				<table id="table-data-product" class="table table-bordered">
                         <thead>
                             <tr>
                                 <th>ID de producto</th>
-                                <th class="text-right">{{ _lang('Fecha registro') }}</th>
-                                <th class="text-right">{{ _lang('Fecha ingreso a stock') }}</th>
+                                <th>{{ _lang('Fecha registro') }}</th>
+                                <th>{{ _lang('Fecha ingreso a stock') }}</th>
                                 <th>{{ _lang('Nro Interno') }}</th>
                                 <th>{{ _lang('Dominio') }}</th>
                                 <th>{{ _lang('Product') }}</th>
@@ -41,17 +42,19 @@ table.dataTable {
                                 <th>{{ _lang('Modelo') }}</th>
                                 <th>{{ _lang('nº motor') }}</th>
                                 <th>{{ _lang('nº oblea') }}</th>
-                                <th style="width: 150px; min-width: 150px;" >{{ _lang('Deposito') }}</th>
+                                <th >{{ _lang('Deposito') }}</th>
                                 <th>{{ _lang('Ubicacion') }}</th>
                                 <th>{{ _lang('Descripcion') }}</th>
-                                <th class="notexport">{{ _lang('Accciones disponibles') }}</th>
+                                <th class="notexport ml-1">{{ _lang('Accciones disponibles') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                         </tbody>
+						  <tfoot>
+                            </tfoot>
                     </table>
 				</div>
-
+			</div>
             </div>
         </div>
     </div>
