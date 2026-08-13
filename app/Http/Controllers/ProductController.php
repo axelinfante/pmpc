@@ -2320,9 +2320,8 @@ if ($request->ajax()) {
 
     return DataTables::of($query)
         ->addIndexColumn()
-        ->addColumn('selection', function ($row) use ($evaluarMostrar) {
-            //if (!$row->product_id) {
-			if (!$row->invoice_number && $evaluarMostrar($row)) {	
+        ->addColumn('selection', function ($row) {
+            if (!$row->product_id) {
                 return '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="' . $row->item_id . '">';
             }
             return "";
@@ -2461,11 +2460,15 @@ if ($request->ajax()) {
                 $resultado .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $row->product_id . "'><i class='ti-eraser'></i></button>";
             }
 
-				$resultado .= "</form>";
-
+			$resultado .= "</form>";
+		
+			/*return '<div class="d-flex align-items-center justify-content-center">' +
+                           '<input type="checkbox" class="chk-accion mr-2" value="' + rowId + '">' +
+                           '<div>' . $resultado . '</div>' +
+                       '</div>';*/
 				return $resultado;
 		//	}
-			return "";	
+		//	return "";	
         })
         ->orderColumn('item_name', function ($query, $order) {
             $query->orderBy('items.item_name', $order);
