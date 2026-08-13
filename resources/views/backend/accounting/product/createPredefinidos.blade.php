@@ -246,7 +246,7 @@ $(document).ready(function() {
         "targets": 8, 
         "searchable": false,
         "orderable": false,
-        "className": 'text-center',
+        "className": 'text-center' ,
         "render": function (data, type, row, meta) {
             
             if (data && data.trim() !== '') {
