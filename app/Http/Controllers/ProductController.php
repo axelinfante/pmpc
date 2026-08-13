@@ -2321,8 +2321,7 @@ if ($request->ajax()) {
     return DataTables::of($query)
         ->addIndexColumn()
         ->addColumn('selection', function ($row) use ($evaluarMostrar) {
-            //if (!$row->product_id) {
-			if (!$row->invoice_number && $evaluarMostrar($row)) {	
+            if (!$row->product_id) {
                 return '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="' . $row->item_id . '">';
             }
             return "";
