@@ -2320,8 +2320,9 @@ if ($request->ajax()) {
 
     return DataTables::of($query)
         ->addIndexColumn()
-        ->addColumn('selection', function ($row) {
-            if (!$row->product_id) {
+        ->addColumn('selection', function ($row) use ($evaluarMostrar) {
+            //if (!$row->product_id) {
+			if (!$row->invoice_number && $evaluarMostrar($row)) {	
                 return '<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="' . $row->item_id . '">';
             }
             return "";
@@ -2447,7 +2448,7 @@ if ($request->ajax()) {
                 return "";
             }
 
-		if ($evaluarMostrar($row)) {
+		//if ($evaluarMostrar($row)) {
             $resultado = "<form id='form-delete-" . $row->product_id . "' action='" . action('ProductController@destroy', $row->product_id) . "' method='post' class='form-delete-inline'>";
             $resultado .= csrf_field();
             $resultado .= "<input name='_method' type='hidden' value='DELETE'>";
@@ -2456,14 +2457,14 @@ if ($request->ajax()) {
             $resultado .= "<a href='" . action('ProductController@printQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a> ";
             $resultado .= "<a href='" . action('ProductController@printsinQR', $row->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a> ";
 
-            //if (!$row->invoice_number && $evaluarMostrar($row)) {
+            if (!$row->invoice_number && $evaluarMostrar($row)) {
                 $resultado .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $row->product_id . "'><i class='ti-eraser'></i></button>";
-            //}
+            }
 
 				$resultado .= "</form>";
 
 				return $resultado;
-			}
+		//	}
 			return "";	
         })
         ->orderColumn('item_name', function ($query, $order) {
