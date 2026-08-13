@@ -2265,7 +2265,10 @@ if ($request->ajax()) {
 				$isExport = isset($request->exportar);
 
 			$evaluarMostrar = function ($row) use ($isExport) {
-				return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO') && ((float) ($row->stock ?? 0) > 0);
+
+            return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO');
+            
+				//return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO') && ((float) ($row->stock ?? 0) > 0);
 			};
 
 			$query = Item::select(
