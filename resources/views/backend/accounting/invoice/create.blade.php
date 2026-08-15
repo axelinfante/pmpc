@@ -96,8 +96,25 @@
 			</div>
 			@endif
 
+
+			<div class="form-group">
+				<label for="comision">Tipo de venta</label>
+				<select class="form-control" required name="comision" id="comision">
+					<option selected value="">Seleccione</option>
+					
+					@foreach($comisiones as $nombre => $valores)
+						<option value="{{ $nombre }}">
+							{{ $nombre }} ({{ $valores['percentage'] }}% 
+							@if($valores['fixed'] > 0) 
+								+ ${{ number_format($valores['fixed'], 2) }}
+							@endif)
+						</option>
+					@endforeach
+				</select>
+			</div>
+
 			
-			<div class="col-lg-3 mb-2">
+			<!--<div class="col-lg-3 mb-2">
 				<label>{{ _lang('Tipo de venta') }}</label>
 				<select class="form-control  " required name="comision">
 					<option selected value="">Seleccione</option>
@@ -118,7 +135,7 @@
 
 
 				</select>
-			</div>
+			</div>-->
 
 			<div class="col-md-4 d-none">
 			  <div class="form-group">
