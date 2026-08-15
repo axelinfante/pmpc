@@ -11,7 +11,20 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
     protected $control = [1 =>'Terminado', 2 => 'Reclamar doc'];
-    protected $comisiones = [
+	
+	protected $comisiones = [
+    'Camiones'            => ['percentage' => 4,   'fixed' => 0],
+    'Motos enteras'       => ['percentage' => 4,   'fixed' => 0],
+    'Mercado Libre'       => ['percentage' => 5,   'fixed' => 0],
+    'Ruedas'              => ['percentage' => 4,   'fixed' => 0],
+    'Motores'             => ['percentage' => 2.5, 'fixed' => 0],
+    'Reventa'        	  => ['percentage' => 3,   'fixed' => 0],
+    'Lote'                => ['percentage' => 3,   'fixed' => 0],
+    'Venta normal' => ['percentage' => 7,   'fixed' => 0],
+    'Venta menos a 30000' => ['percentage' => 7,   'fixed' => 1000],
+	];
+   
+/*   protected $comisiones = [
         'Camiones' => 4,
         'Motos enteras' => 4,
         'Mercado Libre' => 5,
@@ -21,7 +34,7 @@ class Controller extends BaseController
         'Lote' => 3,
         'Venta normal' => 7,// si en mayor a 30.000 y si es < 7 + 1000
         'Venta menos a 30000' => 7,// si en mayor a 30.000 y si es < 7 + 1000
-    ];
+    ];*/
 
     public $estadosIva = [
         'Responsable inscripto',

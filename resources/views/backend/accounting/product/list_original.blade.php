@@ -104,39 +104,6 @@
         </div>
     </div>
 </div>
-
-	
-<!-- Modal Principal -->
-<div class="modal fade" id="modal_principal" tabindex="-1" role="dialog" aria-labelledby="modalPrincipalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalPrincipalLabel font-weight-bold">
-                    Cargando...
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-			
-
-            <div class="modal-body crm-scroll">
-                <div class="text-center p-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando formulario...</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer d-none">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-
-        </div>
-    </div>
-</div>
-
 @endsection
 @section('js-script')
 <script>
@@ -173,6 +140,7 @@
 
                 if (ids.length === 0) {
                     if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Seleccione al menos un producto.', icon: 'error' });}
+                    //alert('Seleccione al menos un producto.');
                     return;
                 }
 
@@ -181,6 +149,7 @@
 
                 if (!updateFecha && !updateUbicacion) {
                     if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: 'Seleccione al menos un campo para actualizar.', icon: 'error' });
+                    //alert('Seleccione al menos un campo para actualizar.');
                     return;
                 }
 
@@ -294,9 +263,9 @@
             //dom: 'Bfrtip', //Bfrltip
             dom: 'Bfrltip',
             orderCellsTop: true,
-			pageLength: 25,
+			pageLength: 10,
 			//lengthMenu: [10, 20, 50, 100, 200, 500],
-			lengthMenu: [[ 25, 100, 200, 500], [25, 100,200, 500]],
+			lengthMenu: [[ 10, 20, 50, 500], [10, 20,50, 500]],
 			autoWidth: false,
             buttons: [
                 {
@@ -343,58 +312,249 @@
                             }
 						}, action: newexportaction, 
                     },
-				{
-    text: '<i class="fa fa-calculator"></i> Cotizar por lote',
-    className: 'btn btn-primary',
-    action: function(e, dt, node, config) {
-        const ids = $('.row-checkbox:checked').map(function() {
-            return $(this).data('id');
-        }).get();
+				{   text: 'Cotizar por lote',
+                    action: function(e, dt, node, config) {
+							const ids = $('.row-checkbox:checked').map(function() {
+									return $(this).data('id');
+								}).get();
 
-        if (ids.length === 0) {
-            if (typeof $.toast !== 'undefined') {
-                 $.toast({ position: 'top-right', text: 'Seleccione al menos un producto.', icon: 'error' });
-            } else {
-                alert('Seleccione al menos un producto.');
-            }
-            return;
-        }
+							if (ids.length === 0) {
+								if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Seleccione al menos un producto.', icon: 'error' });}
+								return;
+							}
+							
+							let valorIdProd = ids.join(',');
+/*							const ids = Object.keys(selectedRows).map(key => key.split('-')[1])
+									if (ids.length === 0) {
+											if (typeof $.toast !== 'undefined') {
+												$.toast({ position: 'top-right', text: 'Por favor seleccione un valor.', icon: 'error' });
+											}
+									return;
+							}*/
+							
+							//console.log(valorIdProd);
+							//return;
+							/*if (valorIdProd.length === 0) {
+								if (typeof $.toast !== 'undefined') {
+									$.toast({ position: 'top-right', text: 'Por favor seleccione un valor.', icon: 'error' });
+								}
+								return
+							}*/
+					target_select = $(this).parent().find(".select2-ajax");
+		 
+		 
+	 	 $.ajax({
+			 url: "{{ url('invoices/create') }}",
+			 beforeSend: function(){
+				$("#preloader").css("display","block"); 
+			 },success: function(data){
+				$("#preloader").css("display","none");
+				$('#main_modal .modal-title').html("Cotizaciones");
+				$('#main_modal .modal-body').html(data);
+				$("#main_modal .alert-secondary").addClass('d-none');
+				$("#main_modal .alert-danger").addClass('d-none');
+				$("#main_modal").find('#idProd').val(valorIdProd);
+				$("#main_modal").find('#actualizarButton').trigger("click"); 
+				$('#main_modal').modal('show'); 
+				var modalDialog = $('#main_modal').find('.modal-dialog');
+				 modalDialog.removeClass('modal-lg');
+				 modalDialog.addClass("fullscreen-modal modal-xl");
+				$("#main_modal .ajax-submit").attr('data-reload',false);
+				//Select2
+				
+			/*	$("#main_modal select.select2").select2({
+					dropdownParent: $("#main_modal .modal-content"),
+				});
+				
+				init_editor();
+				
+				/// Init Datepicker 
+    			init_datepicker();
 
-        let valorIdProd = ids.join(',');
+				/// Init DateTimepicker 
+				$('.datetimepicker').daterangepicker({
+					timePicker: true,
+					timePicker24Hour: true,
+					singleDatePicker: true,
+					showDropdowns: true,
+					locale: {
+					  format: 'YYYY-MM-DD HH:mm'
+					}
+				});
+				
+				//Ajax Select2
+				if ($("#main_modal .select2-ajax").length) {
+					$('#main_modal .select2-ajax').each(function(i, obj) {
+						
+						var display2 = "";
+						if( typeof  $(this).data('display2') !== "undefined" ){
+							display2 = "&display2=" +  $(this).data('display2');
+						}
 
-        $.ajax({
-            url: "{{ url('invoices/create') }}",
-            type: 'GET',
-            beforeSend: function() {
-                $("#preloader").css("display", "block"); 
-            },
-            success: function(data) {
-                $("#preloader").css("display", "none");
-                
-                const $modal = $('#modal_principal');
-                
-                $modal.find('.modal-title').html('<i class="fa fa-file-invoice"></i> Generar Cotización');
-                $modal.find('.modal-body').html(data);
-                
-                $modal.find(".alert-secondary, .alert-danger").addClass('d-none');
+                        var display3 = "";
+                        if( typeof  $(this).data('display3') !== "undefined" ){
+                            display3 = "&display3=" +  $(this).data('display3');
+                        }
+				
+				
+						$(this).select2({
+						  ajax: {
+							url: _url + '/ajax/get_table_data?table=' + $(this).data('table') + '&value=' + $(this).data('value') + '&display=' + $(this).data('display') + display2 +display3+ '&where=' +$(this).data('where'),
+							processResults: function (data) {
+							  return {
+								results: data
+							  };
+							}
+						  },
+						  dropdownParent: $("#main_modal .modal-content"),
+						});
+							
+					});
+				}
+				
+				//Auto Selected
+				if ($(".auto-select").length) {
+					$('.auto-select').each(function(i, obj) {
+						$(this).val($(this).data('selected')).trigger('change');
+					})	
+				}
 
-                $modal.find('#idProd').val(valorIdProd);
-                $modal.find('#actualizarButton').trigger("click"); 
+				$('.crm-scroll').slimscroll({
+					railVisible: true,
+					railColor: '#7f8c8d',
+					height: '500px',
+					alwaysVisible: true,
+			    });
+							
+				$(".dropify").dropify();
+				$("#main_modal .ajax-submit input:required, #main_modal .ajax-submit select:required, #main_modal .ajax-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
+				$("#main_modal .ajax-screen-submit input:required, #main_modal .ajax-screen-submit select:required, #main_modal .ajax-screen-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
+				*/
+				
+			 },
+			  error: function (request, status, error) {
+				console.log(request.responseText);
+			  }
+		 });		
+							
+					//alert();
+					}
+				},				
+				/*{
+                    text: 'Cotizar por lote',
+					action: function () {
+							
+							const ids = Object.keys(selectedRows).map(key => key.split('-')[1])
+							let valorIdProd = ids.join(',');
+							
 
-                var modalDialog = $modal.find('.modal-dialog');
-                modalDialog.removeClass('modal-lg').addClass("fullscreen-modal modal-xl");
-                
-                $modal.find(".ajax-submit").attr('data-reload', false);
+							if (valorIdProd.length === 0) {
+								alert('Por favor seleccione un valor')
+								return
+							}
+							
+		 target_select = $(this).parent().find(".select2-ajax");
+		 
+		 
+	 	 $.ajax({
+			 url: "{{ url('invoices/create') }}",
+			 beforeSend: function(){
+				$("#preloader").css("display","block"); 
+			 },success: function(data){
+				$("#preloader").css("display","none");
+				$('#main_modal .modal-title').html("Cotizaciones");
+				$('#main_modal .modal-body').html(data);
+				$("#main_modal .alert-secondary").addClass('d-none');
+				$("#main_modal .alert-danger").addClass('d-none');
+				$("#main_modal").on("show.bs.modal", function (e) { 
+						$(e.currentTarget).find('#idProd').val(valorIdProd);
+						$(e.currentTarget).find('#actualizarButton').trigger("click"); 
+						alert();
+				}).modal('show');
+				//$('#main_modal').modal('show'); 
+				var modalDialog = $('#main_modal').find('.modal-dialog');
+				 modalDialog.removeClass('modal-lg');
+				 modalDialog.addClass("fullscreen-modal modal-xl");
+				$("#main_modal .ajax-submit").attr('data-reload',false);
+				//Select2
+				$("#main_modal select.select2").select2({
+					dropdownParent: $("#main_modal .modal-content"),
+				});
+				
+					init_editor();
+				
+				/// Init Datepicker 
+    			init_datepicker();
 
-                $modal.modal('show'); 
-            },
-            error: function (request, status, error) {
-                $("#preloader").css("display", "none");
-                console.error("Error al cargar cotización:", request.responseText);
-            }
-        });
-    }
-},		
+				/// Init DateTimepicker 
+				$('.datetimepicker').daterangepicker({
+					timePicker: true,
+					timePicker24Hour: true,
+					singleDatePicker: true,
+					showDropdowns: true,
+					locale: {
+					  format: 'YYYY-MM-DD HH:mm'
+					}
+				});
+				
+				//Ajax Select2
+				if ($("#main_modal .select2-ajax").length) {
+					$('#main_modal .select2-ajax').each(function(i, obj) {
+						
+						var display2 = "";
+						if( typeof  $(this).data('display2') !== "undefined" ){
+							display2 = "&display2=" +  $(this).data('display2');
+						}
+
+                        var display3 = "";
+                        if( typeof  $(this).data('display3') !== "undefined" ){
+                            display3 = "&display3=" +  $(this).data('display3');
+                        }
+				
+				
+						$(this).select2({
+						  ajax: {
+							url: _url + '/ajax/get_table_data?table=' + $(this).data('table') + '&value=' + $(this).data('value') + '&display=' + $(this).data('display') + display2 +display3+ '&where=' +$(this).data('where'),
+							processResults: function (data) {
+							  return {
+								results: data
+							  };
+							}
+						  },
+						  dropdownParent: $("#main_modal .modal-content"),
+						});
+							
+					});
+				}
+				
+				//Auto Selected
+				if ($(".auto-select").length) {
+					$('.auto-select').each(function(i, obj) {
+						$(this).val($(this).data('selected')).trigger('change');
+					})	
+				}
+
+				$('.crm-scroll').slimscroll({
+					railVisible: true,
+					railColor: '#7f8c8d',
+					height: '500px',
+					alwaysVisible: true,
+			    });
+							
+				$(".dropify").dropify();
+				$("#main_modal .ajax-submit input:required, #main_modal .ajax-submit select:required, #main_modal .ajax-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
+				$("#main_modal .ajax-screen-submit input:required, #main_modal .ajax-screen-submit select:required, #main_modal .ajax-screen-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
+				
+			 },
+			  error: function (request, status, error) {
+				console.log(request.responseText);
+			  }
+		 });
+		 
+		 return false;
+					},
+		
+                },*/
                 {
                     extend: 'pdfHtml5',
                     text: 'Exportar a PDF',
@@ -558,6 +718,10 @@
 			
 			if (i == 10) {
 				
+//$(this).html('<input type="checkbox" id="mostrar-todos-input">vacios <input id="input-text" style="width:100%;" type="text" placeholder="' + title + '" />');
+                    //let campoInput = $('#input-text');
+					//                    $("#mostrar-todos-input").change(function () {
+
 				var select = $('<input style="width:100%;" type="checkbox" id="mostrar-todos-deposito">vacios <select id="Deposito_file" multiple="true" class="form-control select2"></select>')
 				.appendTo( $(this).empty() )
 				.on( 'change', function () {
@@ -595,6 +759,17 @@
 					
 				}
                 
+
+              /* 
+			}else
+						
+						
+*/						
+						
+						
+
+
+
          });
 
 
@@ -817,7 +992,20 @@
             table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
         }
   }
-  	
+  
+  
+   /*$('#main_modal').on('show.bs.modal', function(e) {
+        // Obtiene el ID del botón que activó el modal
+		const ids = Object.keys(selectedRows).map(key => key.split('-')[1])
+		let valorIdProd = ids.join(',');
+       // var id = $(e.relatedTarget).data('id');
+        //console.log(e.currentTarget);
+        // Asigna el ID al campo oculto dentro del modal
+        $(e.currentTarget).find('#idProd').val(valorIdProd);
+		$(e.currentTarget).actualizar();
+    });*/
+	
+	
 	async function ActualizarOblea(id) {
         inicioLoading();
 		 const itemId = id;
@@ -839,7 +1027,13 @@
        
     const data = await response.json();
     closeLoading();
-	if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: '1' + ' productos actualizados.', icon: 'success' });
+	//console.log(data);
+
+    /*if (typeof table !== 'undefined' && table !== null) {
+            table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
+        }
+	*/	
+        
     }
 	
 	
@@ -864,8 +1058,52 @@
        
     const data = await response.json();
     closeLoading();
-	if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: '1' + ' productos actualizados.', icon: 'success' });
+	//console.log(data);
+
+    /*if (typeof table !== 'undefined' && table !== null) {
+            table.ajax.reload(null, false); // El 'false' evita que vuelva a la primera página
+        }
+	*/	
+        
     }
+
+    /*$(document).on('click', '.save-ubicacion', function(e) {
+    e.preventDefault();
+    let id = $(this).data('id');
+    let nuevaUbicacion = $('#input-ubicacion-' + id).val();
+	
+	
+			const payload = {
+                    ids: id,
+                    update_ubicacion: 1,
+					ubicacion: nuevaUbicacion
+                };
+	
+	
+	 $.ajax({
+                    url: "{{ route('products.update_fecha_ultimogiro') }}",
+                    type: 'POST',
+                    data: payload,
+					beforeSend: function() {
+						inicioLoading();
+					},
+                    success: function(response) {
+                        if (response.result === 'success') {
+                            if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: response.updated + ' productos actualizados.', icon: 'success' });
+                            table.draw(false);
+                        } else {
+                            if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: response.message || 'No se pudo actualizar.', icon: 'error' });
+                        }
+						closeLoading();	
+                    },
+                    error: function(xhr) {
+						closeLoading();
+                        const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo actualizar.';
+                        if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: message, icon: 'error' });
+                    }
+                });
+			});
+	*/
 	
 	$(document).on('click', '.save-ubicacion', function() {
 		var itemId = $(this).data('id');
@@ -890,7 +1128,7 @@
                     table.ajax.reload(null, false);
 					btn.disabled=false;
 					closeLoading();
-					if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: '1' + ' productos actualizados.', icon: 'success' });
+					if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: res.updated + ' productos actualizados.', icon: 'success' });
                 },
                 error: function(request, status, error) {
 					closeLoading();
@@ -923,7 +1161,7 @@
                     table.ajax.reload(null, false);
 					btn.disabled=false;
 					closeLoading();
-					if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: '1' + ' productos actualizados.', icon: 'success' });
+					if(typeof $.toast !== 'undefined') $.toast({ position: "top-right", text: res.updated + ' productos actualizados.', icon: 'success' });
                 },
                 error: function(request, status, error) {
 					closeLoading();
@@ -1026,34 +1264,36 @@ const observer = lozad('.lozad', {
     }
 });
 	
+	/*const observer = lozad('.lozad', {
+    loaded: function(el) {
+        //console.log('Elemento cargado:', el.src);
+    }
+	});*/
+	
 	$("#main_modal").on('show.bs.modal', function () {
-		var zIndexPrincipal = parseInt($("#modal_principal").css("z-index")) || 1050;
-		$("#main_modal").css("z-index", zIndexPrincipal + 10);
-			observer.observe(); 
-	 });
-	 
-	    	
-	$(document).ready(function() {
+	/*
 
-	$("#modal_principal").on('show.bs.modal', function () {
-		
-		init_editor();
+init_editor();
 				
-		init_datepicker();
+/// Init Datepicker 
+init_datepicker();
 
+/// Init DateTimepicker 
+$('.datetimepicker').daterangepicker({
+    timePicker: true,
+    timePicker24Hour: true,
+    singleDatePicker: true,
+    showDropdowns: true,
+    locale: {
+      format: 'YYYY-MM-DD HH:mm'
+    }
+});
 
-		$('.datetimepicker').daterangepicker({
-			timePicker: true,
-			timePicker24Hour: true,
-			singleDatePicker: true,
-			showDropdowns: true,
-			locale: {
-			  format: 'YYYY-MM-DD HH:mm'
-			}
-		});
-		
-	if ($("#modal_principal .select2, #modal_principal .select2-ajax").length) {
-    $('#modal_principal .select2, #modal_principal .select2-ajax').each(function(i, obj) {
+// ==========================================
+// UNIFICACIÓN DE SELECT2 (Estáticos y AJAX)
+// ==========================================
+if ($("#main_modal .select2, #main_modal .select2-ajax").length) {
+    $('#main_modal .select2, #main_modal .select2-ajax').each(function(i, obj) {
         
         // Si el elemento ya fue inicializado previamente, lo destruimos para evitar duplicados
         if ($(this).hasClass("select2-hidden-accessible")) {
@@ -1064,7 +1304,7 @@ const observer = lozad('.lozad', {
 			placeholder: "Seleccione una opción",
 			allowClear: true,
 			width: '100%',
-			dropdownParent: $(this).closest('.modal-body').length ? $(this).closest('.modal-body') : $("#modal_principal .modal-content")
+			dropdownParent: $(this).closest('.modal-body').length ? $(this).closest('.modal-body') : $("#main_modal .modal-content")
 		};
 
         if ($(this).hasClass('select2-ajax')) {
@@ -1090,11 +1330,21 @@ const observer = lozad('.lozad', {
 
         $(this).select2(selectConfig);
             
-		});
-	}
-	
-	
-	//Auto Selected
+    });
+}
+
+// Fix para el Autofocus (Permite escribir en los buscadores dentro de la modal)
+$(document).off('select2:open').on('select2:open', function() {
+    setTimeout(function() {
+        const searchField = document.querySelector('.select2-search__field');
+        if (searchField) {
+            searchField.focus();
+        }
+    }, 50);
+});
+// ==========================================
+
+//Auto Selected
 if ($(".auto-select").length) {
     $('.auto-select').each(function(i, obj) {
         $(this).val($(this).data('selected')).trigger('change');
@@ -1109,20 +1359,85 @@ $('.crm-scroll').slimscroll({
 });
             
 $(".dropify").dropify();
-$("#modal_principal .ajax-submit input:required, #modal_principal .ajax-submit select:required, #modal_principal .ajax-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
-$("#modal_principal .ajax-screen-submit input:required, #modal_principal .ajax-screen-submit select:required, #modal_principal .ajax-screen-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
-       
+$("#main_modal .ajax-submit input:required, #main_modal .ajax-submit select:required, #main_modal .ajax-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");
+$("#main_modal .ajax-screen-submit input:required, #main_modal .ajax-screen-submit select:required, #main_modal .ajax-screen-submit textarea:required").closest(".form-group").find('.control-label').append("<span class='required'> *</span>");*/
+
+
+
+			observer.observe(); 
+	 });
+	 
+	 
+	 
+/*	     // Fix definitivo para el Autofocus (Poder escribir inmediatamente en el buscador de la modal)
+    $(document).on('select2:open', function() {
+        setTimeout(function() {
+            const searchField = document.querySelector('.select2-search__field');
+            if (searchField) {
+                searchField.focus();
+            }
+        }, 50); // Pequeño retraso de 50ms para esperar que termine la animación de Bootstrap
+    });
+*/
+	    	
+			$(document).ready(function() {
+
+    // Escuchar de forma global cuando CUALQUIER modal se termine de abrir en la pantalla
+    $(document).on('shown.bs.modal', '.modal', function () {
+        
+        // Guardamos la referencia exacta de la modal que se acaba de abrir
+        var $currentModal = $(this);
+
+        // Buscar si existen elementos Select2 locales o AJAX dentro de ESTA modal específica
+        var $selects = $currentModal.find('.select2, .select2-ajax');
+
+        if ($selects.length) {
+            $selects.each(function() {
+                var $element = $(this);
+
+                // 1. Limpieza preventiva: si ya estaba inicializado, lo destruimos para evitar duplicados
+                if ($element.hasClass("select2-hidden-accessible")) {
+                    $element.select2('destroy');
+                }
+
+                // 2. Configuración base acoplada al contenedor de la modal actual
+                var selectConfig = {
+                    placeholder: $element.data('placeholder') || "Seleccione una opción",
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $currentModal.find('.modal-content') // Mantiene el menú dentro de su respectiva modal
+                };
+
+                // 3. Inyección de propiedades AJAX solo si el elemento tiene la clase correspondiente
+                if ($element.hasClass('select2-ajax')) {
+                    var display2 = (typeof $element.data('display2') !== "undefined") ? "&display2=" + $element.data('display2') : "";
+                    var display3 = (typeof $element.data('display3') !== "undefined") ? "&display3=" + $element.data('display3') : "";
+
+                    selectConfig.ajax = {
+                        url: _url + '/ajax/get_table_data?table=' + $element.data('table') + '&value=' + $element.data('value') + '&display=' + $element.data('display') + display2 + display3 + '&where=' + $element.data('where'),
+                        processResults: function (data) {
+                            return {
+                                results: data
+                            };
+                        }
+                    };
+                }
+
+                // 4. Inicializar de forma aislada este Select2 específico
+                $element.select2(selectConfig);
+            });
+        }
     });
 
     // FIX GLOBAL: Enfoque automático del buscador al hacer clic en cualquier Select2 abierto
-   /* $(document).on('select2:open', function() {
+    $(document).on('select2:open', function() {
         setTimeout(function() {
             var searchField = document.querySelector('.select2-search__field');
             if (searchField) {
                 searchField.focus();
             }
         }, 50);
-    });*/
+    });
 
 });
 
