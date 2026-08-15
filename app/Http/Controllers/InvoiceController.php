@@ -136,10 +136,10 @@ class InvoiceController extends Controller
         $item = Product::where('id', $idProduct)->with('item')->first();
 
         $company = \App\Company::where('business_name', 'Pentacar')->orwhere('business_name', 'Paternal')->get();
-
+		$comisiones = $this->comisiones;
         $users = User::all()->where('user_type', '!=', 'admin')->where('user_type', '!=', 'user');
         if (!$request->ajax()) {
-            return view('backend.accounting.invoice.create', compact('idCar', 'vehiculos', 'idProduct', 'item', 'users', 'rol', 'rol_revendedor', 'company'))->with(['companias_global' => $companias_global]);
+            return view('backend.accounting.invoice.create', compact('idCar', 'vehiculos', 'idProduct', 'item', 'users', 'rol', 'rol_revendedor', 'company','comisiones'))->with(['companias_global' => $companias_global]);
         } else {
             return view(
                 'backend.accounting.invoice.modal.create',
@@ -151,7 +151,8 @@ class InvoiceController extends Controller
                     'users',
                     'rol',
                     'rol_revendedor',
-                    'company'
+                    'company',
+					'comisiones',
                 )
             )->with(['companias_global' => $companias_global]);
         }
@@ -585,7 +586,8 @@ class InvoiceController extends Controller
 		
 		
     //crear comision
-    $montoAgregadoComision = 0;
+	$this->guardarComision($request, $invoice);
+ /*   $montoAgregadoComision = 0;
     $percent = $this->comisiones[$request->comision];
     //dd($percent);
     if ($request->comision == 'Venta menos a 30000') {
@@ -627,7 +629,7 @@ class InvoiceController extends Controller
         $comision->isAdicional = null;
     }
 
-    $comision->save();
+    $comision->save();*/
 
 
     //Increment Invoice Starting number
@@ -750,6 +752,7 @@ class InvoiceController extends Controller
 		
 		$salesReturns = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->where("invoice_id",$invoice->id)->get(); // Get // Get all SalesReturns with items
 		$allReturnItemIds = $salesReturns->pluck('sales_return_items')->flatten()->pluck('product_id')->toArray();
+		$comisiones = $this->comisiones;
 		//$devolucionIds = SalesReturn::with('sales_return_items')->where("customer_id",$invoice->client_id)->pluck('sales_return_items.product_id');//->pluck('sales_return_items.product_id');
 		
 		//dd($allReturnItemIds);
@@ -788,7 +791,8 @@ class InvoiceController extends Controller
                     'rol',
                     'rol_revendedor',
                     'estatus_anulado',
-					'allReturnItemIds'
+					'allReturnItemIds',
+					'comisiones',
                 )
             );
         } else {
@@ -805,7 +809,8 @@ class InvoiceController extends Controller
                     'rol',
                     'rol_revendedor',
                     'estatus_anulado',
-					'allReturnItemIds'
+					'allReturnItemIds',
+					'comisiones'
                 )
             );
         }
@@ -1092,7 +1097,8 @@ class InvoiceController extends Controller
 		}
 		//Invoiceitem_id
         //crear comision
-        $montoAgregadoComision = 0;
+		$this->guardarComision($request, $invoice);
+      /*  $montoAgregadoComision = 0;
         $percent = $this->comisiones[$request->comision];
         //dd($percent);
         if ($request->comision == 'Venta menos a 30000') {
@@ -1134,6 +1140,7 @@ class InvoiceController extends Controller
         }
 
         $comision->save();
+		*/
 
         if ($invoice->client->user->id != null) {
             // Notification::send(2, new InvoiceUpdated($invoice));
@@ -5968,5 +5975,46 @@ public function auditoriaInvoice(Request $request)
             ->rawColumns(['event', 'valores_ant', 'historial_items'])
             ->make(true);
     }
+}
+
+/**
+ * Procesa y guarda la comisión de una factura.
+ *
+ * @param \Illuminate\Http\Request $request
+ * @param \App\Models\Invoice $invoice
+ * @return \App\Models\Comision
+ */
+public function guardarComision($request, $invoice)
+{
+    $tipoComision = $request->comision;
+    if (!isset($this->comisiones[$tipoComision])) {
+        throw new \Exception("El tipo de comisión '{$tipoComision}' no está configurado.");
+    }
+
+    $config = $this->comisiones[$tipoComision];
+    $percent = $config['percentage'];
+    $montoAgregadoComision = $config['fixed'];
+
+    $montoComi = ($percent * $invoice->grand_total) / 100;
+
+    $total = $montoComi + $montoAgregadoComision;
+
+    if ($invoice->is_usd) {
+        $total = $total * $invoice->tasa;
+    }
+
+    $comision = Comision::findOrNew($invoice->comision->id ?? null);
+
+    $comision->porcentaje   = $percent;
+    $comision->monto        = $total;
+    $comision->id_venta     = $invoice->id;
+    $comision->id_vendedor  = $invoice->user_id;
+    $comision->isPaid       = null;
+    $comision->tipo         = $tipoComision;
+    $comision->isAdicional  = ($montoAgregadoComision > 0) ? 1 : null;
+
+    $comision->save();
+
+    return $comision;
 }
 }

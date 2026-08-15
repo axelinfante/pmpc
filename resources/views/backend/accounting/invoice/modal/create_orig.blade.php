@@ -15,10 +15,10 @@
 		$ve = 'd-none';
 	}
 @endphp
-
 <link href="{{ asset('public/backend/plugins/bootstrap-select/css/bootstrap-select.css') }}" rel="stylesheet">
-<input type="hidden" id="idProd" value="{{ $idProduct ?? '' }}">
+<input type="hidden" id="idProd" nameid="idProd" value="{{ $idProduct ?? '' }}">
 <button type="button" id="actualizarButton" class="btn btn-primary"  style="display: none;" >Actualizar</button>
+
 <div class="row">
 	<div class="col-12">
 	<div class="card">
@@ -62,24 +62,17 @@
 			<div class="col-md-4">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Acciones') }}</label>
-					<select class="form-control select2" multiple name="acciones[]" id="acciones" data-placeholder="{{ _lang('Seleccionar acciones') }}">
-						<option value=""></option> 
-						
-						<option value="Flete">{{ _lang('Flete') }}</option>
-						<option value="Despacho con guía">{{ _lang('Despacho con guía') }}</option>
-						
-						<option value="Retira en Penta">{{ _lang('Retira en Penta') }}</option>
-						<option value="Retira en Octubre">{{ _lang('Retira en Octubre') }}</option>
-						<option value="Retira en Tucson">{{ _lang('Retira en Tucson') }}</option>
-						<option value="Retira en Constituyentes">{{ _lang('Retira en Constituyentes') }}</option>
-						<option value="Retira Ventanita">{{ _lang('Retira Ventanita') }}</option>
-						
-						<option value="Enviar a Penta por Jumper">{{ _lang('Enviar a Penta por Jumper') }}</option>
-						<option value="Enviar a Rosario">{{ _lang('Enviar a Rosario') }}</option>
-						<option value="Mercado envío (c/Etiq) Jumper a correo">{{ _lang('Mercado envío (c/Etiq) Jumper a correo') }}</option>
-						<option value="ML vía cargo (Jumper)">{{ _lang('ML vía cargo (Jumper)') }}</option>
-						<option value="Moto flex. ML">{{ _lang('Moto flex. ML') }}</option>
-						<option value="Colecta ziping">{{ _lang('Colecta ziping') }}</option>
+					<select class="form-control select2" multiple name="acciones[]" id="acciones">
+						<option value="0">Seleccionar</option>
+						<!--<option value="no_desarmar">{{ _lang('Desarmado') }}</option>-->
+						<option value="retirar">{{ _lang('Retirar en el momento') }}</option>
+						<option value="despacho">{{ _lang('Despacho') }}</option>
+						<option value="retiro_programado">{{ _lang('Retiro Programado') }}</option>
+						<option value="facturar">{{ _lang('Facturar') }}</option> 
+						<option value="retiro_ventanita">{{ _lang('Retiro Ventanita') }}</option> 
+						<option value="retiro_constituyentes">{{ _lang('Retiro Constituyentes') }}</option> 
+						<option value="retiro_octubre">{{ _lang('Retiro Octubre') }}</option> 
+						<option value="despacho">{{ _lang('Despacho') }}</option> 
 					</select>
 				</div>
 			</div>
@@ -94,25 +87,8 @@
 			</div>
 			@endif
 
-
-			<div class="form-group">
-				<label for="comision">Tipo de venta</label>
-				<select class="form-control" required name="comision" id="comision">
-					<option selected value="">Seleccione</option>
-					
-					@foreach($comisiones as $nombre => $valores)
-						<option value="{{ $nombre }}">
-							{{ $nombre }} ({{ $valores['percentage'] }}% 
-							@if($valores['fixed'] > 0) 
-								+ ${{ number_format($valores['fixed'], 2) }}
-							@endif)
-						</option>
-					@endforeach
-				</select>
-			</div>
-
 			
-			<!--<div class="col-lg-3 mb-2">
+			<div class="col-lg-3 mb-2">
 				<label>{{ _lang('Tipo de venta') }}</label>
 				<select class="form-control  " required name="comision">
 					<option selected value="">Seleccione</option>
@@ -133,7 +109,7 @@
 
 
 				</select>
-			</div>-->
+			</div>
 
 			<div class="col-md-4 d-none">
 			  <div class="form-group">
@@ -217,7 +193,7 @@
 
 			<div class="col-md-4 d-none" id="contacts">
 			  <div class="form-group">
-				<a href="{{ route('contacts.create') }}" data-select="client_id" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+				<a href="{{ route('contacts.create') }}" data-reload="false" data-title="{{ _lang('Add Client') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 				<label class="control-label">{{ _lang('Select Client') }}</label>
 				<select data-placeholder="{{ _lang('Buscar por Dni o nombre...') }}" class="form-control select2-ajax" data-value="id" data-display="contact_name" data-display2="dni_cuit"
 						data-table="contacts" data-where="101" name="client_id" id="client_id" required>
@@ -225,7 +201,6 @@
 				</select>
 			  </div>
 			</div>
-
 		<div class="col-md-12">
 					<div class="form-group">
 <br>
@@ -236,6 +211,7 @@
 
 
 			{{-- @if($idCar || !$idProduct) --}}
+				
 <div class="col-md-6">
 					<div class="form-group">
 						{{--<a href="{{ route('vehiculo.create') }}" data-reload="false" data-title="{{ _lang('Add Supplier') --}}
@@ -268,18 +244,13 @@
 			{{-- @if($idCar || !$idProduct) --}}
 				<div class="col-md-6">
 					<div class="form-group select-product-container">
-						<!--<a id="productLink" href="{{ route('products.create') }}?idCar={{$idCar}}" data-reload="false"
+						<a id="productLink" href="{{ route('products.create') }}?idCar={{$idCar}}" data-reload="false"
 						   data-title="{{
 								_lang
-								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
-			<!--<a id="productLink_" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
-				<a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
-								}}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
-								
-								<input type="hidden" name="desamar_item" id="desamar_item" value="">
-						<label class="control-label">{{ _lang('Producto en vehiculo (Listado Predefinido)') }}</label>
+								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+						<label class="control-label">{{ _lang('Producto en vehiculo') }}</label>
 
-						<select class="form-control" data-value="id" data-display="item_name" 
+						<select class="form-control" data-value="items.id" data-display="items.item_name" 
 								data-table="items" data-where="100" data-option = '' name="product" id="product">
 							<option value="">{{ _lang('Select Product') }}</option>
 						</select>
@@ -353,7 +324,7 @@
 				
 			</div>
 
-			<div class="col-md-3">
+			<div class="col-md-3 d-none">
 				<div class="form-group">
 					<label for="tasa_usd">Tasa Usd</label>
 					<input type="number" class="form-control" step="0.01" id="tasa_usd" name="tasa">
@@ -363,7 +334,7 @@
 
 			{{--<div class="col-md-6">--}}
 				{{--<div class="form-group select-product-container">--}}
-					{{--<a href="{{ route('products.create') }}" data-reload="false" data-title="{{ _lang('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>--}}
+					{{--<a href="{{ route('products.create') }}" data-reload="false" data-title="{{ _lang('Add Product') }}" class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>--}}
 					{{--<label class="control-label">{{ _lang('Select Product') }}</label>--}}
 					{{--<select class="form-control select2-ajax" data-value="id" data-display="item_name" data-table="items" data-where="2" name="product" id="product">--}}
 						{{--<option value="">{{ _lang('Select Product') }}</option>--}}
@@ -400,6 +371,7 @@
 								<th></th>
 								<th class="text-center" id="total-qty">0</th>
 								<th></th>
+								
 								<th class="text-right" id="total">0.00</th>
 								<th class="text-right"></th>
 								<th class="text-center"></th>
@@ -443,9 +415,9 @@
 
 			<div class="col-md-12" id="saldo-cc-container" style="display:none;">
 				<div class="form-check">
-					<!--<input type="checkbox" name="usar_saldo_cuenta_corriente" id="usar_saldo_cc" class="form-check-input" value="1">-->
+					<input type="checkbox" name="usar_saldo_cuenta_corriente" id="usar_saldo_cc" class="form-check-input" value="1">
 					<label class="form-check-label" for="usar_saldo_cc">
-						{{ _lang('Saldo de cuenta corriente') }}
+						{{ _lang('Abonar con saldo de cuenta corriente') }}
 						(Saldo disponible: <span id="saldo-cc-disponible">$0.00</span>)
 					</label>
 				</div>
@@ -472,39 +444,7 @@
 </select>
 
 
- <div class="modal fade" id="itemCreateModal" tabindex="-1" aria-labelledby="itemCreateModal" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="categoryCreateModalLabel">Crear Items</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-            </div>
-            <form id="miFormulario" name="miFormulario" class="was-validated" action="{{ route('item.store') }}" method="post">
-                @csrf
-                <div class="modal-body">
-				<div class="alert alert-danger print-error-msg" style="display:none">
-					<ul></ul>
-				</div>
-				<div class="col-lg-12 mb-3">
-						<label for="item_name" class="form-label">{{ _lang('Product Name') }}</label>
-                        <input type="text" name="item_name" id="item_name" required class="form-control" value="{{old('item_name')}}">
-                        @error('item_name')
-                        <small class="text-danger">{{'*'.$message}}</small>
-                        @enderror
-				</div>	
-			  <input type="hidden" id="item_type" name="item_type" value="product" />
-			  <input type="hidden" id="company_id" name="company_id" value="{{ company_id() }}" />
-			  <input type="hidden" id="activo" name="activo" value="si" />
-			</div>	
-                <div class="modal-footer">
-                    <button class="btn btn-primary"> Actualizar <i class="bi bi-check"></i></button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+
 
 <script src="{{ asset('public/backend/plugins/bootstrap-select/js/bootstrap-select.min.js') }}"></script>
 <script src="{{ asset('public/backend/assets/js/invoice/create.js?v=1.4') }}"></script>
@@ -514,30 +454,6 @@
     let product = $('#product');
 
 	let is_usd = $('#is_usd');
-
-	$(document).ready(function() {
-        $('#acciones').select2({
-            allowClear: true,
-            placeholder: $('#acciones').data('placeholder') 
-        });
-		
-				
-		let idCar = "{{ $idCar ?? '' }}";
-		let nombreCar = "{{ ($vehiculos->id ?? '') .' '. ($vehiculos->marca_modelo->marca->marca ?? '').' '. ($vehiculos->marca_modelo->modelo->modelo ?? '') }}"; 
-		let $selectCar = $('#car_id');
-					
-			if (idCar !== '' && idCar !== null) {
-				//console.log(nombreCar);
-				let nuevaOpcion = new Option(nombreCar, idCar, true, true);
-				$selectCar.append(nuevaOpcion).trigger('change.select2');
-				setTimeout(function() {
-					$('#car_id').trigger('change');
-				}, 2000); // Executes after 2 seconds
-							
-			} else {
-				$selectCar.val(null).trigger('change.select2');
-			}
-    });
 
 	is_usd.change(function () {
 		if(is_usd.is(':checked')){
@@ -590,7 +506,7 @@
 	}
     if(car.val() != '' ){
 
-        //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
+        $('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
 
 
@@ -605,13 +521,12 @@
         if( typeof  product.data('display3') !== "undefined" ){
             display3 = "&display3=" +  product.data('display3');
         }
-		
-        /*product.select2({
+
+        product.select2({
             ajax: {
                 url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
                 '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
                 '&option=' +product.data('option'),
-				delay: 250,
                 processResults: function (data) {
 
                     return {
@@ -619,32 +534,7 @@
                     };
                 }
             }
-        });*/
-		
-		product.select2({
-				placeholder: 'Buscar ...',
-				allowClear: true,
-			ajax: {
-				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
-					  '&value=' + product.data('value') +
-					  '&display=' + product.data('display') + display2 + display3 + 
-					  '&where=' + product.data('where') +
-					  '&car_id=' + $(this).val() +
-					  '&option= products.car_id = ' + $(this).val(),
-        delay: 250,
-        dataType: 'json',
-        processResults: function (data) {
-			    return {
-                    results: data
-                };
-        }
-    }
-});
-		
-		setTimeout(function() {
-			$('#car_id').trigger('change');
-		}, 2000); // Executes after 2 seconds
-		
+        });
     }else{
 		$('#productLink').addClass('d-none')
 
@@ -665,11 +555,11 @@
             display3 = "&display3=" +  product.data('display3');
         }
 
-        //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
+        $('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
 
 		limpiarItems($(this).val());
-			product.select2({
+		product.select2({
 				placeholder: 'Buscar...', // ¡Aquí puedes meter el placeholder que querías!
 				allowClear: true,
 			ajax: {
@@ -688,7 +578,23 @@
         }
     }
 });
-   
+        /*product.select2({
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
+                '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
+                '&option= products.car_id = ' + $(this).val(),
+                processResults: function (data) {
+					selected=$('#nro_interno_tmp').val();
+					selected = selected.toString().split(",").map(function(t){return parseInt(t)})
+ 					var data_modified = $.map(data, function (obj) {
+							 	obj.disabled = ($.inArray(obj.id, selected) != -1) ? true:false; // or use logical statement
+          				return obj;
+        				});
+
+					   return { results: data_modified };	
+                }
+            }
+        });*/
 
 
 
@@ -697,28 +603,26 @@
 
 	$('.select2-ajax').on('change',function (e) {
 	
-	if ($(this).prop('id') == 'car_id') {
-    if ($(this).val()) { 
-        $.ajax({
-            url: _url + '/vehiculo/get-company/' + $(this).val(),
-            async: false,
-            dataType: 'json',
-            success: function(data) {
-                $('#service').data('company', data.company);
-                $('#car_id').data('company', data.company);
-                $('#company_id').val(data.company);
-                $('#company_id_s').val(data.company);
-            },
-            error: function(error) {
-                console.log('Error: Al cargar empresa');
-            }
-        });
-    }
-}
-
+	if($(this).prop('id') == 'car_id') {
+		$.ajax({
+			url :_url + '/vehiculo/get-company/'+$(this).val(),
+			async: false,
+			dataType: 'json',
+			success: function(data) {
+				$('#service').data('company', data.company);
+				$('#car_id').data('company', data.company);
+				//console.log(car.data('company'));
+				$('#company_id').val( data.company);
+				$('#company_id_s').val( data.company);
+			},
+			error: function(error) {
+				console.log('Error: Al cargar empresa' )
+			}
+		});
+	}
 
 	if($(this).prop('id') == 'service') {
-	if ($(this).val()) { 
+		if ($(this).val()!= '') {
 		$.ajax({
 			url :_url + '/products/get-company/'+$(this).val(),
 			async: false,
@@ -738,7 +642,28 @@
 	}
 })
 
+/*if($(this).prop('id') == 'service') {
+	if ($(this).val()!= '') {
+		$.ajax({
+			url :_url + '/products/get-company/'+$(this).val(),
+			async: false,
+			dataType: 'json',
+			success: function(data) {
+				console.log(data.company);
+				$('#service').data('company', data.company);
+				$('#car_id').data('company', data.company);
+				//console.log(car.data('company'));
+				$('#company_id').val( data.company);
+				$('#company_id_s').val( data.company);
+			},
+			error: function(error) {
+				// console.log('Error: Al cargar empresa' )
+			}
+		});
+	}
+	}
 
+*/
 			function limpiarItems(nro_interno) {
 				return;
 				$('#nro_interno_tmp').val("");
@@ -766,15 +691,13 @@
 
 				if (Number.isNaN(product_total_)) { // Verifica si NO es NaN
 						e.preventDefault();
-						//alert("Precio de Producto no pueden tener un valor menor 0");
-						if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Precio de Producto no pueden tener un valor menor 0', icon: 'error' });}
+						alert("Precio de Producto no pueden tener un valor menor 0");
               			return false; //for old browsers 
 				} 
 
 				 if (validar_summary() === false) {
 					e.preventDefault();
-						//alert("Producto no pueden tener valor 0");
-						if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto no pueden tener valor 0', icon: 'error' });}
+						alert("Producto no pueden tener valor 0");
               			return false; //for old browsers 
     			}
     //$(this).submit(); 
@@ -795,84 +718,66 @@ function validar_summary() {
     
 }
 
+
+
+$(document).on('change', '#product', function () {
+        var product_id = $(this).val();
+        if (product_id == '') {
+            return;
+        }
+
+
+        let car_id = car.val();
+
+        //alert($car_id);
+        /*{{ route('products.create') }}?modalInStock=1
+        item_id
+        car_id*/
+        //return;
+
+		
+		var link = "{{ url('products') }}";
+
+		var myformData = new FormData();        
+					myformData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+					myformData.append('car_id', car_id);
+					myformData.append("item_id", product_id);
+
+		 $.ajax({
+			 method: "POST",
+			 url: link,
+			 data: myformData,
+			 mimeType:"multipart/form-data",
+			 contentType: false,
+			 cache: false,
+			 processData:false,
+			 beforeSend: function(){
+				$("#preloader").css("display","block");  
+			 },success: function(data){
+				$("#preloader").css("display","none"); 
+				var json = JSON.parse(data);
+				if(json['result'] == "success"){
+
+						
+						var select_value = json['data']["products.id"];
+						var select_display = json['data']["items.item_name"];
+						var newOption = new Option(select_display, select_value, true, true);
+						$('#service').append(newOption).trigger('change');
+					}
+			 },
+			 error: function (request, status, error) {
+				console.log(request.responseText);
+			 }
+		 });
+
+
+		
+    });
+
+	/*$('#idProd').on('change',function (e) {
+		alert();
+	} );*/
 	
-$(document).on('change', '#product', function() {
-	    var product_id = $(this).val();
-		if( product_id == '' ){
-			return;
-		}
-
-			let InternoVehiculo = $('#car_id option:selected').val();
-	    //if product has already in order table
-	    if ($("#order-table > tbody > #product-" + InternoVehiculo+product_id).length > 0) {
-			if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto ya se encuentra agregado', icon: 'error' });}
-			/*var line = $("#order-table > tbody > #product-" +InternoVehiculo+product_id);
-			var quantity = parseFloat($(line).find(".input-quantity").val());
-			if (quantity==1) return "";
-			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
-			$("#product").val("").trigger('change');*/
-			return;		
-	    }
-
-					
-					let textoVehiculo = $('#car_id option:selected').text();
-					let textoPieza    = $(this).find('option:selected').text();
-/*
-					let partes = textoVehiculo.split('-').map(p => p.trim());
-
-					let prefijo        = partes[0] || '';
-					let numeroSinCeros = parseInt(partes[1], 10) || 0; 
-					let internos_new   = `${prefijo}-${numeroSinCeros}`; 
-
-					let vehiculo = partes.slice(2).join(' - '); 
-*/
-					let product = {
-						id: InternoVehiculo+product_id,
-						item_name: textoPieza,
-						marca_modelo: textoVehiculo,
-						item_id: product_id
-					};
-					
-					   var unit_cost = 1;
-					   var sub_total = 1;
-
-					let product_row = `
-						<tr id="product-${product.id}">
-							<td></td>
-							<td><b>${product.item_name} ${product.marca_modelo}</b></td>
-							<td class="description">
-								<input type="text" name="product_new_description[]" class="form-control input-description" value="">
-							</td>
-							<td class="text-center quantity">
-								1 
-								<input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
-							</td>
-							<td class="text-right unit-cost">
-								<input type="text" name="unit_new_cost[]" data-id="${product.id}" onChange="monto_en_usd(this, ${product.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
-							</td>
-							<td class="text-right sub-total">
-								<input type="text" name="sub_new_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly>
-							</td>
-							<td class="text-right usd">
-								<input disabled id="usd_monto-${product.id}" type="text" class="form-control input-usd text-right">
-							</td>
-							<td>${InternoVehiculo}</td>
-							<td class="text-center">
-												<button type="button" class="btn btn-danger btn-xs remove-product"><i class='fa fa-trash'></i></button>
-							</td>
-							<input type="hidden" name="product_new_id[]" value="-1">
-							<input type="hidden" name="product_new_interno[]" value="${InternoVehiculo}">
-							<input type="hidden" name="product_new_items_id[]" value="${product.item_id}">
-							<input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
-						</tr>`;
-
-
-					$("#order-table > tbody").append(product_row);
-					update_summary();
-	});	
-	
-	
-	/* adicional */
 	$( "#actualizarButton" ).on( "click", function(e) {
 	e.preventDefault();
 
@@ -983,5 +888,7 @@ $(document).on('change', '#product', function() {
 	  }
 		
 	});
+
+
 
 </script>
