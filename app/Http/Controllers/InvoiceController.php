@@ -2548,7 +2548,31 @@ $validator = Validator::make($request->all(), [
         return view('backend.accounting.invoice.modal.observacion', $data);
     }
 
-    public function list_comision()
+		public function list_comision()
+		{
+			$user = auth()->user();
+			$isGerencial = strtolower($user->role->name) == 'gerencial';
+
+			if ($isGerencial) {
+				$total_monto = Comision::whereNull('isPaid')->sum('monto');
+				$total_monto_pagado = Comision::where('isPaid', 1)->sum('monto');
+			} else {
+				$total_monto = Comision::where('id_vendedor', $user->id)->whereNull('isPaid')->sum('monto');
+				$total_monto_pagado = Comision::where('id_vendedor', $user->id)->where('isPaid', 1)->sum('monto');
+			}
+
+			$rol = Role::where('name', 'Vendedor')->first()?->id;
+
+			$data = [
+				'total_monto'        => $total_monto,
+				'total_monto_pagado' => $total_monto_pagado,
+				'rol'                => $rol
+			];
+
+			return view('backend.accounting.comision.list', $data);
+		}
+
+    public function list_comision_x()
     {
         if (strtolower(auth()->user()->role->name) == 'Gerencial') {
 			$total_monto = Comision::where('isPaid', null)->sum('monto');
@@ -3891,195 +3915,428 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->make(true);
     }
 
-    public function table_comision(Request $request)
+    /*public function table_comision(Request $request)
     {
-        $currency = currency();
-        $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		if ($request->ajax()) {
+					$currency = currency();
+					$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 
 
-        $comisiones = Comision::select('*')->with(['gasto', 'vendedor', 'invoice'])
-            //->withSum('comision','monto')
-            //->withSum('punches as ptoTotal', 'pto')
-            ->when($request, function ($q) use ($request) {
-                if (strtolower(auth()->user()->role->name) == 'vendedor') {
-                    $q->where('id_vendedor', auth()->id());
-                }
-                if ($request->has('vendedor')) {
-                    $q->where('id_vendedor', $request->get('vendedor'));
-                }
-                if ($request->has('status')) {
-                    if ($request->get('status') == 0) {
-                        $q->where('isPaid', null);
-                    } else {
-                        $q->where('isPaid', $request->get('status'));
-                    }
-                }
+					$comisiones = Comision::select('*')->with(['gasto', 'vendedor', 'invoice'])
+						//->withSum('comision','monto')
+						//->withSum('punches as ptoTotal', 'pto')
+						->when($request, function ($q) use ($request) {
+							if (strtolower(auth()->user()->role->name) == 'vendedor') {
+								$q->where('id_vendedor', auth()->id());
+							}
+							if ($request->has('vendedor')) {
+								$q->where('id_vendedor', $request->get('vendedor'));
+							}
+							if ($request->has('status')) {
+								if ($request->get('status') == 0) {
+									$q->where('isPaid', null);
+								} else {
+									$q->where('isPaid', $request->get('status'));
+								}
+							}
 
-                return $q;
-            })
-            ->whereHas('invoice', function ($q) use ($company_id, $request) {
-                if ($request->has('invoice_number')) {
-                    $q->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
-                }
+							return $q;
+						})
+						->whereHas('invoice', function ($q) use ($company_id, $request) {
+							if ($request->has('invoice_number')) {
+								$q->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
+							}
 
-                $q->whereIn('company_id', $company_id);
-                //$q->where('id_venta', 1667);
-                return $q;
-            });
+							$q->whereIn('company_id', $company_id);
+							//$q->where('id_venta', 1667);
+							return $q;
+						});
 
-        return Datatables::eloquent($comisiones)
-            ->addColumn('invoice_number', function ($comisiones) {
-                if (!empty($comisiones->invoice)) {
-                    return '<a href="' . action('InvoiceController@show', $comisiones->invoice->id) . '">' .  $comisiones->invoice->invoice_number . '</a>';
-                };
-            })
-            ->addColumn('invoice_venta', function ($comisiones) {
-                if (!empty($comisiones->invoice)) {
-                    $date_format = get_company_option('date_format', 'Y-m-d');
-                    return isset($comisiones->invoice->invoice_date) ? date($date_format, strtotime($comisiones->invoice->invoice_date)) : '';
-                };
-            })
-            ->addColumn('cliente', function ($comisiones) {
-                return $comisiones->invoice->client->contact_name ?? '';
-            })
-            ->addColumn('resumen_pieza', function ($comisiones) use ($currency) {
-                $html = '<table class="table">';
-                $mostrado = array();
-                $invoice_item = InvoiceItem::where('invoice_id', $comisiones->invoice->id)->get();
-                if (!empty($invoice_item)):
-                    foreach ($invoice_item as $item):
-                        $modelo_actual = "";
-                        if (!in_array($item->product->marca_modelo, $mostrado)) {
-                            array_push($mostrado, $item->product->marca_modelo);
-                            $modelo_actual = ($item->product->marcaModelo->marca->marca ?? '') . ' ' .  ($item->product->marcaModelo->modelo->modelo ?? '');
-                        }
-                        $html .= " <tr ><td>*.-</td><td>{$modelo_actual}</td><td>$item->quantity x " . decimalPlace($item->unit_cost, $currency) . "</td></tr>";
-                    endforeach;
-                endif;
-                return $html .= "</table>";
-            })
-            ->addColumn('venta_neta', function ($comisiones) use ($currency) {
-                return decimalPlace($comisiones->invoice->grand_total, $currency);
-            })
-            ->addColumn('anulado', function ($comisiones) use ($currency) {
-                $html = '<table class="table">';
-                $mostrado = array();
-                $invoice_item = Anulados_comision::where('invoice_id', $comisiones->invoice->id)->get();
-                if (!empty($invoice_item)):
-                    foreach ($invoice_item as $item):
-                        $modelo_actual = "";
-                        if (!in_array($item->product->marca_modelo, $mostrado)) {
-                            array_push($mostrado, $item->product->marca_modelo);
-                            $modelo_actual = ($item->product->marcaModelo->marca->marca ?? '') . ' ' .  ($item->product->marcaModelo->modelo->modelo ?? '');
-                        }
-                        $class = "";
-                        //$class= ($item->estatus=="") ? "class='bg-danger'" :"";
-                        $html .= " <tr {$class}><td>*.-</td><td>{$modelo_actual}</td><td>" . decimalPlace($item->monto_anulado, $currency) . "</td></tr>";
-                        if ($item->estatus != "") {
-                            $html .= " <tr><td>Estatus</td><td colspan='2'>{$item->estatus}</td></tr>";
-                        }
-                        if ($item->observaciones != "") {
-                            $html .= " <tr><td>Observacion</td><td colspan='2'>{$item->observaciones}</td></tr>";
-                        }
-                    endforeach;
-                endif;
-                return $html .= "</table>";
-
-
-                //return "1111";
-            })
-            ->addColumn('comision', function ($comisiones) use ($currency) {
-                return "<center> " . $comisiones->porcentaje . "% </center>";
-            })
-            ->addColumn('importe_liq', function ($comisiones) use ($currency) {
-                return "<span class='float-right'> " . decimalPlace($comisiones->monto, $currency) . " </span>";
-            })
-            ->addColumn('importe_pag',  function ($comisiones) use ($currency) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                $html = '<table class="table">';
-                $transactions = Transaction::where('id_comision', $comisiones->id)->whereIn('chart_id', array(7))->orderBy('id', 'desc')->get();
-                if (!empty($transactions)):
-                    foreach ($transactions as $item):
-                        $html .= " <tr><td>" . decimalPlace($item->amount, $currency) . "</td><td>" . date($date_format, strtotime($item->trans_date)) . "</td></tr>";
-                    endforeach;
-                endif;
-                return $html .= "</table>";
-            })
-            ->addColumn('observaciones', function ($comisiones) {
-                return $comisiones->invoice->note;
-            })
-            ->addColumn('checkbox', function ($comisiones) use ($request) {
-
-                if ($request->has('status') && ($request->get('status') != 0)) {
-                    return "";
-                }
+					return Datatables::eloquent($comisiones)
+						->addColumn('invoice_number', function ($comisiones) {
+							if (!empty($comisiones->invoice)) {
+								return '<a href="' . action('InvoiceController@show', $comisiones->invoice->id) . '">' .  $comisiones->invoice->invoice_number . '</a>';
+							};
+						})
+						->addColumn('invoice_venta', function ($comisiones) {
+							if (!empty($comisiones->invoice)) {
+								$date_format = get_company_option('date_format', 'Y-m-d');
+								return isset($comisiones->invoice->invoice_date) ? date($date_format, strtotime($comisiones->invoice->invoice_date)) : '';
+							};
+						})
+						->addColumn('cliente', function ($comisiones) {
+							return $comisiones->invoice->client->contact_name ?? '';
+						})
+						->addColumn('resumen_pieza', function ($comisiones) use ($currency) {
+							$html = '<table class="table">';
+							$mostrado = array();
+							$invoice_item = InvoiceItem::where('invoice_id', $comisiones->invoice->id)->get();
+							if (!empty($invoice_item)):
+								foreach ($invoice_item as $item):
+									$modelo_actual = "";
+									if (!in_array($item->product->marca_modelo, $mostrado)) {
+										array_push($mostrado, $item->product->marca_modelo);
+										$modelo_actual = ($item->product->marcaModelo->marca->marca ?? '') . ' ' .  ($item->product->marcaModelo->modelo->modelo ?? '');
+									}
+									$html .= " <tr ><td>*.-</td><td>{$modelo_actual}</td><td>$item->quantity x " . decimalPlace($item->unit_cost, $currency) . "</td></tr>";
+								endforeach;
+							endif;
+							return $html .= "</table>";
+						})
+						->addColumn('venta_neta', function ($comisiones) use ($currency) {
+							return decimalPlace($comisiones->invoice->grand_total, $currency);
+						})
+						->addColumn('anulado', function ($comisiones) use ($currency) {
+							$html = '<table class="table">';
+							$mostrado = array();
+							$invoice_item = Anulados_comision::where('invoice_id', $comisiones->invoice->id)->get();
+							if (!empty($invoice_item)):
+								foreach ($invoice_item as $item):
+									$modelo_actual = "";
+									if (!in_array($item->product->marca_modelo, $mostrado)) {
+										array_push($mostrado, $item->product->marca_modelo);
+										$modelo_actual = ($item->product->marcaModelo->marca->marca ?? '') . ' ' .  ($item->product->marcaModelo->modelo->modelo ?? '');
+									}
+									$class = "";
+									//$class= ($item->estatus=="") ? "class='bg-danger'" :"";
+									$html .= " <tr {$class}><td>*.-</td><td>{$modelo_actual}</td><td>" . decimalPlace($item->monto_anulado, $currency) . "</td></tr>";
+									if ($item->estatus != "") {
+										$html .= " <tr><td>Estatus</td><td colspan='2'>{$item->estatus}</td></tr>";
+									}
+									if ($item->observaciones != "") {
+										$html .= " <tr><td>Observacion</td><td colspan='2'>{$item->observaciones}</td></tr>";
+									}
+								endforeach;
+							endif;
+							return $html .= "</table>";
 
 
+							//return "1111";
+						})
+						->addColumn('comision', function ($comisiones) use ($currency) {
+							return "<center> " . $comisiones->porcentaje . "% </center>";
+						})
+						->addColumn('importe_liq', function ($comisiones) use ($currency) {
+							return "<span class='float-right'> " . decimalPlace($comisiones->monto, $currency) . " </span>";
+						})
+						->addColumn('importe_pag',  function ($comisiones) use ($currency) {
+							$date_format = get_company_option('date_format', 'Y-m-d');
+							$html = '<table class="table">';
+							$transactions = Transaction::where('id_comision', $comisiones->id)->whereIn('chart_id', array(7))->orderBy('id', 'desc')->get();
+							if (!empty($transactions)):
+								foreach ($transactions as $item):
+									$html .= " <tr><td>" . decimalPlace($item->amount, $currency) . "</td><td>" . date($date_format, strtotime($item->trans_date)) . "</td></tr>";
+								endforeach;
+							endif;
+							return $html .= "</table>";
+						})
+						->addColumn('observaciones', function ($comisiones) {
+							return $comisiones->invoice->note;
+						})
+						->addColumn('checkbox', function ($comisiones) use ($request) {
 
-                $d = 'disabled';
-                if (!isset($comisiones->invoice->isPaid)) {
-                    $d = '';
-                }
-                if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
-                    return "<input $d class='form-check' name='paidComi[]' type='checkbox' value='" . $comisiones->id . "' >";
-                }
-                return "x";
-            })
-            ->withQuery('total_importe', function ($comisiones) use ($currency) {
-                $total_importe = 0;
-                if (!empty($comisiones)) {
-                    $total_importe = $comisiones->sum('monto');
-                };
-                return decimalPlace($total_importe, $currency);
-            })
-            ->withQuery('total_pagado', function ($comisiones) use ($currency, $company_id, $request) {
-                $id_vendedor = 0;
-                $status = null;
-
-                if (strtolower(auth()->user()->role->name) == 'vendedor') {
-                    $id_vendedor = auth()->id();
-                }
-                if ($request->has('vendedor')) {
-                    $id_vendedor = $request->get('vendedor');
-                }
-
-                if ($request->has('status')) {
-                    $status = ($request->get('status') == 0) ? null : $request->get('status');
-                }
-
-                $datos = Comision::select('*')
-                    ->leftJoin('invoices as t1', 't1.id', '=', 'comisiones.id_venta')
-                    ->leftJoin('transactions as t2', 't2.id_comision', '=', 'comisiones.id');
-
-                if ($id_vendedor != 0) {
-                    $datos->where('comisiones.id_vendedor', $id_vendedor);
-                }
-                if ($request->has('invoice_number')) {
-                    $datos->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
-                }
+							if ($request->has('status') && ($request->get('status') != 0)) {
+								return "";
+							}
 
 
 
-                $datos->whereIn('t1.company_id', $company_id);
-                $total_monto_pagado = $datos->where('isPaid', $status)->get()->sum('amount');
+							$d = 'disabled';
+							if (!isset($comisiones->invoice->isPaid)) {
+								$d = '';
+							}
+							if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
+								return "<input $d class='form-check' name='paidComi[]' type='checkbox' value='" . $comisiones->id . "' >";
+							}
+							return "x";
+						})
+						->withQuery('total_importe', function ($comisiones) use ($currency) {
+							$total_importe = 0;
+							if (!empty($comisiones)) {
+								$total_importe = $comisiones->sum('monto');
+							};
+							return decimalPlace($total_importe, $currency);
+						})
+						->withQuery('total_pagado', function ($comisiones) use ($currency, $company_id, $request) {
+							$id_vendedor = 0;
+							$status = null;
 
-                return decimalPlace($total_monto_pagado, $currency);
-            })
+							if (strtolower(auth()->user()->role->name) == 'vendedor') {
+								$id_vendedor = auth()->id();
+							}
+							if ($request->has('vendedor')) {
+								$id_vendedor = $request->get('vendedor');
+							}
+
+							if ($request->has('status')) {
+								$status = ($request->get('status') == 0) ? null : $request->get('status');
+							}
+
+							$datos = Comision::select('*')
+								->leftJoin('invoices as t1', 't1.id', '=', 'comisiones.id_venta')
+								->leftJoin('transactions as t2', 't2.id_comision', '=', 'comisiones.id');
+
+							if ($id_vendedor != 0) {
+								$datos->where('comisiones.id_vendedor', $id_vendedor);
+							}
+							if ($request->has('invoice_number')) {
+								$datos->where('invoice_number', 'like', "%{$request->get('invoice_number')}%");
+							}
 
 
-            ->setRowId(function ($comisiones) {
-                return $comisiones->id;
-            })
-            ->rawColumns(['invoice_number', 'resumen_pieza', 'comision', 'importe_liq', 'importe_pag', 'checkbox', 'anulado'])
-            //->with('total_importe', decimalPlace($comisiones->sum('monto'), $currency))
-            //->with('total_pagado', decimalPlace(($comisiones->where('isPaid', 1)->get()->sum('monto')), $currency))
-            ->make(true);
 
-        //            $balance = DB::table('data')->sum('balance')->where('user_id' '=' $id);
+							$datos->whereIn('t1.company_id', $company_id);
+							$total_monto_pagado = $datos->where('isPaid', $status)->get()->sum('amount');
+
+							return decimalPlace($total_monto_pagado, $currency);
+						})
 
 
+						->setRowId(function ($comisiones) {
+							return $comisiones->id;
+						})
+						->rawColumns(['invoice_number', 'resumen_pieza', 'comision', 'importe_liq', 'importe_pag', 'checkbox', 'anulado'])
+						//->with('total_importe', decimalPlace($comisiones->sum('monto'), $currency))
+						//->with('total_pagado', decimalPlace(($comisiones->where('isPaid', 1)->get()->sum('monto')), $currency))
+						->make(true);
+
+					//            $balance = DB::table('data')->sum('balance')->where('user_id' '=' $id);
+		}
+
+    }*/
+
+public function table_comision(Request $request)
+    {
+if ($request->ajax()) {
+    /*$currency = currency();
+    $company_id = company_id_arr();
+
+    $comisiones = Comision::query()
+        ->select('comisiones.*')
+        ->join('invoices', 'invoices.id', '=', 'comisiones.id_venta')
+        ->with(['gasto', 'vendedor', 'invoice'])
+        ->whereIn('invoices.company_id', $company_id);
+
+    if (strtolower(auth()->user()->role->name) == 'vendedor') {
+        $comisiones->where('comisiones.id_vendedor', auth()->id());
     }
 
+    if ($request->filled('vendedor')) {
+        $comisiones->where('comisiones.id_vendedor', $request->get('vendedor'));
+    }
+
+    if ($request->has('status') && $request->get('status') !== '') {
+        if ($request->get('status') == 0) {
+            $comisiones->whereNull('comisiones.isPaid');
+        } else {
+            $comisiones->where('comisiones.isPaid', $request->get('status'));
+        }
+    }
+
+    if ($request->filled('invoice_number')) {
+        $comisiones->where('invoices.invoice_number', 'like', "%{$request->get('invoice_number')}%");
+    }*/
+		
+	
+	
+$currency = currency();
+$company_id = company_id_arr();
+
+$aplicarFiltros = function ($query, $aliasComision = 'comisiones', $aliasInvoice = 'invoices') use ($request) {
+    if (strtolower(auth()->user()->role->name ?? '') == 'vendedor') {
+        $query->where("{$aliasComision}.id_vendedor", auth()->id());
+    }
+
+    if ($request->filled('vendedor')) {
+        $query->where("{$aliasComision}.id_vendedor", $request->get('vendedor'));
+    }
+
+    if ($request->has('status') && $request->get('status') !== '') {
+        if ($request->get('status') == 0) {
+            $query->whereNull("{$aliasComision}.isPaid");
+        } else {
+            $query->where("{$aliasComision}.isPaid", $request->get('status'));
+        }
+    }
+
+    if ($request->filled('invoice_number')) {
+        $query->where("{$aliasInvoice}.invoice_number", 'like', "%{$request->get('invoice_number')}%");
+    }
+};
+
+$subQueryIds = Comision::query()
+    ->select('comisiones.id')
+    ->join('invoices', 'invoices.id', '=', 'comisiones.id_venta')
+    ->whereIn('invoices.company_id', $company_id);
+
+$aplicarFiltros($subQueryIds, 'comisiones', 'invoices');
+
+$comisiones = Comision::query()
+    ->select([
+        'comisiones.*',
+        \DB::raw("COALESCE(vendedor.name, 'Sin Vendedor') AS vendedor_nombre")
+    ])
+    
+
+    ->selectSub(function ($q) use ($subQueryIds) {
+        $q->from('comisiones as c_sub')
+            ->leftJoin('users as v_sub', 'v_sub.id', '=', 'c_sub.id_vendedor')
+            ->whereIn('c_sub.id', $subQueryIds)
+            // Vincula el ID del vendedor o los unifica si ambos equivalen a 'Sin Vendedor'
+            ->whereRaw("COALESCE(v_sub.id, 0) <=> COALESCE(vendedor.id, 0)")
+            ->selectRaw('COUNT(c_sub.id)');
+    }, 'vendedor_total_ventas')
+
+    ->selectSub(function ($q) use ($subQueryIds) {
+        $q->from('comisiones as c_sub2')
+            ->leftJoin('users as v_sub2', 'v_sub2.id', '=', 'c_sub2.id_vendedor')
+            ->whereIn('c_sub2.id', $subQueryIds)
+            // Vincula el ID del vendedor o los unifica si ambos equivalen a 'Sin Vendedor'
+            ->whereRaw("COALESCE(v_sub2.id, 0) <=> COALESCE(vendedor.id, 0)")
+            ->selectRaw('COALESCE(SUM(c_sub2.monto), 0)');
+    }, 'vendedor_total_monto')
+
+    ->join('invoices', 'invoices.id', '=', 'comisiones.id_venta')
+    ->leftJoin('users as vendedor', 'vendedor.id', '=', 'comisiones.id_vendedor')
+    ->whereIn('comisiones.id', $subQueryIds)
+    ->with([
+        'gasto', 
+        'vendedor', 
+        'invoice.client', 
+        'invoice.invoice_items.product.marcaModelo.marca', 
+        'invoice.invoice_items.product.marcaModelo.modelo'
+    ])
+    ->orderByRaw("CASE WHEN vendedor.id IS NULL THEN 0 ELSE 1 END, vendedor.name ASC");
+	
+return Datatables::eloquent($comisiones)
+    ->addColumn('invoice_number', function ($comision) {
+        if (!empty($comision->invoice)) {
+            return '<a href="' . action('InvoiceController@show', $comision->invoice->id) . '">' . $comision->invoice->invoice_number . '</a>';
+        }
+        return '';
+    })
+    ->addColumn('invoice_venta', function ($comision) {
+        if (!empty($comision->invoice)) {
+            $date_format = get_company_option('date_format', 'Y-m-d');
+            return isset($comision->invoice->invoice_date) ? date($date_format, strtotime($comision->invoice->invoice_date)) : '';
+        }
+        return '';
+    })
+    ->addColumn('cliente', function ($comision) {
+        return $comision->invoice->client->contact_name ?? '';
+    })
+    ->addColumn('resumen_pieza', function ($comision) use ($currency) {
+        $html = '<table class="table mb-0">';
+        $mostrado = array();
+        $invoice_items = $comision->invoice->invoice_items ?? [];
+        
+        foreach ($invoice_items as $item) {
+            $modelo_actual = "";
+            if (isset($item->product->marca_modelo) && !in_array($item->product->marca_modelo, $mostrado)) {
+                array_push($mostrado, $item->product->marca_modelo);
+                $modelo_actual = ($item->product->marcaModelo->marca->marca ?? '') . ' ' . ($item->product->marcaModelo->modelo->modelo ?? '');
+            }
+            $html .= "<tr><td>*.-</td><td>{$modelo_actual}</td><td>{$item->quantity} x " . decimalPlace($item->unit_cost, $currency) . "</td></tr>";
+        }
+        return $html . "</table>";
+    })
+    ->addColumn('venta_neta', function ($comision) use ($currency) {
+        return decimalPlace($comision->invoice->grand_total ?? 0, $currency);
+    })
+    ->addColumn('anulado', function ($comision) use ($currency) {
+        $html = '<table class="table mb-0">';
+        $mostrado = array();
+        $invoice_item = Anulados_comision::where('invoice_id', $comision->invoice->id ?? 0)->get();
+        if (!empty($invoice_item)) {
+            foreach ($invoice_item as $item) {
+                $modelo_actual = "";
+                if (isset($item->product->marca_modelo) && !in_array($item->product->marca_modelo, $mostrado)) {
+                    array_push($mostrado, $item->product->marca_modelo);
+                    $modelo_actual = ($item->product->marcaModelo->marca->marca ?? '') . ' ' . ($item->product->marcaModelo->modelo->modelo ?? '');
+                }
+                $html .= "<tr><td>*.-</td><td>{$modelo_actual}</td><td>" . decimalPlace($item->monto_anulado, $currency) . "</td></tr>";
+                if (!empty($item->estatus)) {
+                    $html .= "<tr><td>Estatus</td><td colspan='2'>{$item->estatus}</td></tr>";
+                }
+                if (!empty($item->observaciones)) {
+                    $html .= "<tr><td>Observacion</td><td colspan='2'>{$item->observaciones}</td></tr>";
+                }
+            }
+        }
+        return $html . "</table>";
+    })
+    ->addColumn('comision', function ($comision) {
+        return "<center>" . $comision->porcentaje . "%</center>";
+    })
+    ->addColumn('importe_liq', function ($comision) use ($currency) {
+        return "<span class='float-right'>" . decimalPlace($comision->monto, $currency) . "</span>";
+    })
+    ->addColumn('importe_pag', function ($comision) use ($currency) {
+        $date_format = get_company_option('date_format', 'Y-m-d');
+        $html = '<table class="table mb-0">';
+        $transactions = Transaction::where('id_comision', $comision->id)->where('chart_id', 7)->orderBy('id', 'desc')->get();
+        if (!empty($transactions)) {
+            foreach ($transactions as $item) {
+                $html .= "<tr><td>" . decimalPlace($item->amount, $currency) . "</td><td>" . date($date_format, strtotime($item->trans_date)) . "</td></tr>";
+            }
+        }
+        return $html . "</table>";
+    })
+    ->addColumn('observaciones', function ($comision) {
+        return $comision->invoice->note ?? '';
+    })
+    ->addColumn('checkbox', function ($comision) use ($request) {
+        if ($request->has('status') && ($request->get('status') != 0)) {
+            return "";
+        }
+        $d = !isset($comision->invoice->isPaid) ? '' : 'disabled';
+        $userRole = auth()->user()->role->name ?? '';
+        if ($userRole == 'Gerencial' || empty($userRole)) {
+            return "<input {$d} class='form-check' name='paidComi[]' type='checkbox' value='" . $comision->id . "'>";
+        }
+        return "x";
+    })
+    ->editColumn('vendedor', function ($comision) {
+        return $comision->vendedor->name ?? 'Sin Vendedor';
+    })
+    ->with('total_importe', function () use ($comisiones, $currency) {
+        return decimalPlace($comisiones->sum('comisiones.monto'), $currency);
+    })
+    ->with('total_pagado', function () use ($request, $company_id, $currency) {
+        $status = $request->get('status') == 0 ? null : $request->get('status');
+        $datos = Comision::select('t2.amount')
+            ->join('invoices as t1', 't1.id', '=', 'comisiones.id_venta')
+            ->join('transactions as t2', 't2.id_comision', '=', 'comisiones.id')
+            ->whereIn('t1.company_id', $company_id);
+
+        if (strtolower(auth()->user()->role->name ?? '') == 'vendedor') {
+            $datos->where('comisiones.id_vendedor', auth()->id());
+        } elseif ($request->filled('vendedor')) {
+            $datos->where('comisiones.id_vendedor', $request->get('vendedor'));
+        }
+
+        if ($request->filled('invoice_number')) {
+            $datos->where('t1.invoice_number', 'like', "%{$request->get('invoice_number')}%");
+        }
+
+        if ($status === null) {
+            $datos->whereNull('comisiones.isPaid');
+        } else {
+            $datos->where('comisiones.isPaid', $status);
+        }
+
+        return decimalPlace($datos->sum('t2.amount'), $currency);
+    })
+    ->setRowId(function ($comision) {
+        return $comision->id;
+    })
+	/*->orderColumn('vendedor', function ($query, $order) {
+        $query->orderBy('vendedor.name', $order);
+    })*/
+    ->rawColumns(['invoice_number', 'resumen_pieza', 'comision', 'importe_liq', 'importe_pag', 'checkbox', 'anulado'])
+    ->make(true);
+	}
+}
 
     public function piezasExportExcel(Request $request)
     {
