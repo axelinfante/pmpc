@@ -61,6 +61,7 @@
 							<th>{{ _lang('Nro Motor')}}</th>
 							<th >{{ _lang('Tipo Baja')}}</th>
 							<th >{{ _lang('Estado')}}</th>	
+							<th>{{ _lang('Estado/Seguimiento') }}</th>
 							<th >{{ _lang('Retira')}}</th>
 							<th >{{ _lang('Color')}}</th>
 							<th >{{ _lang('Marca') }}</th>
@@ -111,6 +112,7 @@
 			{ data : 'motor_nro', name : 'motor_nro' },
 			{  data : 'tipo_baja', name : 'tipo_baja' },
 			{  data : 'estado', name : 'estado', searcheable : false},
+			{ data : 'estado_seguimiento', name : 'estado_seguimiento' }, // Columna 19 (Posición 20)
             {  data : 'responsable_retiro', name : 'responsable_retiro' },
 			{  data : 'color', name : 'color' },
 			{  data : 'marca', name : 'marca' },

@@ -137,6 +137,7 @@
                             <th style="width: 100%;min-width: 150px">{{ _lang('Localidad') }}</th>
 							<th style="width: 100%;min-width: 150px">{{ _lang('Provincia') }}</th>
 							<th style="width: 100%;min-width: 150px">{{ _lang('Estado') }}</th>
+							<th style="width: 100%;min-width: 150px">{{ _lang('Estado/Seguimiento') }}</th>
 							<th style="width: 100%;min-width: 150px">{{ _lang('Entregado a') }}</th>
 							<th style="width: 100%;min-width: 150px">{{ _lang('Fecha entrega 04') }}</th>
 							<th style="width: 100%;min-width: 150px">{{ _lang('Observaciones administrativas') }}</th>
