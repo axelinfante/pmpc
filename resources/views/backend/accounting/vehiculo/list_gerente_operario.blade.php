@@ -58,13 +58,13 @@
 							<th  class="text-center">{{ _lang('Action') }}</th>
 							<th >{{ _lang('Nro interno') }}</th>
 							<th >{{ _lang('Compañia') }}</th>
-							{{-- <th >{{ _lang('Siniestro') }}</th> --}}
                             <th >{{ _lang('Dominio') }}</th>
 							<th >{{ _lang('Marca') }}</th>
 							<th >{{ _lang('Modelo') }}</th>
 							<th >{{ _lang('Nro de motor') }}</th>
-							<th >{{ _lang('Tipo de baja') }}</th>
+							<th style="width: 100px;min-width: 100px" >{{ _lang('Tipo de baja') }}</th>
 							<th style="width: 200px;min-width: 200px" >{{ _lang('Estado') }}</th>
+							<th>{{ _lang('Estado/Seguimiento') }}</th>
 							<th style="width: 200px;min-width: 200px" >{{ _lang('Ubicacion') }}</th>
 							<th style="width: 200px;min-width: 200px" >{{ _lang('Observaciones de taller') }}</th>
 							<th >{{ _lang('Fecha de ingreso') }}</th>

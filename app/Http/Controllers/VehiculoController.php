@@ -3668,6 +3668,9 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             ->with('lugar_entrega')
             ->with('responsable_retiro')
             ->with('estado')
+            ->with(['checkpoints' => function ($query) {
+				$query->where('checkpoint_id', 11); 
+			}])
             ->whereIn('company_id', $company_id);
 
         if (isset($request->regitro_activo)) {
@@ -3874,6 +3877,12 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                     $q->where('name', 'like', "%{$keyword}%");
                 });
             })
+			->filterColumn('estado_seguimiento', function ($query, $keyword) {
+				$query->whereHas('checkpoints', function ($q) use ($keyword) {
+					$q->where('checkpoint_id', 11)
+					  ->where('observaciones', 'LIKE', "%{$keyword}%");
+				});
+			})
             ->editColumn('id', function ($car) {
                 return '<a href="' . action('VehiculoController@show', $car->id) . '" class="btn-xs ajax-modal" data-title=" Multimedia">' . nroInternoAlias($car->company_id, $car->tipo_vehiculo, $car->id) .  '</a>';
             })
@@ -4007,6 +4016,11 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             })
             ->editColumn('observacion_retiro', function ($car) {
                 return strip_tags(clean($car->observacion_retiro));
+            })
+			->addColumn('estado_seguimiento', function ($car) {
+				$checkpoint = $car->checkpoints->first();
+				//$observaciones = $checkpoint ? "<br>" . $checkpoint->observaciones : "";
+                return $checkpoint->observaciones ?? "";
             })
             ->editColumn('observacion_gerente_operario', function ($car) {
                 if (strtolower(auth()->user()->role->name) == 'gerencial' || strtolower(auth()->user()->role->name) == 'gerente de operarios' || strtolower(auth()->user()->role->name) == 'operario') {

@@ -101,7 +101,7 @@
   			
 			}
 
-			if (i == 9) {
+			if (i == 10) {
 				var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
 				.appendTo( $(this).empty() )
 				.on( 'change', function () {
@@ -172,6 +172,7 @@
 			// {  data : 'localidad', name : 'localidad' },
 			// {  data : 'provincia', name : 'provincia' },
 			{  data : 'estado', name : 'estado', searcheable : false},
+			{ data : 'estado_seguimiento', name : 'estado_seguimiento' }, // Columna 19 (Posición 20)
 			{  data : 'lugar_entrega', name : 'lugar_entrega', searcheable : false},
 			//{  data : 'entregado_a', name : 'entregado_a' },
 			// {  data : 'fecha_entrega', name : 'fecha_entrega' },
