@@ -221,7 +221,7 @@ class InvoiceController extends Controller
         }
     }
 
-    $vent = Invoice::where('invoice_number', $request->input('invoice_number'))->first();
+   /* $vent = Invoice::where('invoice_number', $request->input('invoice_number'))->first();
     $invoice_number = $request->input('invoice_number');
     if ($vent) {
         for ($i = $invoice_number; $i < 1000000; $i) {
@@ -233,10 +233,24 @@ class InvoiceController extends Controller
                 break;
             }
         }
-    }
+    }*/
 	
     DB::beginTransaction();
 	
+	///---
+		 $input_number = $request->input('invoice_number');
+
+		$last_invoice = Invoice::where('invoice_number', '=', $input_number)
+        ->lockForUpdate() 
+        //->orderByRaw('CAST(invoice_number AS UNSIGNED) DESC') // Orden numérico real
+        ->first();
+
+    $invoice_number = $last_invoice 
+        ? (int)$last_invoice->invoice_number + 1 
+        : (int)$input_number;
+
+    
+	///
 	$numero_final = increment_invoice_number($invoice_number);
 
     $company_id = $request->input('company_id');
