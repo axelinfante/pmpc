@@ -226,9 +226,9 @@ if (objectWithId1) {
     } );
 	// vehiculo_table.fnFilter('');
 
-	let c_visible = [0, 1, 2,9,10,11,12,18,25,29,30];
+	let c_visible = [0, 1, 2,9,10,11,12,18,26,30,31];
 // Reduce to create union
-	let mapa_visible = c_visible.concat([...Array(35)].map((_,i) => ++i)).reduce((acc, value) => {
+	let mapa_visible = c_visible.concat([...Array(36)].map((_,i) => ++i)).reduce((acc, value) => {
 			if (!acc.includes(value)) acc.push(value);
 			return acc;
 	}, []);
@@ -265,47 +265,43 @@ if (objectWithId1) {
 			}
 		}),
 		"columns" : [
-            { data : "action", name : "action", searcheable : false },
-			{  data : 'id', name : 'id' },
-			{  data : 'dominio', name : 'dominio' },
-			{  data : 'anulado', name : 'anulado' },
-			// {  data : 'nro_interno', name : 'nro_interno' },
-			{  data : 'fecha_asignacion', name : 'fecha_asignacion' },
-			// {  data : 'forma', name : 'forma' },
-			{  data : 'tramitador', name : 'tramitador' },
-			{  data : 'aseguradora', name : 'aseguradora' },
-			{  data : 'tramitador_compania', name : 'tramitador_compania' },
-			{  data : 'siniestro', name : 'siniestro' },
-			{  data : 'marca', name : 'marca' },
-			{  data : 'modelo', name : 'modelo' },
-			{  data : 'motor', name : 'motor_nro' },
-			{  data : 'tipo_baja', name : 'tipo_baja' },
-			{  data : 'asegurado', name : 'asegurado' },
-			{  data : 'contacto', name : 'contacto' },
-			{  data : 'lugar_retiro', name : 'lugar_retiro' },
-			{  data : 'localidad', name : 'localidad' },
-			{  data : 'provincia', name : 'provincia' },
-			{  data : 'estado', name : 'estado', searcheable : false},
-			{  data : 'entregado_a', name : 'entregado_a' },
-			{  data : 'fecha_entrega', name : 'fecha_entrega' },
-			{  data : 'observacion_admin', name : 'observacion_admin' },
-            {  data : 'fecha_recepcion', name : 'fecha_recepcion' },
-            {  data : 'coordinar_retiro', name : 'coordinar_retiro' },//22
-            {  data : 'fecha_envio_doc', name : 'fecha_envio_doc' },
-            {  data : 'chasis', name : 'chasis' },
-            {  data : 'fecha_confirmacion_contacto', name : 'fecha_confirmacion_contacto' },
-            {  data : 'fecha_limite_retiro', name : 'fecha_limite_retiro' },
-            {  data : 'responsable_retiro', name : 'responsable_retiro' },
-            {  data : 'crp_nro', name : 'crp_nro' },
-            {  data : 'entregar_en', name : 'entregar_en' },
-            {  data : 'fecha_retiro', name : 'fecha_retiro' },
-            {  data : 'fecha_ingreso', name : 'fecha_ingreso' },
-            // {  data : 'control', name : 'control' },
-			{  data : 'observacion_gerente_operario', name : 'observacion_gerente_operario' },
-            {  data : 'observacion_retiro', name : 'observacion_retiro', },
-						{  data : 'fecha_de_pago_cia', name : 'fecha_de_pago_cia', },
-
-
+            { data : "action", name : "action", searcheable : false }, // Columna 0 (Posición 1)
+			{ data : 'id', name : 'id' }, // Columna 1 (Posición 2)
+			{ data : 'dominio', name : 'dominio' }, // Columna 2 (Posición 3)
+			{ data : 'anulado', name : 'anulado' }, // Columna 3 (Posición 4)
+			{ data : 'fecha_asignacion', name : 'fecha_asignacion' }, // Columna 4 (Posición 5)
+			{ data : 'tramitador', name : 'tramitador' }, // Columna 5 (Posición 6)
+			{ data : 'aseguradora', name : 'aseguradora' }, // Columna 6 (Posición 7)
+			{ data : 'tramitador_compania', name : 'tramitador_compania' }, // Columna 7 (Posición 8)
+			{ data : 'siniestro', name : 'siniestro' }, // Columna 8 (Posición 9)
+			{ data : 'marca', name : 'marca' }, // Columna 9 (Posición 10)
+			{ data : 'modelo', name : 'modelo' }, // Columna 10 (Posición 11)
+			{ data : 'motor', name : 'motor_nro' }, // Columna 11 (Posición 12)
+			{ data : 'tipo_baja', name : 'tipo_baja' }, // Columna 12 (Posición 13)
+			{ data : 'asegurado', name : 'asegurado' }, // Columna 13 (Posición 14)
+			{ data : 'contacto', name : 'contacto' }, // Columna 14 (Posición 15)
+			{ data : 'lugar_retiro', name : 'lugar_retiro' }, // Columna 15 (Posición 16)
+			{ data : 'localidad', name : 'localidad' }, // Columna 16 (Posición 17)
+			{ data : 'provincia', name : 'provincia' }, // Columna 17 (Posición 18)
+			{ data : 'estado', name : 'estado', searcheable : false }, // Columna 18 (Posición 19)
+			{ data : 'estado_seguimiento', name : 'estado_seguimiento' }, // Columna 19 (Posición 20)
+			{ data : 'entregado_a', name : 'entregado_a' }, // Columna 20 (Posición 21)
+			{ data : 'fecha_entrega', name : 'fecha_entrega' }, // Columna 21 (Posición 22)
+			{ data : 'observacion_admin', name : 'observacion_admin' }, // Columna 22 (Posición 23)
+			{ data : 'fecha_recepcion', name : 'fecha_recepcion' }, // Columna 23 (Posición 24)
+			{ data : 'coordinar_retiro', name : 'coordinar_retiro' }, // Columna 24 (Posición 25)
+			{ data : 'fecha_envio_doc', name : 'fecha_envio_doc' }, // Columna 25 (Posición 26)
+			{ data : 'chasis', name : 'chasis' }, // Columna 26 (Posición 27)
+			{ data : 'fecha_confirmacion_contacto', name : 'fecha_confirmacion_contacto' }, // Columna 27 (Posición 28)
+			{ data : 'fecha_limite_retiro', name : 'fecha_limite_retiro' }, // Columna 28 (Posición 29)
+			{ data : 'responsable_retiro', name : 'responsable_retiro' }, // Columna 29 (Posición 30)
+			{ data : 'crp_nro', name : 'crp_nro' }, // Columna 30 (Posición 31)
+			{ data : 'entregar_en', name : 'entregar_en' }, // Columna 31 (Posición 32)
+			{ data : 'fecha_retiro', name : 'fecha_retiro' }, // Columna 32 (Posición 33)
+			{ data : 'fecha_ingreso', name : 'fecha_ingreso' }, // Columna 33 (Posición 34)
+			{ data : 'observacion_gerente_operario', name : 'observacion_gerente_operario' }, // Columna 34 (Posición 35)
+			{ data : 'observacion_retiro', name : 'observacion_retiro' }, // Columna 35 (Posición 36)
+			{ data : 'fecha_de_pago_cia', name : 'fecha_de_pago_cia' }, // Columna 36 (Posición 37)
 		],
 		dom: 'Bfrtip',
 		buttons: [
@@ -380,111 +376,6 @@ if (objectWithId1) {
 						page: 'all'
 					}
 				}, action: newexportaction, 
-				/*action: function (e, dt, button, config)
-				{
-					this.processing( true );
-					var self = this;
-					var oldStart = dt.settings()[0]._iDisplayStart;
-					dt.one('preXhr', function (e, s, data) {
-
-							// Just this once, load all data from the server...
-							data.start = 0;
-							data.length = -1;
-							//data.length = 2147483647;
-							//dt.columns(0).visible(false);
-							dt.one('preDraw', function (e, settings) {
-
-								--/var visibleColumns = vehiculo_table.columns(':visible').indexes().toArray();
-								var columnData = [];
-							$.each(visibleColumns, function (key, value) {
-											if (value > 0) {
-											columnData.push(vehiculo_table.settings()[0].aoColumns[value].data);
-									}
-							});
-
-								var data = dt.buttons.exportData({
-									columns: columnData
-								});--/--
-
-									// Call the original action function
-									if (button[0].className.indexOf('buttons-copy') >= 0) {
-											$.fn.dataTable.ext.buttons.copyHtml5.action.call(self, e, dt, button, config);
-									} else if (button[0].className.indexOf('buttons-excel') >= 0) {
-											$.fn.dataTable.ext.buttons.excelHtml5.available(dt, config) ?
-													$.fn.dataTable.ext.buttons.excelHtml5.action.call(self, e, dt, button, config) :
-													$.fn.dataTable.ext.buttons.excelFlash.action.call(self, e, dt, button, config);
-									} else if (button[0].className.indexOf('buttons-csv') >= 0) {
-											$.fn.dataTable.ext.buttons.csvHtml5.available(dt, config) ?
-													$.fn.dataTable.ext.buttons.csvHtml5.action.call(self, e, dt, button, config) :
-													$.fn.dataTable.ext.buttons.csvFlash.action.call(self, e, dt, button, config);
-									} else if (button[0].className.indexOf('buttons-pdf') >= 0) {
-											$.fn.dataTable.ext.buttons.pdfHtml5.available(dt, config) ?
-													$.fn.dataTable.ext.buttons.pdfHtml5.action.call(self, e, dt, button, config) :
-													$.fn.dataTable.ext.buttons.pdfFlash.action.call(self, e, dt, button, config);
-									} else if (button[0].className.indexOf('buttons-print') >= 0) {
-											$.fn.dataTable.ext.buttons.print.action(e, dt, button, config);
-									}
-									dt.one('preXhr', function (e, s, data) {
-											// DataTables thinks the first item displayed is index 0, but we're not drawing that.
-											// Set the property to what it was before exporting.
-											settings._iDisplayStart = oldStart;
-											data.start = oldStart;
-									});
-									// Reload the grid with the original page. Otherwise, API functions like table.cell(this) don't work properly.
-									setTimeout(dt.ajax.reload, 0);
-									// Prevent rendering of the full data to the DOM
-									return false;
-							});
-					});
-					// Requery the server with the new one-time export settings
-					dt.ajax.reload();
-					//dt.columns(0).visible(true);
-					this.processing( false );
-
-				},*/
-
-
-
-				/*action: function() {
-					let params = vehiculo_table.ajax.params(); 
-					var visibleColumns = vehiculo_table.columns(':visible').indexes().toArray();
-					var columnData = [];
-
-					$.each(visibleColumns, function (key, value) {
-						//console.log(key + ": " + value );
-            if (value > 0) {
-								columnData.push(vehiculo_table.settings()[0].aoColumns[value].data);
-            }
-        });
-
-					params.visible_columns = columnData;
-					$.ajax({
-						url: routes.exportExcel, 
-						type: 'POST', 
-						data: {
-							...params,
-							_token: routes.csrfToken 
-						},
-						xhrFields: {
-							responseType: 'blob' 
-						},
-						success: function(response) {
-							
-							let blob = new Blob([response], {
-								type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-							});
-							let link = document.createElement('a');
-							link.href = window.URL.createObjectURL(blob);
-							link.download =
-								'vehiculo.xlsx'; 
-							link.click();
-						},
-						error: function(xhr) {
-							
-							alert('Hubo un error al exportar el archivo.');
-						}
-					});
-				}*/
 			},
 			{
 				extend: 'pdf',
@@ -575,7 +466,7 @@ if (objectWithId1) {
 		
 		$('#fecha_ingreso').on('change', function(e) {
 			let val = $(this).val();
-			vehiculo_table.columns(32).search(val ? val : '', true, false );
+			vehiculo_table.columns(33).search(val ? val : '', true, false );
 			vehiculo_table.draw();
 		});
 	
@@ -583,7 +474,7 @@ if (objectWithId1) {
 		$('#fecha_ingreso').on('apply.daterangepicker', function(ev, picker) {
 				let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
 					$(this).val(daterango);
-					vehiculo_table.columns(32).search(daterango);
+					vehiculo_table.columns(33).search(daterango);
 					vehiculo_table.draw();
 			});
 
@@ -605,7 +496,7 @@ if (objectWithId1) {
 		
 		$('#fecha_documentos').on('change', function(e) {
 			let val = $(this).val();
-			vehiculo_table.columns(24).search(val ? val : '', true, false );
+			vehiculo_table.columns(25).search(val ? val : '', true, false );
 			vehiculo_table.draw();
 		});
 	
@@ -613,7 +504,7 @@ if (objectWithId1) {
 		$('#fecha_documentos').on('apply.daterangepicker', function(ev, picker) {
 				let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
 					$(this).val(daterango);
-					vehiculo_table.columns(24).search(daterango);
+					vehiculo_table.columns(25).search(daterango);
 					vehiculo_table.draw();
 			});
 
@@ -627,16 +518,11 @@ if (objectWithId1) {
 			//var status = $(this).prop('checked') == true ? 1 : 0;
 			//var id = $(this).data('id');
 		})
-/*
-		 //initially clear select otherwise first option is selected
-		 //$('#fecha_ingreso').val(null).trigger('change');	
-	/*
-		*/
 		
 
-	vehiculo_table.search('').columns().search('').draw();
+		vehiculo_table.search('').columns().search('').draw();
 
-	 function newexportaction(e, dt, button, config) {
+		function newexportaction(e, dt, button, config) {
 
 this.processing( true );
 var self = this;

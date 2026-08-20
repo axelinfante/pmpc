@@ -101,7 +101,7 @@
                     <hr>
 
                     <div class="row">
-                        <div class="col-12">
+                        <div class="col-12" style="background-color: #faff7e">
 
 
                             <div class="card mt-2">
@@ -146,7 +146,7 @@
                                   }
                                         @endphp
                                         <tr id="row_{{ $product->id }}">
-                                            <td class='item_id'>{{ $in.$product->id }}</td>
+                                            <td class=''>{{ $in.$product->id }}</td>
                                             <td class=''>{{ $in.$product->nro_interno }} </td>
                                             <td class='item_id'>{{ $product->item->item_name }}</td>
                                             <td class='product_cost text-right'>{{ ($product->marcaModelo->marca->marca ?? '') .' ' .
@@ -193,9 +193,16 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
                             </div>
                         </div>
                     </div>
+					<hr>
+					<div class="row">
+                        <div class="col-12" style="background-color: #ffa5a5">
 
-                    <h3 class="my-3"> Vehiculos</h3>
-                    <table id="vehiculo" class="table table-bordered ">
+
+                            <div class="card mt-2">
+                                <div class="card-body">
+
+                                    <h3 class="my-3">Vehiculos</h3>
+									<table id="vehiculo" class="table table-bordered ">
                         <thead>
                             <tr>
                                 <th>{{ _lang('Nro interno') }}</th>
@@ -228,6 +235,13 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
 
                         </tbody>
                     </table>
+									
+									
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					
                 </div>
             </div>
         </div>
@@ -807,8 +821,11 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
                     // {  data : 'fecha_ingreso', name : 'fecha_ingreso' },
 
                 ],
-                dom: 'Bfrtip',
-                buttons: [
+                //dom: 'Bfrtip',
+				dom: 'Bfrltip',
+				pageLength: 25,
+				lengthMenu: [[ 25, 100, 200, 500], [25, 100,200, 500]],
+				buttons: [
                     {
                     text: 'Reset Filter',
                     action: function(e, dt, node, config) {
