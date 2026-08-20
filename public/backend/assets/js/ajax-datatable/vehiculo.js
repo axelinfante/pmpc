@@ -7,7 +7,7 @@
 
     // //Creamos una fila en el head de la tabla y lo clonamos para cada columna
     $('#vehiculos_table thead tr').clone(true).appendTo( '#vehiculos_table thead' );
-		const array_const = [3,23];
+		const array_const = [3,24];
 			let inputArray = [
   			{ id: 2, name: "dominio_vacio"},
 				{ id: 9, name: "marca_vacio"},
@@ -27,7 +27,7 @@ if (objectWithId1) {
         var title = $(this).text(); //es el nombre de la columna
 		if(i != 0) {
 
-				if (i == 32) {
+				if (i == 33) {
 					//if ($.trim(title)=="Fecha de ingreso"){
 						$(this).html( '<input type="text" id="fecha_ingreso" name="fecha_ingreso" value="" class="form-control filtros" placeholder="Search...'+title+'" />' );
 					}else{
@@ -98,7 +98,7 @@ if (objectWithId1) {
   			
 			}
 
-			if (i == 30) {
+			if (i == 31) {
 				var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
 				.appendTo( $(this).empty() )
 				.on( 'change', function () {
@@ -112,7 +112,7 @@ if (objectWithId1) {
 
 			}
 
-			if(i == 29){
+			if(i == 30){
 
                 $(this).html('<input type="checkbox" id="mostrar-todos-motorventa">vacios <input id="input-text-motor" style="width:100%;" type="text" placeholder="' + title + '" />');
 
@@ -145,7 +145,7 @@ if (objectWithId1) {
 
             }
 			
-			if(i == 21){
+			if(i == 22){
 
                 $(this).html('<input type="checkbox" id="mostrar-todos-obs_administrativa">no vacias <input id="input-text-obs_administrativa" class="form-control filtros" placeholder="Search...'+title+'" style="width:100%;" type="text" placeholder="' + title + '" />');
 
@@ -213,7 +213,7 @@ if (objectWithId1) {
 			}
 
 
-			if (i == 24) {
+			if (i == 25) {
 						$(this).html( '<input type="text" id="fecha_documentos" name="fecha_documentos" value="" class="form-control filtros" placeholder="Search...'+title+'" />' );
 			}
 
