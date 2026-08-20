@@ -249,7 +249,7 @@ btn-xs " target="_blank" data-title=" '._lang ( 'Venta') .'"><i class="ti-shoppi
 @endsection
 
 @section('js-script')
-    {{-- <script src="{{ asset('public/backend/assets/js/ajax-datatable/vehiculo.js') }}"></script> --}}
+    {{-- <script src="{{ asset('public/backend/assets/js/ajax-datatable/vehiculo.js?v=1.0.0') }}"></script> --}}
     <script>
         const routes = {
             exportExcel: "{{ route('piezas.export.excel') }}",

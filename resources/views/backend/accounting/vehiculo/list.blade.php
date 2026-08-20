@@ -237,6 +237,6 @@ const observer = lozad('.lozad', {
 	
 	</script>
  	
-	<script src="{{ asset('public/backend/assets/js/ajax-datatable/vehiculo.js') }}"></script>
+	<script src="{{ asset('public/backend/assets/js/ajax-datatable/vehiculo.js?v=1.0.0') }}"></script>
 
 @endsection
