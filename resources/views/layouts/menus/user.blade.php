@@ -58,6 +58,9 @@
 </li>
 <li class="nav-item"><a class="nav-link" href="{{ url('lugarentrega') }}">{{ _lang('Depositos')
 		}}</a></li>
+		
+		
+@canany(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia', 'crear-asignacionmercancia'])		
 <li>
 	<a href="javascript: void(0);"><i class="ti-shopping-cart"></i><span>{{ _lang('Products') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 	<ul class="nav-second-level" aria-expanded="false">
@@ -71,11 +74,13 @@
 		<li class="nav-item"><a class="nav-link" href="{{ url('products/comunes') }}">{{ _lang('Productos predefinidos') }}</a>
 
 		<li class="nav-item"><a class="nav-link" href="{{ url('categorias') }}">{{ _lang('Categorias') }}</a></li>
-		 <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products/anulados') }}">{{ _lang('Anulados') }}</a>
-                    </li>
+		
+		@canany(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia'])
+			<li class="nav-item"><a class="nav-link" href="{{ route('transfers.index') }}">{{ _lang('Traslado de Productos') }}</a></li>	
+		@endcanany
 	</ul>
 </li>
+@endcanany
 
 <li>
 	<a href="javascript: void(0);"><i class="ti-agenda"></i><span>{{ _lang('Service') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>

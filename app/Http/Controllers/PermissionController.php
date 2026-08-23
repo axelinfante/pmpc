@@ -184,7 +184,8 @@ class PermissionController extends Controller
 		$this->collection=collect([
 		['grupo' => 'Tablero de Mando Gerencial', 'activo'=>'Si', 'items' => ['ver-ingresos_mes','ver-ingresos_mes_usd','ver-gastos_mes','ver-total_factura','ver-factura_pendiente_pago','ver-importe_factura_vencida','ver-factura_cancelada','ver-income_vs_expense','ver-income_vs_expense_mes','ver-financial_balance_status']]
 		,['grupo' => 'Tablero de Mando Vendedor', 'activo'=>'Si', 'items' => ['bton-nueva_cotizacion','bton-clientes','bton-orden_desarme','bton-vehiculos']]
-		,['grupo' => 'Procesos interno', 'activo'=>'Si', 'items' => ['pi_consulta_venta']]
+		,['grupo' => 'Procesos interno', 'activo'=>'Si', 'items' => ['pi_consulta_venta']],
+		['grupo' => 'Traslado de productos', 'activo' => 'Si', 'items' => ['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia']],
 		]);
 
 		$permisos=$this->collection;

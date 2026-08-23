@@ -12,498 +12,666 @@ $usuariosAutorizados = [26,169];
         </div>
     </div>
 </li>
-<li> {{-- COMERCIAL --}}
-    <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('COMERCIAL') }}</span><span
-            class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+{{-- MÓDULO COMERCIAL --}}
+@if (
+    array_intersect([
+        'contacts.index', 'contacts.create', 'contact_groups.index',
+        'invoices.list_comision', 'buscador_de_piezas', 'invoices.index', 'invoices.ventasPorFacturar', 'reservas.index',
+        'vehiculo.index', 'aseguradora', 'provincia', 'marcamodelo.index',
+        'products.create', 'products.index', 'products_returns.index', 'products_returns.create',
+        'suppliers.create', 'suppliers.index',
+        'purchase_orders.index', 'purchase_orders.create', 'purchase_returns', 'sales_returns'
+    ], $permissions)
+    || auth()->user()->canAny(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia'])
+)
+
+<li>
+    <a href="javascript: void(0);">
+        <i class="ti-shopping-cart-full"></i>
+        <span>{{ _lang('COMERCIAL') }}</span>
+        <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+    </a>
+
     <ul class="nav-second-level" aria-expanded="false">
-        <li>{{-- CLIENTES --}}
-            <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('Customers') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-			{{-- @if (in_array('contacts.index', $permissions)) --}}
-			@can('contacts.index')
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('contacts') }}">{{ _lang('Contacts List') }}</a>
-                    </li>
-		    @endcan
-					{{-- @endif --}}
 
-                {{-- @if (in_array('contacts.create', $permissions)) --}}
-				@can('contacts.create')
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('contacts/create') }}">{{ _lang('Add New') }}</a>
-                    </li>
-				@endcan
-					{{-- @endif --}}
-
-                {{-- @if (in_array('contact_groups.index', $permissions)) --}}
-				@can('contact_groups.index')
-						<li class="nav-item"><a class="nav-link"
-                            href="{{ url('contact_groups') }}">{{ _lang('Contact Group') }}</a></li>
-				@endcan
-				{{-- @endif --}}
-            </ul>
-        </li>
-        <li> {{-- VENTAS --}}
-            <a href="javascript: void(0);"><i class="ti-shopping-cart-full"></i><span>{{ _lang('Sales') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (has_feature('invoice_limit'))
-                    @if (in_array('invoices.list_comision', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ route('invoices.list_comision') }}">{{ _lang('Comisiones') }}</a></li>
-                    @endif
-
-                    @if (in_array('buscador_de_piezas', $permissions))
-                        <li class="nav-item"><a href="{{ route('buscador_de_piezas') }}"><i
-                                    class="ti-briefcase"></i><span>{{ _lang('Buscador de piezas') }}</span></a>
-                        </li>
-                    @endif
-                    <!-- @if (in_array('invoices.create', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('invoices/create') }}">{{ _lang('Crear venta') }}</a></li>
-                    @endif -->
-
-
-
-                    @if (in_array('invoices.index', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('invoices') }}">{{ _lang('Invoice List') }}</a>
+        {{-- CLIENTES --}}
+        @if (array_intersect(['contacts.index', 'contacts.create', 'contact_groups.index'], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-id-badge"></i><span>{{ _lang('Customers') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('contacts.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('contacts') }}">{{ _lang('Contacts List') }}</a>
                         </li>
                     @endif
 
-                    @if (in_array('invoices.ventasPorFacturar', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('invoices/pendiente-facturar') }}">{{ _lang('Pendiente por facturar') }}</a>
+                    @if (in_array('contacts.create', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('contacts/create') }}">{{ _lang('Add New') }}</a>
                         </li>
                     @endif
-                @endif
 
-                @if (has_feature('quotation_limit'))
-                    {{-- @if (in_array('quotations.create', $permissions) && strtolower(auth()->user()->role->name) != 'vendedor')
-                        <li class="nav-item"><a class="nav-link"
-                                                href="{{ url('reservas/create') }}">{{ _lang('Add Quotation') }}</a></li>
-                    @endif --}}
-
-                    @if (in_array('reservas.index', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('reservas') }}">{{ _lang('Quotation List') }}</a></li>
+                    @if (in_array('contact_groups.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('contact_groups') }}">{{ _lang('Contact Group') }}</a>
+                        </li>
                     @endif
-                @endif
-            </ul>
-        </li>
-        <li> {{-- VEHICULOS --}}
-            <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('Vehiculos') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('vehiculo.index', $permissions))
-                    <li class="nav-item"> <a class="nav-link" href="{{ route('vehiculo.index') }}"><i
-                                class="ti-car"></i><span>{{ _lang('Vehiculos') }}</span></a></li>
-                @endif
+                </ul>
+            </li>
+        @endif
 
-                <!--@if (in_array('list_consu_orden', $permissions))
-                    <li class="nav-item"> <a class="nav-link" href="{{ route('list_consu_orden') }}"><i
-                                class="ti-link"></i><span>{{ _lang('Consulta Ordenes de desarme') }}</span></a></li>
-                @endif -->
+        {{-- VENTAS --}}
+        @if (array_intersect(['invoices.list_comision', 'buscador_de_piezas', 'invoices.index', 'invoices.ventasPorFacturar', 'reservas.index'], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-receipt"></i><span>{{ _lang('Sales') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (has_feature('invoice_limit'))
+                        @if (in_array('invoices.list_comision', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('invoices.list_comision') }}">{{ _lang('Comisiones') }}</a>
+                            </li>
+                        @endif
 
-                <!--@if (in_array('list_estado_vehiculo', $permissions))
-                    <li class="nav-item"> <a class="nav-link" href="{{ route('list_estado_vehiculo') }}"><i
-                                class="ti-link"> </i><span>{{ _lang('Estado y Seguimiento') }}</span></a></li>
-                @endif-->
+                        @if (in_array('buscador_de_piezas', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('buscador_de_piezas') }}">{{ _lang('Buscador de piezas') }}</a>
+                            </li>
+                        @endif
 
-                {{-- <li class="nav-item"><a class="nav-link" href="{{ url('estado') }}">{{ _lang('Estados') }}</a></li> --}}
-                @if (in_array('aseguradora', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('aseguradora') }}">{{ _lang('Aseguradoras') }}</a>
-                    </li>
-                @endif
+                        @if (in_array('invoices.index', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('invoices') }}">{{ _lang('Invoice List') }}</a>
+                            </li>
+                        @endif
 
+                        @if (in_array('invoices.ventasPorFacturar', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('invoices/pendiente-facturar') }}">{{ _lang('Pendiente por facturar') }}</a>
+                            </li>
+                        @endif
+                    @endif
 
+                    @if (has_feature('quotation_limit'))
+                        @if (in_array('reservas.index', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('reservas') }}">{{ _lang('Quotation List') }}</a>
+                            </li>
+                        @endif
+                    @endif
+                </ul>
+            </li>
+        @endif
 
-                @if (in_array('provincia', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('provincia') }}">{{ _lang('Provincia') }}</a></li>
-                @endif
-            </ul>
-        </li>
+        {{-- VEHÍCULOS --}}
+        @if (array_intersect(['vehiculo.index', 'aseguradora', 'provincia'], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-car"></i><span>{{ _lang('Vehículos') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('vehiculo.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('vehiculo.index') }}">{{ _lang('Vehículos') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('aseguradora', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('aseguradora') }}">{{ _lang('Aseguradoras') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('provincia', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('provincia') }}">{{ _lang('Provincia') }}</a>
+                        </li>
+                    @endif
+                </ul>
+            </li>
+        @endif
+
+        {{-- MARCAS Y MODELOS --}}
         @if (in_array('marcamodelo.index', $permissions))
-            {{-- MARCAS Y MODELOS --}}
-            <li class="nav-item"><a class="nav-link"
-                    href="{{ route('marcamodelo.index') }}">{{ _lang('Marcas Modelos') }}</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('marcamodelo.index') }}">{{ _lang('Marcas Modelos') }}</a>
+            </li>
         @endif
-        <li> {{-- PRODUCTOS --}}
-            <a href="javascript: void(0);"><i class="ti-shopping-cart"></i><span>{{ _lang('Products') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('products.create', $permissions) && strtolower(auth()->user()->role->name) != 'vendedor')
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products/create') }}">{{ _lang('Add New') }}</a>
-                    </li>
-                @endif
 
-                @if (in_array('products.index', $permissions))
-					<li class="nav-item"><a class="nav-link"
-                            href="{{ route('products.create') }}?predefinido=1">{{ _lang('Precarga masiva') }}</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products') }}">{{ _lang('Product List') }}</a>
-                    </li>
-
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products/historial') }}">{{ _lang('Historial') }}</a></li>
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products/comunes') }}">{{ _lang('Productos predefinidos') }}</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('categorias') }}">{{ _lang('Categorias') }}</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products/carga-rapida') }}">{{ _lang('Carga rápida de productos') }}</a>
-                    </li>
-
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('products/anulados') }}">{{ _lang('Anulados') }}</a>
-                    </li>
-                @endif
-            </ul>
-        </li>
-        <li> {{-- PROVEEDORES --}}
-            <a href="javascript: void(0);"><i class="ti-truck"></i><span>{{ _lang('Supplier') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('suppliers.create', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('suppliers/create') }}">{{ _lang('Add New') }}</a>
-                    </li>
-                @endif
-
-                @if (in_array('suppliers.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('suppliers') }}">{{ _lang('Supplier List') }}</a>
-                    </li>
-                @endif
-            </ul>
-        </li>
-        @if (has_feature('inventory_module')) {{-- STOCK --}}
+        {{-- PRODUCTOS --}}
+        @if (
+            array_intersect(['products.create', 'products.index', 'products_returns.index', 'products_returns.create'], $permissions)
+            || auth()->user()->canAny(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia'])
+        )
             <li>
-                <a href="javascript: void(0);"><i class="ti-bag"></i><span>{{ _lang('Purchase') }}</span><span
-                        class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+                <a href="javascript: void(0);">
+                    <i class="ti-package"></i><span>{{ _lang('Products') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
                 <ul class="nav-second-level" aria-expanded="false">
-                    @if (in_array('purchase_orders.index', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('purchase_orders') }}">{{ _lang('Purchase Orders') }}</a></li>
-                    @endif
-
-                    @if (in_array('purchase_orders.create', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('purchase_orders/create') }}">{{ _lang('Create Purchase Order') }}</a>
+                    @if (in_array('products.create', $permissions) && strtolower(auth()->user()->role->name) !== 'vendedor')
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products/create') }}">{{ _lang('Add New') }}</a>
                         </li>
                     @endif
-                </ul>
-            </li>
 
-            <li>
-                <a href="javascript: void(0);"><i class="ti-back-left"></i><span>{{ _lang('Return') }}</span><span
-                        class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    @if (in_array('purchase_returns', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('purchase_returns') }}">{{ _lang('Purchase Return') }}</a></li>
+                    @if (in_array('products.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products/create?predefinido=1') }}">{{ _lang('Precarga masiva') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products') }}">{{ _lang('Product List') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products/historial') }}">{{ _lang('Historial') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products/comunes') }}">{{ _lang('Productos predefinidos') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('categorias') }}">{{ _lang('Categorías') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products/carga-rapida') }}">{{ _lang('Carga rápida de productos') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('products/anulados') }}">{{ _lang('Anulados') }}</a>
+                        </li>
                     @endif
 
-                    @if (in_array('sales_returns', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('sales_returns') }}">{{ _lang('Sales Return') }}</a></li>
+                    @canany(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia'])
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('transfers.index') }}">{{ _lang('Traslado de Productos') }}</a>
+                        </li>
+                    @endcanany
+
+                    {{-- Devolución de Productos (Dentro de Productos) --}}
+                    @if (has_feature('invoice_limit') && array_intersect(['products_returns.index', 'products_returns.create'], $permissions))
+                        @if (in_array('products_returns.index', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('products_returns') }}">{{ _lang('Listado Devolución de Productos') }}</a>
+                            </li>
+                        @endif
+
+                        @if (in_array('products_returns.create', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('products_returns/create') }}">{{ _lang('Crear Devolución de Productos') }}</a>
+                            </li>
+                        @endif
                     @endif
                 </ul>
             </li>
         @endif
-        <li>
-            <a href="javascript: void(0);"><i
-                    class="ti-back-left"></i><span>{{ _lang('Devolución de Productos') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (has_feature('invoice_limit'))
-                    @if (in_array('products_returns.index', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('products_returns') }}">{{ _lang('Listado Devolución de Productos') }}</a>
-                        </li>
-                    @endif
-                    @if (in_array('products_returns.create', $permissions))
-                        <li class="nav-item"><a class="nav-link"
-                                href="{{ url('products_returns/create') }}">{{ _lang('Crear Devolución de Productos') }}</a>
-                        </li>
-                    @endif
-                @endif
-            </ul>
-        </li>
-    </ul>
-</li>
-<li> {{-- FINANZAS --}}
-    <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('FINANZAS') }}</span><span
-            class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
 
-</li>
-<li> {{-- ADMINISTRACION --}}
-    <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('ADMINISTRACION') }}</span><span
-            class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-    <ul class="nav-second-level" aria-expanded="false">
-        @if (in_array('tramitadores.index', $permissions))
-            <li class="nav-item"><a class="nav-link" href="{{ url('tramitadores') }}"><i
-                        class="ti-receipt"></i><span>{{ _lang('Tramitadores') }}</span></a>
+        {{-- PROVEEDORES --}}
+        @if (array_intersect(['suppliers.create', 'suppliers.index'], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-truck"></i><span>{{ _lang('Supplier') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('suppliers.create', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('suppliers/create') }}">{{ _lang('Add New') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('suppliers.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('suppliers') }}">{{ _lang('Supplier List') }}</a>
+                        </li>
+                    @endif
+                </ul>
             </li>
         @endif
-        <li>
-            <a href="javascript: void(0);"><i class="ti-user"></i><span>{{ _lang('Staffs') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('staffs.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('staffs') }}">{{ _lang('All Staff') }}</a></li>
-                @endif
 
-                @if (in_array('staffs.create', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('staffs/create') }}">{{ _lang('Add New') }}</a>
-                    </li>
-                @endif
-                @if (in_array('roles.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ route('roles.index') }}">{{ _lang('Staff Roles') }}</a></li>
-                @endif
-            </ul>
-        </li>
+        {{-- STOCK / COMPRAS Y DEVOLUCIONES DE PROVEEDOR --}}
+        @if (has_feature('inventory_module'))
+            @if (array_intersect(['purchase_orders.index', 'purchase_orders.create'], $permissions))
+                <li>
+                    <a href="javascript: void(0);">
+                        <i class="ti-bag"></i><span>{{ _lang('Purchase') }}</span>
+                        <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                    </a>
+                    <ul class="nav-second-level" aria-expanded="false">
+                        @if (in_array('purchase_orders.index', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('purchase_orders') }}">{{ _lang('Purchase Orders') }}</a>
+                            </li>
+                        @endif
+
+                        @if (in_array('purchase_orders.create', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('purchase_orders/create') }}">{{ _lang('Create Purchase Order') }}</a>
+                            </li>
+                        @endif
+                    </ul>
+                </li>
+            @endif
+
+            @if (array_intersect(['purchase_returns', 'sales_returns'], $permissions))
+                <li>
+                    <a href="javascript: void(0);">
+                        <i class="ti-back-left"></i><span>{{ _lang('Return') }}</span>
+                        <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                    </a>
+                    <ul class="nav-second-level" aria-expanded="false">
+                        @if (in_array('purchase_returns', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('purchase_returns') }}">{{ _lang('Purchase Return') }}</a>
+                            </li>
+                        @endif
+
+                        @if (in_array('sales_returns', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('sales_returns') }}">{{ _lang('Sales Return') }}</a>
+                            </li>
+                        @endif
+                    </ul>
+                </li>
+            @endif
+        @endif
+
     </ul>
 </li>
-<li> {{-- CONTABILIDAD --}}
-    <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('CONTABILIDAD') }}</span><span
-            class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-    <ul class="nav-second-level" aria-expanded="false">
-        <li>
-            <a href="javascript: void(0);"><i class="ti-credit-card"></i><span>{{ _lang('Accounts') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('accounts.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('accounts') }}">{{ _lang('List Account') }}</a>
-                    </li>
-                @endif
+@endif
 
-                @if (in_array('accounts.create', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('accounts/create') }}">{{ _lang('Add New Account') }}</a></li>
-                @endif
-            </ul>
-        </li>
-        <li>
-            <a href="javascript: void(0);"><i class="fas fa-file-invoice-dollar"></i><span>{{ _lang('Cuentas Corrientes') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('cuenta_corriente.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ route('cuenta_corriente.index') }}">{{ _lang('Lista de Cuentas') }}</a>
-                    </li>
-                @endif
-            </ul>
-        </li>
-        <li>
-            <a href="javascript: void(0);"><i class="ti-receipt"></i><span>{{ _lang('Transactions') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('income.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('income') }}">{{ _lang('Income/Deposit') }}</a>
-                    </li>
-                @endif
-
-                @if (in_array('expense.index', $permissions))
-                    <li class="nav-item"><a class="nav-link" href="{{ url('expense') }}">{{ _lang('Expense') }}</a>
-                    </li>
-                @endif
-
-                @if (in_array('transfer.create', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('transfer/create') }}">{{ _lang('Transfer') }}</a>
-                    </li>
-                @endif
-
-                @if (in_array('income.income_calendar', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('income/calendar') }}">{{ _lang('Income Calendar') }}</a></li>
-                @endif
-
-                @if (in_array('expense.expense_calendar', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('expense/calendar') }}">{{ _lang('Expense Calendar') }}</a></li>
-                @endif
-            </ul>
-        </li>
-        <li>
-            <a href="javascript: void(0);"><i class="ti-receipt"></i><span>{{ _lang('Informes') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+{{-- FINANZAS --}}
+{{-- Nota: Se mantiene condicionado a tener al menos un permiso dentro de Finanzas cuando agregues sus ítems --}}
+@if (array_intersect(['finanzas.index'], $permissions)) 
+    <li>
+        <a href="javascript: void(0);">
+            <i class="ti-money"></i>
+            <span>{{ _lang('FINANZAS') }}</span>
+            <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+        </a>
         <ul class="nav-second-level" aria-expanded="false">
-            @if (in_array('reports.account_statement', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/account_statement') }}">{{ _lang('Account Statement') }}</a>
-                </li>
-            @endif
-
-            {{-- @if (in_array('reports.account_statement', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/account_statement') }}">{{ _lang('Account Statement') }}</a>
-                </li>
-            @endif --}}
-
-            @if (in_array('report_by_day', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ route('report_by_day') }}">{{ _lang('Reporte por dia personalizado') }}</a></li>
-            @endif
-
-            @if (in_array('reports.date_wise_income', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/date_wise_income') }}">{{ _lang('Date Wise Income') }}</a>
-                </li>
-            @endif
-
-            @if (in_array('reports.day_wise_expense', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/day_wise_expense') }}">{{ _lang('Detail Expense Report') }}</a>
-                </li>
-            @endif
-
-            @if (in_array('reports.date_wise_expense', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/date_wise_expense') }}">{{ _lang('Date Wise Expense') }}</a>
-                </li>
-            @endif
-
-            @if (in_array('reports.tax_report', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/tax_report') }}">{{ _lang('Tax Reports') }}</a></li>
-            @endif
-
-            @if (in_array('reports.transfer_report', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/transfer_report') }}">{{ _lang('Transfer Report') }}</a></li>
-            @endif
-
-            @if (in_array('reports.income_vs_expense', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/income_vs_expense') }}">{{ _lang('Income VS Expense') }}</a>
-                </li>
-            @endif
-
-            @if (in_array('reports.report_by_payer', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/report_by_payer') }}">{{ _lang('Report By Payer') }}</a></li>
-            @endif
-
-            @if (in_array('reports.report_by_payee', $permissions))
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ url('reports/report_by_payee') }}">{{ _lang('Report By Payee') }}</a></li>
-            @endif
+            {{-- Colocar submenús de finanzas aquí cuando estén disponibles --}}
         </ul>
     </li>
+@endif
+
+{{-- ADMINISTRACIÓN --}}
+@if (array_intersect(['tramitadores.index', 'staffs.index', 'staffs.create', 'roles.index'], $permissions))
+    <li>
+        <a href="javascript: void(0);">
+            <i class="ti-settings"></i>
+            <span>{{ _lang('ADMINISTRACION') }}</span>
+            <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+        </a>
+
+        <ul class="nav-second-level" aria-expanded="false">
+
+            {{-- Tramitadores --}}
+            @if (in_array('tramitadores.index', $permissions))
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url('tramitadores') }}">
+                        <i class="ti-receipt"></i>
+                        <span>{{ _lang('Tramitadores') }}</span>
+                    </a>
+                </li>
+            @endif
+
+            {{-- Staffs --}}
+            @if (array_intersect(['staffs.index', 'staffs.create', 'roles.index'], $permissions))
+                <li>
+                    <a href="javascript: void(0);">
+                        <i class="ti-user"></i>
+                        <span>{{ _lang('Staffs') }}</span>
+                        <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                    </a>
+
+                    <ul class="nav-second-level" aria-expanded="false">
+                        @if (in_array('staffs.index', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('staffs') }}">{{ _lang('All Staff') }}</a>
+                            </li>
+                        @endif
+
+                        @if (in_array('staffs.create', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url('staffs/create') }}">{{ _lang('Add New') }}</a>
+                            </li>
+                        @endif
+
+                        @if (in_array('roles.index', $permissions))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('roles.index') }}">{{ _lang('Staff Roles') }}</a>
+                            </li>
+                        @endif
+                    </ul>
+                </li>
+            @endif
+
+        </ul>
+    </li>
+@endif
+{{-- CONTABILIDAD --}}
+@if (array_intersect([
+    'accounts.index', 'accounts.create',
+    'cuenta_corriente.index',
+    'income.index', 'expense.index', 'transfer.create', 'income.income_calendar', 'expense.expense_calendar',
+    'reports.account_statement', 'report_by_day', 'reports.date_wise_income', 'reports.day_wise_expense',
+    'reports.date_wise_expense', 'reports.tax_report', 'reports.transfer_report', 'reports.income_vs_expense',
+    'reports.report_by_payer', 'reports.report_by_payee'
+], $permissions))
+
+<li>
+    <a href="javascript: void(0);">
+        <i class="ti-book"></i>
+        <span>{{ _lang('CONTABILIDAD') }}</span>
+        <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+    </a>
+
+    <ul class="nav-second-level" aria-expanded="false">
+
+        {{-- ACCOUNTS --}}
+        @if (array_intersect(['accounts.index', 'accounts.create'], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-credit-card"></i><span>{{ _lang('Accounts') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('accounts.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('accounts') }}">{{ _lang('List Account') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('accounts.create', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('accounts/create') }}">{{ _lang('Add New Account') }}</a>
+                        </li>
+                    @endif
+                </ul>
+            </li>
+        @endif
+
+        {{-- CUENTAS CORRIENTES --}}
+        @if (in_array('cuenta_corriente.index', $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="fas fa-file-invoice-dollar"></i><span>{{ _lang('Cuentas Corrientes') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('cuenta_corriente.index') }}">{{ _lang('Lista de Cuentas') }}</a>
+                    </li>
+                </ul>
+            </li>
+        @endif
+
+        {{-- TRANSACTIONS --}}
+        @if (array_intersect(['income.index', 'expense.index', 'transfer.create', 'income.income_calendar', 'expense.expense_calendar'], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-receipt"></i><span>{{ _lang('Transactions') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('income.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('income') }}">{{ _lang('Income/Deposit') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('expense.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('expense') }}">{{ _lang('Expense') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('transfer.create', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('transfer/create') }}">{{ _lang('Transfer') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('income.income_calendar', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('income/calendar') }}">{{ _lang('Income Calendar') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('expense.expense_calendar', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('expense/calendar') }}">{{ _lang('Expense Calendar') }}</a>
+                        </li>
+                    @endif
+                </ul>
+            </li>
+        @endif
+
+        {{-- INFORMES --}}
+        @if (array_intersect([
+            'reports.account_statement', 'report_by_day', 'reports.date_wise_income',
+            'reports.day_wise_expense', 'reports.date_wise_expense', 'reports.tax_report',
+            'reports.transfer_report', 'reports.income_vs_expense', 'reports.report_by_payer',
+            'reports.report_by_payee'
+        ], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-bar-chart"></i><span>{{ _lang('Informes') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('reports.account_statement', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/account_statement') }}">{{ _lang('Account Statement') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('report_by_day', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('report_by_day') }}">{{ _lang('Reporte por dia personalizado') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.date_wise_income', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/date_wise_income') }}">{{ _lang('Date Wise Income') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.day_wise_expense', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/day_wise_expense') }}">{{ _lang('Detail Expense Report') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.date_wise_expense', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/date_wise_expense') }}">{{ _lang('Date Wise Expense') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.tax_report', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/tax_report') }}">{{ _lang('Tax Reports') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.transfer_report', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/transfer_report') }}">{{ _lang('Transfer Report') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.income_vs_expense', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/income_vs_expense') }}">{{ _lang('Income VS Expense') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.report_by_payer', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/report_by_payer') }}">{{ _lang('Report By Payer') }}</a>
+                        </li>
+                    @endif
+
+                    @if (in_array('reports.report_by_payee', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('reports/report_by_payee') }}">{{ _lang('Report By Payee') }}</a>
+                        </li>
+                    @endif
+                </ul>
+            </li>
+        @endif
 
     </ul>
 </li>
-<li> {{-- PROCESOS INTERNOS --}}
-    <a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('PROCESOS INTERNOS') }}</span><span
-            class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+@endif
+{{-- PROCESOS INTERNOS --}}
+@if (
+    array_intersect([
+        'orden-desarme.index', 'list_consu_orden', 'orden-despacho.index', 
+        'historialOrden', 'vehiculo.historial_estados', 'company.change_settings', 
+        'company_email_template.index', 'chart_of_accounts.index', 'payment_methods.index', 
+        'product_units.index', 'taxs.index', 'file_manager.index'
+    ], $permissions) 
+    || auth()->user()->can('piezas_destruir.index') 
+    || auth()->user()->can('compactacion.index') 
+    || auth()->user()->can('pi_consulta_venta')
+)
+
+<li>
+    <a href="javascript: void(0);">
+        <i class="ti-settings"></i>
+        <span>{{ _lang('PROCESOS INTERNOS') }}</span>
+        <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+    </a>
+
     <ul class="nav-second-level" aria-expanded="false">
+
         @if (in_array('orden-desarme.index', $permissions))
-            <li class="nav-item"><a class="nav-link"
-                    href="{{ url('orden-desarme') }}">{{ _lang('Ordenes de desarme') }}</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url('orden-desarme') }}">{{ _lang('Ordenes de desarme') }}</a>
+            </li>
         @endif
-		@if (in_array('list_consu_orden', $permissions))
-                    <li class="nav-item"> <a class="nav-link" href="{{ route('list_consu_orden') }}"><i
-                                class="ti-link"></i><span>{{ _lang('Consulta Ordenes de desarme') }}</span></a></li>
+
+        @if (in_array('list_consu_orden', $permissions))
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('list_consu_orden') }}">{{ _lang('Consulta Ordenes de desarme') }}</a>
+            </li>
         @endif
+
         @if (in_array('orden-despacho.index', $permissions))
-            <li class="nav-item"><a class="nav-link"
-                    href="{{ url('orden-despacho') }}">{{ _lang('Entrega / Despacho ') }}</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url('orden-despacho') }}">{{ _lang('Entrega / Despacho') }}</a>
+            </li>
         @endif
 
         @if (in_array('historialOrden', $permissions))
-            <li class="nav-item"><a class="nav-link"
-                    href="{{ route('historialOrden') }}">{{ _lang('Historial ordenes de desarme') }}</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('historialOrden') }}">{{ _lang('Historial ordenes de desarme') }}</a>
+            </li>
         @endif
 
         @if (in_array('vehiculo.historial_estados', $permissions))
-            <li class="nav-item"><a class="nav-link"
-                    href="{{ route('vehiculo.historial_estados') }}">{{ _lang('Historial de Cambios de Estado') }}</a>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('vehiculo.historial_estados') }}">{{ _lang('Historial de Cambios de Estado') }}</a>
             </li>
         @endif
-		@can('piezas_destruir.index') 
-		   <li class="nav-item">
-                    <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
-                </li>
-		@endcan	
-        @can('compactacion.index') 
+
+        @can('piezas_destruir.index')
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('piezas_destruir.index') }}">{{ _lang('Piezas a Destruir') }}</a>
+            </li>
+        @endcan
+
+        @can('compactacion.index')
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('compactacion.index') }}">{{ _lang('Vehículos Compactados') }}</a>
             </li>
         @endcan
-		<li> {{-- REPORTES --}}
-			<a href="javascript: void(0);"><i class="ti-bar-chart"></i><span>{{ _lang('Reportes') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-			<ul class="nav-second-level" aria-expanded="false">
-			@can('pi_consulta_venta')
-				<li class="nav-item"><a class="nav-link" href="{{ route('invoice.consulta_ventas') }}">{{ _lang('Consulta Venta') }}</a></li>
-		   @endcan
-			</ul>
-		</li>
 
-        <li>
-            <a href="javascript: void(0);"><i class="ti-settings"></i><span>{{ _lang('Settings') }}</span><span
-                    class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
-            <ul class="nav-second-level" aria-expanded="false">
-                @if (in_array('company.change_settings', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('company/general_settings') }}">{{ _lang('Company Settings') }}</a>
+        {{-- REPORTES --}}
+        @can('pi_consulta_venta')
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-bar-chart"></i><span>{{ _lang('Reportes') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('invoice.consulta_ventas') }}">{{ _lang('Consulta Venta') }}</a>
                     </li>
-                @endif
+                </ul>
+            </li>
+        @endcan
 
-                @if (in_array('company_email_template.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('company_email_template') }}">{{ _lang('Email Template') }}</a></li>
-                @endif
+        {{-- SETTINGS --}}
+        @if (array_intersect([
+            'company.change_settings', 'company_email_template.index', 
+            'chart_of_accounts.index', 'payment_methods.index', 
+            'product_units.index', 'taxs.index'
+        ], $permissions))
+            <li>
+                <a href="javascript: void(0);">
+                    <i class="ti-panel"></i><span>{{ _lang('Settings') }}</span>
+                    <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+                </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    @if (in_array('company.change_settings', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('company/general_settings') }}">{{ _lang('Company Settings') }}</a>
+                        </li>
+                    @endif
 
-                @if (in_array('chart_of_accounts.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('chart_of_accounts') }}">{{ _lang('Income & Expense Types') }}</a></li>
-                @endif
+                    @if (in_array('company_email_template.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('company_email_template') }}">{{ _lang('Email Template') }}</a>
+                        </li>
+                    @endif
 
-                @if (in_array('payment_methods.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('payment_methods') }}">{{ _lang('Payment Methods') }}</a></li>
-                @endif
+                    @if (in_array('chart_of_accounts.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('chart_of_accounts') }}">{{ _lang('Income & Expense Types') }}</a>
+                        </li>
+                    @endif
 
-                @if (in_array('product_units.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('product_units') }}">{{ _lang('Product Unit') }}</a>
-                    </li>
-                @endif
+                    @if (in_array('payment_methods.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('payment_methods') }}">{{ _lang('Payment Methods') }}</a>
+                        </li>
+                    @endif
 
-                @if (in_array('taxs.index', $permissions))
-                    <li class="nav-item"><a class="nav-link"
-                            href="{{ url('taxs') }}">{{ _lang('Tax Settings') }}</a>
-                    </li>
-                @endif
-            </ul>
+                    @if (in_array('product_units.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('product_units') }}">{{ _lang('Product Unit') }}</a>
+                        </li>
+                    @endif
 
-
-        </li>
-        @if (has_feature('file_manager'))
-            @if (in_array('file_manager.index', $permissions))
-                <li>
-                    <a href="{{ url('file_manager') }}"><i
-                            class="ti-folder"></i><span>{{ _lang('File Manager') }}</span></a>
-                </li>
-            @endif
+                    @if (in_array('taxs.index', $permissions))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('taxs') }}">{{ _lang('Tax Settings') }}</a>
+                        </li>
+                    @endif
+                </ul>
+            </li>
         @endif
-    </ul>
 
+        {{-- FILE MANAGER --}}
+        @if (has_feature('file_manager') && in_array('file_manager.index', $permissions))
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url('file_manager') }}">
+                    <i class="ti-folder"></i><span>{{ _lang('File Manager') }}</span>
+                </a>
+            </li>
+        @endif
+
+    </ul>
 </li>
+@endif
 
 @if (has_feature('contacts_limit'))
 @endif
