@@ -1533,3 +1533,7 @@ Route::resource("puestos", "PuestosController");
 		   Route::post("Items/actualiza-predefinidos", "ItemController@actualizaPredefinido",)->name("items.actualizapredefinidos");
 		   
 		   Route::post('products/detalle/activos', 'ProductController@table_detalle_inventario')->name('products.table.detalle.inventario');
+		   //traslado de mercancia
+		   Route::resource('transfers', \TransferenciaProductoController::class);
+		   Route::post('transfers/detalle', 'TransferenciaProductoController@table_detalle')->name('transfers.table_detalle');
+		   Route::get('/traslados-masivos/{id}/pdf', 'TransferenciaProductoController@descargarGuiaMasiva')->name('traslados.pdf');
