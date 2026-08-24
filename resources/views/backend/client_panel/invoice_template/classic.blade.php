@@ -189,7 +189,7 @@
                                                 <b>{{ $item->product->id }}/{{ $item->product->nro_oblea }}</b>
                                             </td>
                                             <td>
-                                                <b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
+                                                <b>{{ $item->item->item_name }}</b><br>{{-- $item->description --}}
                                             </td>
 											<td><b>
                                                     @isset($item->product->marcaModelo)
