@@ -172,7 +172,7 @@
                                     @foreach ($invoice->invoice_items as $item)
                                         <tr id="product-{{ $item->item_id }}">
                                             <td><b>{{ $item->product->id ?? '' }}/{{ $item->product->nro_oblea ?? '' }}</b></td>
-                                            <td><b>{{ $item->item->item_name ?? '' }}</b><br>{{ $item->description }}</td>
+                                            <td><b>{{ $item->item->item_name ?? '' }}</b><br>{{-- $item->description --}}</td>
                                             <td>
                                                 <b>
                                                     @isset($item->product->marcaModelo)
@@ -199,10 +199,10 @@
                                         </tr>
 
                                         @if ($invoice->note != '')
-                                            <tr class="no-print">
+										{{-- <tr class="no-print">
                                                 <td colspan="2"><small>{{ $invoice->note }}</small></td>
                                                 <td colspan="4"></td>   
-                                            </tr>
+										</tr> --}}
                                         @endif
 
                                         @if (isset($allReturnItemIds) && in_array(($item->product->id ?? 0), $allReturnItemIds))
