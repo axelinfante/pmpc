@@ -48,6 +48,7 @@ class PermissionController extends Controller
 			'App\Http\Controllers\API\UserController',
 			'App\Http\Controllers\Install\InstallController',
 			'App\Http\Controllers\Install\UpdateController',
+			'App\Http\Controllers\TransferenciaProductoController',
 		);
 
 		//Get Subscribed Package Details
