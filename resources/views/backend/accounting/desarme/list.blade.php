@@ -749,7 +749,7 @@
                                     "alert-danger");
                                 $("#main_alert > span.msg").html(response.success);
                                 $("#main_alert").css('display', 'block');
-								table.draw(); // Redibuja la tabla para aplicar el filtro
+								//table.draw(); // Redibuja la tabla para aplicar el filtro
                             } else if (response.error) {
                                 //console.log(response);
                                 $("#main_alert > span.msg").html("");
