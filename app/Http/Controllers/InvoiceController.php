@@ -5617,9 +5617,16 @@ public function get_table_data(Request $request)
 			}
 
 			$invoices->when($request, function ($query) use ($request) {
-				if ($request->filled('invoice_number')) {
+				/*if ($request->filled('invoice_number')) {
 					$query->where('invoices.invoice_number', 'like', "%{$request->get('invoice_number')}%");
-				}
+				}*/
+				
+				$query->when($request->filled('invoice_number'), function ($q) use ($request) {
+					$invoices = array_map('trim', explode(',', $request->input('invoice_number')));
+					count($invoices) > 1
+						? $q->whereIn('invoices.invoice_number', $invoices)
+						: $q->where('invoices.invoice_number', 'like', "%{$invoices[0]}%");
+				});
 
 				if ($request->filled('vendedor')) {
 					$query->where('invoices.user_id', $request->get('vendedor'));

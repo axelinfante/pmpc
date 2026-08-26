@@ -156,7 +156,7 @@
 								 @foreach($invoice->invoice_items as $item)
 									 <tr id="product-{{ $item->item_id }}">
 										 <td>
-											<b>{{ $item->item->item_name }}</b><br>{{-- $item->description --}}
+											<b>{{ $item->item->item_name }}</b><br>{{ $item->description }}
 										 </td>
 										 <td class="text-center">{{ $item->quantity }}</td>
 										 <td class="text-right">{{ decimalPlace($item->unit_cost, $currency) }}</td>
@@ -258,7 +258,7 @@
 					 
 					 <!--Invoice Note-->
 					 @if($invoice->note  != '')
-					 {{-- <div class="invoice-note border-top pt-4">{{ $invoice->note }}</div> --}}
+					  <div class="invoice-note border-top pt-4">{{ $invoice->note }}</div> 
 					 @endif
 					 <!--End Invoice Note-->
 					 
