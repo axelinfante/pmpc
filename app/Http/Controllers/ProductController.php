@@ -53,8 +53,42 @@ class ProductController extends Controller
          if (request()->ajax()) {
            
 		   $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		   $products = Product::select([
+				'products.*',
+				'cars.idMarca_modelo',
+				'cars.tipo_vehiculo',
+				'cars.dominio',
+				'cars.motor_nro',
+				'marcas.marca as nombre_marca',
+				'modelos.modelo as nombre_modelo'
+			])
+			->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+			->leftJoin('marca_modelos', 'marca_modelos.id', '=', 'cars.idMarca_modelo')
+			->leftJoin('marcas', 'marcas.id', '=', 'marca_modelos.idMarca')
+			->leftJoin('modelos', 'modelos.id', '=', 'marca_modelos.idModelo')
+			->whereNull('products.car_id') 
+			->where('products.stock', '>=', 1)
+			->where(function ($query) {
+				$query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
+					  ->orWhereNull('products.estado');
+			})
+			->whereIn('products.company_id', $company_id)
+			->with([
+				'category', 
+				'devoluciones',
+				'item' => function ($query) {
+					$query->where("item_type", "product");
+				}
+			]);
+
+		if (!empty($request->columns['3']['search']['value'])) {
+			$products->orderBy('products.nro_interno', 'asc');
+		} else {
+			$products->orderBy('products.id', 'desc');
+		}
+		   
             // Iniciamos la consulta base
-            $products = Product::select('products.*', 'cars.tipo_vehiculo', 'cars.dominio','cars.motor_nro')
+           /*  $products = Product::select('products.*', 'cars.idMarca_modelo','cars.tipo_vehiculo', 'cars.dominio','cars.motor_nro')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
                 ->whereNull('car_id')
                 ->where('stock', '>=', 1)
@@ -79,7 +113,7 @@ class ProductController extends Controller
                 $products->orderBy('products.nro_interno', 'asc');
             } else {
                 $products->orderBy('products.id', 'desc');
-            }
+            } */
 			
 
             return DataTables::eloquent($products)
@@ -141,7 +175,7 @@ class ProductController extends Controller
                         $subQuery->where('item_name', 'like', "%{$keyword}%");
                     });
                 })
-                ->filterColumn('marca', function ($query, $keyword) {
+               /*  ->filterColumn('marca', function ($query, $keyword) {
                     $query->orWhereHas('marcamodelo', function ($subQuery) use ($keyword) {
                         $subQuery->whereHas('marca', function ($str) use ($keyword) {
                             //$str->where('marca', 'like', "%{$keyword}%");
@@ -154,14 +188,34 @@ class ProductController extends Controller
                             }
                         });
                     });
-                })
-                ->filterColumn('modelo', function ($query, $keyword) {
+                }) 
+                 ->filterColumn('modelo', function ($query, $keyword) {
                     $query->orWhereHas('marcamodelo', function ($subQuery) use ($keyword) {
                         $subQuery->whereHas('modelo', function ($str) use ($keyword) {
                             $str->where('modelo', 'like', "%{$keyword}%");
                         });
                     });
-                })
+                }) */
+				->filterColumn('marca', function ($query, $keyword) {
+						if ($keyword === 'todos') {
+							$query->where(function ($q) {
+								$q->where('marcas.marca', '=')
+								  ->orWhereNull('marcas.marca');
+							});
+						} elseif (!empty($keyword)) {
+							$query->where('marcas.marca', 'like', "%{$keyword}%");
+						}
+					})
+					->filterColumn('modelo', function ($query, $keyword) {
+						if ($keyword === 'todos') {
+							$query->where(function ($q) {
+								$q->where('modelos.modelo', '=')
+								  ->orWhereNull('modelos.modelo');
+							});
+						} elseif (!empty($keyword)) {
+							$query->where('modelos.modelo', 'like', "%{$keyword}%");
+						}
+					})
                 ->filterColumn('motor_nro', function ($query, $keyword) {
                     //$query->where('products.motor', 'like', "%{$keyword}");
                     if ($keyword == "todos") {
@@ -223,12 +277,18 @@ class ProductController extends Controller
                 ->addColumn('productItem', function ($data) {
                     return $data->item->item_name ?? null;
                 })
-                ->addColumn('marca', function ($data) {
+               /*  ->addColumn('marca', function ($data) {
                     return ($data->marcaModelo->marca->marca ?? '');
                 })
                 ->addColumn('modelo', function ($data) {
                     return ($data->marcaModelo->modelo->modelo ?? '');
-                })
+                }) */
+					->addColumn('marca', function ($row) {
+						return $row->nombre_marca ?? '';
+					})
+					->addColumn('modelo', function ($row) {
+						return $row->nombre_modelo ?? '';
+					})
 				->addColumn('reparaciones', function ($data) {
 					
     if ($data->devoluciones->isEmpty()) {
