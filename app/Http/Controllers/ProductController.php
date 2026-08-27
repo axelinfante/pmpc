@@ -196,7 +196,67 @@ class ProductController extends Controller
                         });
                     });
                 }) */
-				->filterColumn('marca', function ($query, $keyword) {
+               ->filterColumn('marca', function ($query, $keyword) {
+    if ($keyword === 'todos') {
+        $query->where(function ($q) {
+            $q->where(function ($sub) {
+                $sub->whereNotNull('products.nro_interno')
+                    ->where(function ($inner) {
+                        $inner->where('marcas.marca', '')
+                              ->orWhereNull('marcas.marca');
+                    });
+            })->orWhere(function ($sub) {
+                $sub->whereNull('products.nro_interno')
+                    ->where(function ($inner) {
+                        $inner->where('marcas.marca', '')
+                              ->orWhereNull('marcas.marca');
+                    });
+            });
+        });
+    } elseif (!empty($keyword)) {
+        $query->where(function ($q) use ($keyword) {
+            $q->where(function ($sub) use ($keyword) {
+                $sub->whereNotNull('products.nro_interno')
+                    ->where('marcas.marca', 'like', "%{$keyword}%");
+            })->orWhere(function ($sub) use ($keyword) {
+                $sub->whereNull('products.nro_interno')
+                    ->where('marcas.marca', 'like', "%{$keyword}%");
+            });
+        });
+    }
+})
+->filterColumn('modelo', function ($query, $keyword) {
+    if ($keyword === 'todos') {
+        $query->where(function ($q) {
+            $q->where(function ($sub) {
+                $sub->whereNotNull('products.nro_interno')
+                    ->where(function ($inner) {
+                        $inner->where('modelos.modelo', '')
+                              ->orWhereNull('modelos.modelo');
+                    });
+            })->orWhere(function ($sub) {
+                $sub->whereNull('products.nro_interno')
+                    ->where(function ($inner) {
+                        $inner->where('modelos.modelo', '')
+                              ->orWhereNull('modelos.modelo');
+                    });
+            });
+        });
+    } elseif (!empty($keyword)) {
+        $query->where(function ($q) use ($keyword) {
+            $q->where(function ($sub) use ($keyword) {
+                // Solución al error: se añade 'products.' antes de nro_interno
+                $sub->whereNotNull('products.nro_interno')
+                    ->where('modelos.modelo', 'like', "%{$keyword}%");
+            })->orWhere(function ($sub) use ($keyword) {
+                $sub->whereNull('products.nro_interno')
+                    ->where('modelos.modelo', 'like', "%{$keyword}%");
+            });
+        });
+    }
+})
+
+				/*->filterColumn('marca', function ($query, $keyword) {
 						if ($keyword === 'todos') {
 							$query->where(function ($q) {
 								$q->where('marcas.marca', '=')
@@ -215,7 +275,7 @@ class ProductController extends Controller
 						} elseif (!empty($keyword)) {
 							$query->where('modelos.modelo', 'like', "%{$keyword}%");
 						}
-					})
+					})*/
                 ->filterColumn('motor_nro', function ($query, $keyword) {
                     //$query->where('products.motor', 'like', "%{$keyword}");
                     if ($keyword == "todos") {
@@ -283,12 +343,28 @@ class ProductController extends Controller
                 ->addColumn('modelo', function ($data) {
                     return ($data->marcaModelo->modelo->modelo ?? '');
                 }) */
-					->addColumn('marca', function ($row) {
+					/*->addColumn('marca', function ($row) {
 						return $row->nombre_marca ?? '';
 					})
 					->addColumn('modelo', function ($row) {
 						return $row->nombre_modelo ?? '';
-					})
+					})*/
+
+                    ->addColumn('marca', function ($row) {
+                        if (!empty($row->nro_interno)) {
+                            return $row->nombre_marca ?? '';
+                        }
+                        
+                        return $row->marcaModelo->marca->marca ?? '';
+                    })
+                     ->addColumn('modelo', function ($row) {
+                        if (!empty($row->nro_interno)) {
+                            return $row->nombre_modelo ?? '';
+                        }
+                        
+                        return $row->marcaModelo->modelo->modelo ?? '';
+                    })
+
 				->addColumn('reparaciones', function ($data) {
 					
     if ($data->devoluciones->isEmpty()) {
