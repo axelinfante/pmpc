@@ -2407,7 +2407,7 @@ if ($request->ajax()) {
 				//return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO') && ((float) ($row->stock ?? 0) > 0);
 			};
 
-			$query = Item::select(
+			/* $query = Item::select(
 					'products.id as product_id', 
 					'items.id as item_id',       
 					'products.stock', 
@@ -2453,7 +2453,65 @@ if ($request->ajax()) {
 					});
 				})
 				->groupBy('items.id', 'products.id')
-				->orderBy('item_name', 'asc');
+				->orderBy('item_name', 'asc'); */
+				
+				$query = Item::select([
+        'products.id as product_id', 
+        'items.id as item_id',       
+        'products.stock', 
+        'products.nro_oblea',
+        DB::raw("CONCAT(items.item_name, CASE WHEN items.allCar = 0 OR items.allCar IS NULL THEN ' (*)' ELSE '' END) as item_name"),
+        'items.allCar',
+        'items.activo',
+        'products.estado',
+        'lugar_entregas.nombre as deposito',
+        DB::raw("GROUP_CONCAT(
+            DISTINCT CASE 
+                WHEN invoices.invoice_number IS NOT NULL OR users.name IS NOT NULL 
+                THEN CONCAT(COALESCE(invoices.invoice_number, ''), '||', COALESCE(users.name, '')) 
+                ELSE NULL 
+            END 
+            SEPARATOR ';;'
+        ) as facturas_vendedores")
+    ])
+    ->leftJoin('products', function ($join) use ($request) {
+        $join->on('products.item_id', '=', 'items.id')
+             ->where('products.nro_interno', '=', $request->nro_interno); 
+    })
+    ->leftJoin('invoice_items', 'invoice_items.product_id', '=', 'products.id')
+    ->leftJoin('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+    ->leftJoin('users', 'users.id', '=', 'invoices.user_id')
+    ->leftJoin('lugar_entregas', 'lugar_entregas.id', '=', 'products.idDeposito')
+    ->where('items.item_type', 'product')
+    ->where(function ($query) {
+        // Regla 1: Ítems Activos Estándar
+        $query->where(function ($q) {
+            $q->where('items.activo', 'Si')
+              ->where(function ($subQuery) {
+                  $subQuery->where('items.allCar', 1)
+                           ->orWhere(function ($allCarQuery) {
+                               $allCarQuery->where(function ($nullQuery) {
+                                               $nullQuery->where('items.allCar', 0)
+                                                         ->orWhereNull('items.allCar');
+                                           })
+                                           ->where('products.stock', '>', 0);
+                           });
+              });
+        })
+        ->orWhereNotNull('products.id');
+    })
+    ->groupBy([
+        'items.id',
+        'products.id',
+        'products.stock',
+        'products.nro_oblea',
+        'items.item_name',
+        'items.allCar',
+        'items.activo',
+        'products.estado',
+        'lugar_entregas.nombre'
+    ])
+    ->orderBy('item_name', 'asc');
 
 				$lugar_entregas = Lugar_entregas::all();
 
