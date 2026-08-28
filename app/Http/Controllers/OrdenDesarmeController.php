@@ -602,13 +602,21 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         };
         $data['nro_interno_datos'] = $nro_interno_datos;
 		
-		$data['productos'] =$data['productos'] = Product::select('products.*', 'cars.tipo_vehiculo','items.item_name')
+		$data['productos'] = Product::select('products.*', 'cars.tipo_vehiculo','items.item_name')
+                ->Join('items', 'items.id', '=', 'products.item_id')
+                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+                ->where('products.id', $orden->product_id)
+				->get();
+                //->where('products.nro_interno', $orden->idCar)
+                //->where('products.item_id', $orden->pieza)
+                //->where('stock', '>=', 0)->get();
+		/*$data['productos'] = Product::select('products.*', 'cars.tipo_vehiculo','items.item_name')
                 ->Join('items', 'items.id', '=', 'products.item_id')
                 ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
                 ->where('car_id', null)
                 ->where('products.nro_interno', $orden->idCar)
                 //->where('products.item_id', $orden->pieza)
-                ->where('stock', '>=', 0)->get();
+                ->where('stock', '>=', 0)->get();*/
 				
 				//$item = Product::where('id', $idProduct)->with('item')->first();
 	   if (strtolower(auth()->user()->role->name) != 'operario' || strtolower(auth()->user()->role->name) != 'cadete') {
@@ -715,8 +723,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 			$stock = Product::where("id", $orden_desarme->product_id)->first();
 			if($item_invoice)
 			{
-				$item_invoice->product_id=$orden_desarme->product_id;
-				$item_invoice->save();
+				//$item_invoice->product_id=$orden_desarme->product_id;
+				//$item_invoice->save();
 				
 				//$vend = Product::where('nro_interno', "$car->id")->where('stock', 0)->get();
 				 //$stock = Product::where("id", $orden_desarme->product_id)->first();
@@ -1669,8 +1677,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 									$stock = Product::where("id", $orden_desarme->product_id)->first();
 									if($item_invoice)
 									{
-										$item_invoice->product_id=$orden_desarme->product_id;
-										$item_invoice->save();
+										//$item_invoice->product_id=$orden_desarme->product_id;
+										//$item_invoice->save();
 
 										 if (in_array($stock->estado, array("desarme","desarme-stock"))) {
 											$stock->estado = "optimo";
