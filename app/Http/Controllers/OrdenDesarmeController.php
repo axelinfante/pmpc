@@ -1002,7 +1002,8 @@ $ordenes = Orden_desarme::with([
 		$estEnv = $request->estado;
 		if (!$estEnv && !$isHistorial) {
 			$ordenes->where(function ($q) {
-				$q->where('estado', '!=', 'completado')
+				//$q->where('estado', '!=', 'completado')
+				$q->whereNotIn('estado', ['completado', 'anulada'])
 				  ->orWhereNull('estado'); 
 			});
 		}
