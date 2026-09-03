@@ -7,6 +7,7 @@ use App\ProductReturn;
 use App\SalesReturn;
 use App\SalesReturnItem;
 use App\SalesReturnItemTax;
+use App\Invoice;
 use App\Stock;
 use App\Tax;
 use Validator;
@@ -526,8 +527,8 @@ public function update(Request $request, $id)
 		DB::beginTransaction();
 		
         //$salesReturn = SalesReturn::where("id",$id)->where("company_id",company_id());
-		$salesReturn = SalesReturn::where("id",$id);	
-		
+//		$salesReturn = SalesReturn::where("id",$id)findOrFail($id);	
+		$salesReturn = SalesReturn::findOrFail($id);	
 		$invoice = Invoice::where("id", $salesReturn->invoice_id)->first();	  				
 		$invoice->status = 'Unpaid';	
 		$invoice->note = "Nota de devolucion anulada";
