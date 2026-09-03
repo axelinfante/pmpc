@@ -4,11 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-//use App\Permission;
 use App\Permission;
 use App\User;
-
-
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -29,22 +26,33 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
-		$this->registerGates();
-		
-		Gate::before(function (User $user) {
-			//$usuarios= array("test@test.com", "crismartinez@pmpc.com.ar");
-			$usuarios= array("test@test.com");
-			//return (in_array($user->email, $usuarios)) $user->email=='test@test.com' ? true : null;
-			return (in_array($user->email, $usuarios)) ? true : null;
-			  //return $user->user_type=='user' ? true : null;
-			//user_type
-			//email
-				//return $user->hasRole(''); // or create an  `isSuperAdmin(...)` function in `User` model
-			});
 
+        Gate::before(function (User $user) {
+            $superAdmins = [
+                'test@test.com'];
+
+            if (in_array($user->email, $superAdmins, true)) {
+                return true;
+            }
+
+            if (isset($user->user_type) && strtolower($user->user_type) === 'super_admin') {
+                return true;
+            }
+
+            if (method_exists($user, 'hasRole') && $user->hasRole('super-admin')) {
+                return true;
+            }
+
+            return null; 
+        });
+
+        $this->registerGates();
     }
-	
-	protected function registerGates(): void
+
+    /**
+     * Registra dinámicamente las Gates asociadas a la tabla de permisos.
+     */
+    protected function registerGates(): void
     {
         try {
             foreach (Permission::pluck('permission') as $permission) {
