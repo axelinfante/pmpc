@@ -93,7 +93,8 @@
 								<label class="control-label">{{ _lang('Group') }}</label>						
 								<select class="form-control select2-ajax" data-value="id" data-display="name" data-table="contact_groups" data-where="1" name="group_id" required>
 									<option value="">{{ _lang('- Select Group -') }}</option>
-									{{ create_option("contact_groups","id","name",$contact->group_id ?? '',array("company_id="=>company_id())) }}
+									{{-- create_option("contact_groups","id","name",$contact->group_id ?? '',array("company_id="=>company_id())) --}}
+									{{ create_option("contact_groups","id",'name',$contact->group_id) }}
 								</select>
 							 </div>
 							</div>
