@@ -178,7 +178,9 @@ class ContactController extends Controller
 		$validator = Validator::make($request->all(), [
 			'profile_type'  => 'required|max:20',
 			'company_name'  => 'nullable|max:50',
-			'contact_name'  => 'required|max:50',
+			//'contact_name'  => 'required|max:50',
+			'contact_name'  => 'required|max:50|unique:contacts,contact_name',
+			'vat_id' => 'required|max:60|unique:contacts,dni_cuit',
 			// 'contact_email' => [
 			//     //'required',
 			//     //'email',
@@ -269,17 +271,30 @@ class ContactController extends Controller
 		if ($client) {
 			$contact->user_id = $client->id;
 		}
-		$contact->nombre_env = $request->input('nombre_env');
+		$contact->nombre_env = $request->input('nombre_env') ?? $request->input('contact_name');
 		$contact->apellidos_env = $request->input('apellidos_env');
-		$contact->dni_env = $request->input('dni_env');
-		$contact->calle_env = $request->input('calle_env');
+		$contact->dni_env = $request->input('dni_env') ?? $request->input('vat_id');
+		$contact->calle_env = $request->input('calle_env') ?? $request->input('address');
 		$contact->numero_env = $request->input('numero_env');
 		$contact->piso_env = $request->input('piso_env');
 		$contact->depto_env = $request->input('depto_env');
-		$contact->cp_env = $request->input('cp_env');
-		$contact->localidad_env = $request->input('localidad_env');
+		$contact->cp_env = $request->input('cp_env') ?? $request->input('zip');
+		$contact->localidad_env = $request->input('localidad_env') ?? $request->input('state');
 		$contact->pcia_env = $request->input('pcia_env');
-		$contact->tel_env = $request->input('tel_env');
+		$contact->tel_env = $request->input('tel_env') ?? $request->input('contact_phone');
+		
+		
+		// $contact->nombre_env = $request->input('nombre_env');
+		// $contact->apellidos_env = $request->input('apellidos_env');
+		// $contact->dni_env = $request->input('dni_env');
+		// $contact->calle_env = $request->input('calle_env');
+		// $contact->numero_env = $request->input('numero_env');
+		// $contact->piso_env = $request->input('piso_env');
+		// $contact->depto_env = $request->input('depto_env');
+		// $contact->cp_env = $request->input('cp_env');
+		// $contact->localidad_env = $request->input('localidad_env');
+		// $contact->pcia_env = $request->input('pcia_env');
+		// $contact->tel_env = $request->input('tel_env');
 		$contact->group_id = $request->input('group_id');
 		$contact->company_id = company_id();
 		$contact->contact_image = $contact_image;
@@ -509,10 +524,10 @@ class ContactController extends Controller
 		$validator = Validator::make($request->all(), [
 			'profile_type' => 'required|max:20',
 			'company_name' => 'nullable|max:50',
-			'contact_name' => 'required|max:50',
+			//'contact_name' => 'required|max:50',
+			'contact_name' => 'required|max:60|unique:contacts,contact_name,' . $id,
+			'vat_id' => 'required|max:60|unique:contacts,dni_cuit,' . $id,
 			// 'contact_email' => [
-
-
 			//     Rule::unique('contacts')->ignore($contact->id),
 			// ],
 			'contact_phone' => 'nullable|max:20',

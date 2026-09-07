@@ -36,7 +36,13 @@
 							@can('contact_groups.destroy')
 							{{ csrf_field() }}
 							<input name="_method" type="hidden" value="DELETE">
-							<button class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i></button>
+							<button class="btn {{ $contactgroup['activo'] == 'Si' ? 'btn-danger' : 'btn-success' }}  btn-xs btn-removex" type="submit">
+							@if ($contactgroup['activo'] == 'Si')
+								<i class="ti-eraser"></i>
+								@else
+									<i class="ti-loop"></i>
+							@endif
+							</button>
 							@endcan	
 						  </form>
 						</td>
@@ -48,7 +54,4 @@
 		</div>
 	</div>
 </div>
-
 @endsection
-
-

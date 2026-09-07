@@ -19,8 +19,9 @@ class ContactGroupController extends Controller
      */
     public function index()
     {
-        $contactgroups = ContactGroup::where("company_id",company_id())
-		                              ->orderBy("id","desc")->get();
+//        $contactgroups = ContactGroup::where("company_id",company_id())
+       $contactgroups = ContactGroup::orderBy("id","desc")->get();
+									  
         return view('backend.accounting.contacts.contact_group.list',compact('contactgroups'));
     }
 
@@ -47,7 +48,8 @@ class ContactGroupController extends Controller
     public function store(Request $request)
     {	
 		$validator = Validator::make($request->all(), [
-			'name' => 'required|max:50',
+			//'name' => 'required|max:50',
+			'name'  => 'required|max:50|unique:contact_groups,name',
 		]);
 		
 		if ($validator->fails()) {
@@ -65,7 +67,7 @@ class ContactGroupController extends Controller
         $contactgroup= new ContactGroup();
 	    $contactgroup->name = $request->input('name');
 		$contactgroup->note = $request->input('note');
-		$contactgroup->company_id = company_id();
+		//$contactgroup->company_id = company_id();
 	
         $contactgroup->save();
         
@@ -86,8 +88,8 @@ class ContactGroupController extends Controller
      */
     public function show(Request $request,$id)
     {
-        $contactgroup = ContactGroup::where("id",$id)
-                                    ->where("company_id",company_id())->first();
+        $contactgroup = ContactGroup::where("id",$id)->first();
+                                    //->where("company_id",company_id())->first();
 		if(! $request->ajax()){
 		    return view('backend.accounting.contacts.contact_group.view',compact('contactgroup','id'));
 		}else{
@@ -104,8 +106,8 @@ class ContactGroupController extends Controller
      */
     public function edit(Request $request,$id)
     {
-        $contactgroup = ContactGroup::where("id",$id)
-                                    ->where("company_id",company_id())->first();
+        $contactgroup = ContactGroup::where("id",$id)->first();
+                                    //->where("company_id",company_id())->first();
    
 		if(! $request->ajax()){
 		   return view('backend.accounting.contacts.contact_group.edit',compact('contactgroup','id'));
@@ -125,7 +127,8 @@ class ContactGroupController extends Controller
     public function update(Request $request, $id)
     {
 		$validator = Validator::make($request->all(), [
-			'name' => 'required|max:50',
+			//'name' => 'required|max:50',
+			'name' => 'required|max:60|unique:contact_groups,name,' . $id,
 		]);
 		
 		if ($validator->fails()) {
@@ -140,10 +143,10 @@ class ContactGroupController extends Controller
 	
         	
 		
-        $contactgroup = ContactGroup::where("id",$id)->where("company_id",company_id())->first();
+        $contactgroup = ContactGroup::where("id",$id)->first();
 		$contactgroup->name = $request->input('name');
 		$contactgroup->note = $request->input('note');
-		$contactgroup->company_id = company_id();
+		//$contactgroup->company_id = company_id();
 	
         $contactgroup->save();
 		
@@ -163,9 +166,15 @@ class ContactGroupController extends Controller
      */
     public function destroy($id)
     {
-        $contactgroup = ContactGroup::where("id",$id)
-		                            ->where("company_id",company_id());
-        $contactgroup->delete();
-        return redirect('contact_groups')->with('success',_lang('Deleted sucessfully'));
+			$contactgroup = ContactGroup::where("id", $id)->first();
+												
+    if ($contactgroup) {
+        $nuevoEstado = $contactgroup->activo == 'Si' ? 'No' : 'Si';
+        $contactgroup->update(['activo' => $nuevoEstado]);
+        $mensaje = $nuevoEstado == 'No' ? _lang('Disabled successfully') : _lang('Enabled successfully');
+    } else {
+        $mensaje = _lang('Record not found');
+    }
+        return redirect('contact_groups')->with('success',$mensaje);
     }
 }
