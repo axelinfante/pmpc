@@ -11,6 +11,10 @@ class ContactGroup extends Model
      *
      * @var string
      */
+	 
+	 protected $fillable = [
+		'activo', 
+	];
 	
     protected $table = 'contact_groups';
 }
