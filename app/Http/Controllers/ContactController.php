@@ -76,10 +76,15 @@ class ContactController extends Controller
 	{
 		$currency = currency();
 		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-		$contacts = Contact::with("group")->select('contacts.*')
+	/*	$contacts = Contact::with("group")->select('contacts.*')
 			//->where("contacts.company_id", company_id())
 			 ->whereIn('company_id', $company_id)
-			->orderBy("contacts.id", "desc");
+			->orderBy("contacts.id", "desc");*/
+				
+		$contacts = Contact::with("group")
+		//->select('contacts.*')
+		->paraVentas($company_id) 
+		->orderBy("contacts.id", "desc");			
 
 		return Datatables::eloquent($contacts)
 
@@ -97,11 +102,13 @@ class ContactController extends Controller
 					. '<a href="' . action('ContactController@edit', $contact['id']) . '" class="btn btn-warning btn-xs"><i class="ti-pencil"></i></a>&nbsp;'
 					. csrf_field()
 					. '<input name="_method" type="hidden" value="DELETE">'
-					. '<button class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i></button>&nbsp;'
+					. '<button class="btn '. ($contact['activo'] == 'Si' ? 'btn-danger' : 'btn-success') .' btn-xs btn-remove2" type="submit">'. (($contact['activo'] == 'Si') ?	'<i class="ti-eraser">' : '<i class="ti-loop">').'</i></button>&nbsp;'
 					. '<a class="btn btn-success btn-xs ajax-modal" data-title="Ajustes en cuenta"
 					href="' . action('ContactController@ajusteCuenta', $contact['id']) . '">A</a>'
 					. '</form>';
 			})
+			
+						
 			->setRowId(function ($contact) {
 				return "row_" . $contact->id;
 			})
@@ -623,7 +630,7 @@ class ContactController extends Controller
 		$contact->localidad_env = $request->input('localidad_env');
 		$contact->pcia_env = $request->input('pcia_env');
 		$contact->tel_env = $request->input('tel_env');
-		$contact->company_id = company_id();
+		//$contact->company_id = company_id();
 		if ($request->hasfile('contact_image')) {
 			$contact->contact_image = $contact_image;
 		}
@@ -647,23 +654,31 @@ class ContactController extends Controller
 	 */
 	public function destroy($id)
 	{
-		DB::beginTransaction();
+		//DB::beginTransaction();
 
-		$contact = Contact::where("id", $id)->first();
-			/*->where("company_id", company_id())
-			->first();*/
+		/*$contact = Contact::where("id", $id)->first();
+			->where("company_id", company_id())
+			->first();
 
-		/*$user = User::find($contact->user_id);
+		$user = User::find($contact->user_id);
 		if($user){
 			$user->delete();
-		}*/
+		}
 
-		$contact->delete();
-
-		DB::commit();
-
-
-		return redirect('contacts')->with('success', _lang('Information has been deleted sucessfully'));
+		$contact->delete();*/
+		
+		$contact = Contact::where("id", $id)->first();
+												
+    if ($contact) {
+        $nuevoEstado = $contact->activo == 'Si' ? 'No' : 'Si';
+        $contact->update(['activo' => $nuevoEstado]);
+        $mensaje = $nuevoEstado == 'No' ? _lang('Disabled successfully') : _lang('Enabled successfully');
+    } else {
+        $mensaje = _lang('Record not found');
+    }
+        return redirect('contacts')->with('success',$mensaje);
+	//	DB::commit();
+		//return redirect('contacts')->with('success', _lang('Information has been deleted sucessfully'));
 	}
 
 
