@@ -26,6 +26,9 @@ class Select2Controller extends Controller
 	  public function get_table_data(Request $request)
     {
 		
+		if ($request->get('where')=="999"){
+			return self::SearchGeneral($request);
+		}
 		if ($request->get('where')=="101"){
 			return self::SearchCliente($request);
 		}
@@ -455,6 +458,115 @@ private function formatearItems($items, $productsInfo)
             'disabled' => $disabledRow
         ];
     });
+}
+
+
+private function SearchGeneral(Request $request)
+{
+	
+    $search       		= $request->input('q');
+    $table        		= $request->input('table');        
+    $value        		= $request->input('value', 'id');  
+    $whereraw       	= $request->input('whereraw');    
+    $display 			= $request->input('display'); 
+    
+
+    if (empty($table) || empty($display)) {
+        return response()->json(['error' => 'Faltan parámetros obligatorios (table, display_name)'], 400);
+    }
+	
+	
+	$rawText = $display;
+	$rawWhere = "1=1";
+	
+	if (!empty($whereraw)) {
+        $rawWhere = $whereraw;
+    }
+	
+	$display_columns = explode(',', $display);
+    $display_columns = array_filter(array_map('trim', $display_columns));
+	$concat_parts = [];
+	
+	  foreach ($display_columns as $index => $column) {
+        $clean_col = preg_replace('/[^a-zA-Z0-9_]/', '', trim($column)); 
+        
+        if (!empty($clean_col)) {
+            if (empty($concat_parts)) {
+                $order_column = $clean_col; 
+            }
+            $concat_parts[] = "IFNULL($clean_col, '')";
+            
+            if ($index < count($display_columns) - 1) {
+                $concat_parts[] = "' '";
+            }
+        }
+    }
+	
+     $rawText = "CONCAT(" . implode(', ', $concat_parts) . ")";
+
+	 $query = DB::table($table)
+        ->select(
+            DB::raw("$value AS id"),
+            DB::raw("$rawText AS text")
+        )
+        ->whereRaw($rawWhere); 
+	
+	  if (!empty($search)) {
+        $query->where(function ($q) use ($search, $display_columns) {
+            foreach ($display_columns as $index => $column) {
+                $clean_col = preg_replace('/[^a-zA-Z0-9_]/', '', trim($column));
+                if (!empty($clean_col)) {
+                    if ($index === 0) {
+                        $q->where($clean_col, 'LIKE', '%' . $search . '%');
+                    } else {
+                        $q->orWhere($clean_col, 'LIKE', '%' . $search . '%');
+                    }
+                }
+            }
+        });
+    }
+
+
+  if (empty($search))
+	{
+	  $query->limit(30);
+	}
+    return $query->orderBy($order_column, 'ASC')->get();
+		
+	
+	
+/*
+
+    $query = DB::table($table)
+        ->select(
+            "$value AS id",
+            // Concatenación dinámica usando la columna que viene en $display_name
+            DB::raw("CONCAT('[', IFNULL(dni_cuit, 'Sin DNI'), '] ', IFNULL($display_name, 'Sin nombre')) AS text")
+        )
+        ->whereIn("company_id", $companias_global);
+
+    // 3. Aplicar filtro dinámico ($where) SOLO si fue enviado en el request
+    // Ejemplo: si $where es 'status', filtrará donde 'status' = 1 (o el valor que definas)
+    if (!empty($where)) {
+        // Opción A: Si $where es solo el nombre de la columna y buscas un valor fijo (ej: activo = 1)
+        $query->where($where, 1); 
+        
+        // Opción B: Si necesitas que el usuario mande un valor específico para ese WHERE, cambia la lógica a:
+        // $query->where($where, $request->input('where_value'));
+    }
+
+    // 4. Aplicar el filtro de búsqueda del buscador (Select2 / Autocomplete)
+    if (!empty($search)) {
+        $query->where(function ($q) use ($search, $display_name) {
+            $q->where('dni_cuit', 'LIKE', '%' . $search . '%')
+              ->orWhere($display_name, 'LIKE', '%' . $search . '%');
+        });
+    }
+
+    // 5. Ordenar, limitar resultados para mejorar rendimiento y ejecutar
+    return $query->orderBy($display_name, 'ASC')
+        ->limit(30)
+        ->get();*/
 }
 
 
