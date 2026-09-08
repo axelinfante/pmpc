@@ -90,9 +90,9 @@
 				  <div class="form-group">
 					<a href="{{ route('contact_groups.create') }}" data-reload="false" data-title="{{ _lang('Add Contact Group') }}" class="ajax-modal-2 select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
 					<label class="control-label">{{ _lang('Group') }}</label>						
-					<select class="form-control select2-ajax" data-value="id" data-display="name" data-table="contact_groups" data-where="1" name="group_id" required>
+					<select class="form-control select2-raw" data-value="id" data-display="name" data-table="contact_groups" data-where="999"  data-whereraw="activo='Si'" name="group_id" required>
 						<option value="">{{ _lang('- Select Group -') }}</option>
-						{{ create_option("contact_groups","id",'name',old('group_id',1)) }}
+						{{ create_option("contact_groups","id",'name',old('group_id',1), array('activo=' => 'Si')) }}
 					</select>
 				 </div>
 				</div>
@@ -227,6 +227,42 @@
  </form>
 </div>
 </div>
+@endsection
+@section('js-script')
+<script>
+if ($(".select2-raw").length) {
+    $('.select2-raw').each(function(i, obj) {
+        var $select = $(this);
+
+        $select.select2({
+            //minimumInputLength: 1,
+            language: {
+                inputTooShort: function () {
+                    return "buscar...";
+                }
+            },
+            ajax: {
+                url: function () {
+                    var params = new URLSearchParams({
+                        table: $select.data('table') || '',
+                        value: $select.data('value') || 'id',
+                        display: $select.data('display') || '',
+                        where: $select.data('where') || '',
+                        whereraw: $select.data('whereraw') || ''
+                    });
+                    return _url + '/ajax/get_table_data?' + params.toString();
+                },
+                processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                }
+            }
+        });
+      
+    });
+}
+</script>
 @endsection
 
 
