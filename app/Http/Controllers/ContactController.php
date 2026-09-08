@@ -76,10 +76,15 @@ class ContactController extends Controller
 	{
 		$currency = currency();
 		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-		$contacts = Contact::with("group")->select('contacts.*')
+	/*	$contacts = Contact::with("group")->select('contacts.*')
 			//->where("contacts.company_id", company_id())
 			 ->whereIn('company_id', $company_id)
-			->orderBy("contacts.id", "desc");
+			->orderBy("contacts.id", "desc");*/
+				
+		$contacts = Contact::with("group")
+		//->select('contacts.*')
+		->paraVentas($company_id) 
+		->orderBy("contacts.id", "desc");			
 
 		return Datatables::eloquent($contacts)
 
