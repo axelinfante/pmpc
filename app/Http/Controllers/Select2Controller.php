@@ -287,6 +287,7 @@ class Select2Controller extends Controller
     if (empty($search)) {
         return Contact::query()
             ->select('id', DB::raw("CONCAT('[', IFNULL(dni_cuit, 'Sin DNI'), '] ', IFNULL(contact_name, 'Sin nombre')) AS text"))
+			->where("activo",'=','Si')
             ->whereIn("company_id", $companias_global)
             ->orderBy('contact_name', 'ASC')
             ->limit(30)
@@ -303,7 +304,8 @@ class Select2Controller extends Controller
             $query->where('dni_cuit', 'LIKE', '%' . $search . '%')
                   ->orWhere('contact_name', 'LIKE', '%' . $search . '%');
         })
-        ->whereIn("company_id", $companias_global)
+        //->whereIn("company_id", $companias_global)
+		->where("activo",'=','Si')
         ->orderBy('contact_name', 'ASC')
         ->get();
         
