@@ -185,8 +185,8 @@ class ContactController extends Controller
 		$validator = Validator::make($request->all(), [
 			'profile_type'  => 'required|max:20',
 			'company_name'  => 'nullable|max:50',
-			//'contact_name'  => 'required|max:50',
-			'contact_name'  => 'required|max:50|unique:contacts,contact_name',
+			'contact_name'  => 'required|max:50',
+			//'contact_name'  => 'required|max:50|unique:contacts,contact_name',
 			'vat_id' => 'required|max:60|unique:contacts,dni_cuit',
 			// 'contact_email' => [
 			//     //'required',
@@ -531,8 +531,8 @@ class ContactController extends Controller
 		$validator = Validator::make($request->all(), [
 			'profile_type' => 'required|max:20',
 			'company_name' => 'nullable|max:50',
-			//'contact_name' => 'required|max:50',
-			'contact_name' => 'required|max:60|unique:contacts,contact_name,' . $id,
+			'contact_name' => 'required|max:50',
+			//'contact_name' => 'required|max:60|unique:contacts,contact_name,' . $id,
 			'vat_id' => 'required|max:60|unique:contacts,dni_cuit,' . $id,
 			// 'contact_email' => [
 			//     Rule::unique('contacts')->ignore($contact->id),
