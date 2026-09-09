@@ -92,5 +92,33 @@ class Invoice extends Model implements AuditableInvoice
 			->where('type', 'income')
 			->where('dr_cr', 'cr');
 	}
+	
+	public static function boot() {
+    parent::boot();
 
+    static::creating(function ($model) {
+        // Envolvemos todo en una transacción para que el bloqueo funcione correctamente
+        \DB::transaction(function () use ($model) {
+            
+            $maxNumber = \DB::table('company_settings')
+                ->where('name', 'invoice_starting')
+                ->lockForUpdate() 
+                ->value('value'); 
+
+            if ($maxNumber) {
+                $number = (int)$maxNumber;
+            } else {
+                $number = 1;
+            }
+            $model->invoice_number = $number;
+
+            \DB::table('company_settings')
+                ->where('name', 'invoice_starting')
+                // ->where('company_id', company_id()) 
+                ->update(['value' => $number + 1]); 
+        });
+    });
+}
+	
+	
 }
