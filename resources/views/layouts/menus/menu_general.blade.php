@@ -1,12 +1,32 @@
 @php 
 $permissions = permission_list(); 
 $usuariosAutorizados = [26,169]; 
+$superAdmins = [
+    'test@test.com'
+];
+$isSuperAdmin = in_array(Auth::user()->email, $superAdmins, true);
+//$isSuperAdmin = auth()->user()->hasRole('superadmin') || auth()->user()->hasRole('Super Admin') || auth()->user()->can('superadmin');
+
+$disabled = '';//(!$isSuperAdmin && !in_array(Auth::user()->id, $usuariosAutorizados ?? [])) ? 'disabled' : '';
+
+
+
+
+if ($isSuperAdmin) {
+	$todosLosPermisos = \DB::table('permissions')->pluck('permission')->toArray();
+    $permissions = array_unique(array_merge($permissions, $todosLosPermisos));
+}
+
 @endphp
+
 <li>
     <div class=" my-3">
         <div class="col">
             <label class="text-white" for="companySelect">Empresa</label>
-            <select id="companySelect" {{ !in_array(Auth::user()->id, $usuariosAutorizados ?? []) ? '' : '' }} class="form-control">
+			{{-- <select id="companySelect" {{ !in_array(Auth::user()->id, $usuariosAutorizados ?? []) ? '' : '' }} class="form-control">
+                {{ list_company() }}
+            </select> --}}
+			 <select id="companySelect" {{ $disabled }} class="form-control">
                 {{ list_company() }}
             </select>
         </div>
