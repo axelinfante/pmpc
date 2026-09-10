@@ -765,7 +765,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 			}		
 			/// proceso para desarme-stock
 				 if (in_array($stock->estado, array("desarme-stock"))) {
-					$stock->estado = "despacho";
+					$stock->estado = "optimo";
 					$stock->save();
 				  }
 			//dd($orden_desarme->pieza);
@@ -1039,7 +1039,10 @@ $ordenes = Orden_desarme::with([
                 return ($orden->cotizacion->quotation_number ?? null);
             })
             ->editColumn('venta', function ($orden) {
-
+				
+				if (($orden->producto->estado ?? '') == "desarme-stock"){
+						return "Precarga Masiva";
+				}	
                 $in = 'VEN-';
                 if (!isset($orden->venta)) {
                     return '';
@@ -1187,6 +1190,10 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
     if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
         
         $ventaCompanyId = $orden->venta->company_id ?? null;
+		
+		if (($orden->producto->estado ?? '') == "desarme-stock"){
+						 $ventaCompanyId= $orden->producto->company_id ?? 1;
+				}
 
         $filteredCompany = $opciones->filter(function ($opcion) use ($ventaCompanyId) {
             return $opcion->company_id == $ventaCompanyId;
@@ -1194,6 +1201,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
         $select = '<select name="puesto" class="puesto-select form-control" data-id=' . $orden->id . '>';
         $select .= '<option value=""> </option>';
+		
+				
 
         foreach ($filteredCompany as $opcion) {
             $selected = ($orden->puesto == $opcion->puesto) ? 'selected' : '';
