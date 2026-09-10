@@ -1,5 +1,6 @@
-@include('layouts.menus.menu_user')
-
+{{-- @include('layouts.menus.menu_user') --}}
+@include('layouts.menus.menu_general')
+-------------------------------
 @if( has_feature( 'contacts_limit' ) )
 <li>
 	<a href="javascript: void(0);"><i class="ti-id-badge"></i><span>{{ _lang('Customers') }}</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
