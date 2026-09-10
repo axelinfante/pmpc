@@ -552,7 +552,7 @@ class ProductsReturnController extends Controller
                                 </a>*/
 				
            // if (strtolower(auth()->user()->role->name) !== 'despacho' &&  (in_array($ProductReturn->status, array('pendiente','descompuesto')))) {
-				 if (in_array($ProductReturn->status, array('pendiente','descompuesto'))) {
+				 if (in_array($ProductReturn->status, array('pendiente','descompuesto','reparar'))) {
                 return '<div class="dropdown">
                             <button class="btn btn-xs dropdown-toggle" type="button" data-toggle="dropdown" 
                         		style="background-color: white; color: black; border: 1px solid #ced4da; font-family: \'Poppins\', sans-serif;">
