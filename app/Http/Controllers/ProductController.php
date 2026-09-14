@@ -613,6 +613,21 @@ class ProductController extends Controller
 								$delete='<button class="btn btn-danger btn-xs button-delete" type="button"><i class="ti-eraser"></i></button>';
 							return $edit.$delete;
 				})
+				->editColumn('combo_producto', function ($data) {
+						$ids = is_string($data->combo_producto) 
+							? json_decode($data->combo_producto, true) 
+							: ($data->combo_producto ?? []);
+
+						$itemsSeleccionados = !empty($ids) 
+							? \App\Item::whereIn('id', $ids)->get() 
+							: collect();
+
+						if ($itemsSeleccionados->isEmpty()) {
+							return '';
+						}
+
+						return $itemsSeleccionados->pluck('item_name')->implode(', ');
+					})
 				->editColumn('allCar', function ($car) {
 				
 					if (!isset($request->exportar)){
@@ -629,7 +644,7 @@ class ProductController extends Controller
                     return $row->activo ?? "";
 				})
 				
-				->rawColumns(['action','allCar','activo'])
+				->rawColumns(['action','allCar','activo','combo_producto'])
                 ->make(true);
 		}	
 		
