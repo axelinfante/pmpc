@@ -46,7 +46,10 @@ class ItemController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'item_name' => 'required|max:150|unique:items'
+            'item_name' => 'required|max:150|unique:items',
+            'categoria' => 'required|max:80',
+			'combo_producto' => 'nullable|array',
+			'combo_producto.*' => 'integer|exists:items,id'
         ]);
 
         if ($validator->fails()) {
@@ -58,14 +61,18 @@ class ItemController extends Controller
                     ->withInput();
             }
         }
-		
+		$productosSeleccionados = $request->input('combo_producto', []);
 		$item = Item::create(
 				[
 				'item_name'   => $request->item_name,
+				'categoria'   => $request->categoria ?? '',
+				'con_oblea'   => $request->con_oblea ?? 'No',
 				'item_type'   => $request->item_type,
 				'company_id'  => company_id(),
 				'allCar' 	  => $request->allcar ?? Null,
-				'activo' 	  => $request->activo ?? 'No'
+				'activo' 	  => $request->activo ?? 'No',
+				'type' 	  => $request->type ?? '',
+				'combo_producto' => !empty($productosSeleccionados) ? json_encode($productosSeleccionados) : null
 				]
 			);
 

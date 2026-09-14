@@ -32,11 +32,10 @@
                         <label>Modelos Asociados <span class="text-danger">*</span></label>
                         <select name="modelos[]" id="select-modelos-edit" class="form-control @error('modelos') is-invalid @enderror" 
                                 multiple="multiple" style="width: 100%;" required>
-                            
                             {{-- Lógica para mantener selecciones si hay error o cargar las existentes --}}
                             @php
                                 $modelosSeleccionados = old('modelos') 
-                                    ? \App\Models\Modelo::whereIn('id', old('modelos'))->get() 
+                                    ? \App\Modelo::whereIn('id', old('modelos'))->get() 
                                     : $marca->modelos;
                             @endphp
 
@@ -60,7 +59,7 @@
 
 
     <script>
-        $(document).ready(function() {
+        /* $(document).ready(function() {
             $('#select-modelos-edit').select2({
                 placeholder: "Buscar y agregar más modelos...",
                 allowClear: true,
@@ -78,6 +77,26 @@
                     cache: true
                 }
             });
-        });
+        }); */
+		
+$(document).ready(function() {
+    $('#select-modelos-edit').select2({
+        placeholder: "Buscar modelos...",
+        allowClear: true,
+        minimumInputLength: 0,
+        ajax: {
+            url: "{{ route('modelos.buscar.ajax') }}",
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                return { results: data.data }; // Apuntamos a .data si usas paginate() de Laravel
+            },
+            cache: true
+        }
+    });
+});
     </script>
 

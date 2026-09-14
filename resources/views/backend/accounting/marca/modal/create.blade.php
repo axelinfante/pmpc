@@ -51,12 +51,12 @@
 </div>
 
     <script>
-        $(document).ready(function() {
+       /* $(document).ready(function() {
             $('#select-modelos').select2({
               //  theme: 'bootstrap4',
                 placeholder: "Buscar modelos...",
                 allowClear: true,
-                minimumInputLength: 2,
+                minimumInputLength: 0,
                 ajax: {
                     url: "{{ route('modelos.buscar.ajax') }}",
                     dataType: 'json',
@@ -70,6 +70,26 @@
                     cache: true
                 }
             });
-        });
+        });*/
+		
+		$(document).ready(function() {
+    $('#select-modelos').select2({
+        placeholder: "Buscar modelos...",
+        allowClear: true,
+        minimumInputLength: 0,
+        ajax: {
+            url: "{{ route('modelos.buscar.ajax') }}",
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                return { results: data.data }; // Apuntamos a .data si usas paginate() de Laravel
+            },
+            cache: true
+        }
+    });
+});
 
-
+</script>
