@@ -16,7 +16,9 @@
 					<thead>
 					  <tr>
 							<th>{{ _lang('Product') }}</th>
-							<th>{{ _lang('Predefinido') }}</th>
+							<th>{{ _lang('Categoria') }}</th>
+							<th>{{ _lang('C / N° Oblea') }}</th>
+							<th>{{ _lang('Primario') }}</th>
 							<th>{{ _lang('Activo') }}</th>
 							<th class="text-center notexport">{{ _lang('Action') }}</th>
 					  </tr>
@@ -52,8 +54,8 @@
 		customButtons: [{
                    text: 'Filtrar por: ' +
                       '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
-                      '<option value="predefinido">Predefinidos</option>' +
-                      '<option value="activos">Activos</option>' +
+                      '<option value="predefinido">Primario</option>' +
+                      '<option value="activos">Secundario</option>' +
                       '<option value="inactivos">Inactivos</option>' +
                       '</select>',
                 className: 'botones-custom',
@@ -61,15 +63,22 @@
 						}
 					}
 				],
-		columnFilters: ['input', { 
+		columnFilters: ['input','input', { 
             type: 'select', 
             data: ['Si','No'] // Array simple
-        },{ 
+        },
+		{ 
+            type: 'select', 
+            data: ['Si','No'] // Array simple
+        },
+		{ 
             type: 'select', 
             data: ['Si','No'] // Array simple
         }], 
         columns: [
             {data: 'item_name', name: 'item_name'},
+			{data: 'categoria', name: 'categoria'},
+			{data: 'con_oblea', name: 'con_oblea'},
             {data: 'allCar', name: 'allCar'},
             {data: 'activo', name: 'activo'},
             {data: 'action', name: 'action', orderable: false, searchable: false},

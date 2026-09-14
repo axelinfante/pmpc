@@ -12,6 +12,60 @@
 				</div>
 			</div>
 			
+			
+			<div class="col-md-6">
+				<div class="form-group">
+                                <label class="control-label" for="categoria">Categoria </label>
+								<select class="form-control" name="categoria" id="categoria" required>
+									<option value="">Seleccione una categoría</option>
+									<option value="AUTO" {{ old('categoria', $item->categoria ?? '') == 'AUTO' ? 'selected' : '' }}>AUTO</option>
+									<option value="CARROCERIA" {{ old('categoria', $item->categoria ?? '') == 'CARROCERIA' ? 'selected' : '' }}>CARROCERIA</option>
+									<option value="CARROCERIA / MOTOR" {{ old('categoria', $item->categoria ?? '') == 'CARROCERIA / MOTOR' ? 'selected' : '' }}>CARROCERIA / MOTOR</option>
+									<option value="INTERIOR" {{ old('categoria', $item->categoria ?? '') == 'INTERIOR' ? 'selected' : '' }}>INTERIOR</option>
+									<option value="MOTO" {{ old('categoria', $item->categoria ?? '') == 'MOTO' ? 'selected' : '' }}>MOTO</option>
+									<option value="MOTOR" {{ old('categoria', $item->categoria ?? '') == 'MOTOR' ? 'selected' : '' }}>MOTOR</option>
+									<option value="MOTOR / Periferico" {{ old('categoria', $item->categoria ?? '') == 'MOTOR / Periferico' ? 'selected' : '' }}>MOTOR / Periferico</option>
+									<option value="MOTOR /TRANS" {{ old('categoria', $item->categoria ?? '') == 'MOTOR /TRANS' ? 'selected' : '' }}>MOTOR /TRANS</option>
+									<option value="SUSPENSION" {{ old('categoria', $item->categoria ?? '') == 'SUSPENSION' ? 'selected' : '' }}>SUSPENSION</option>
+								</select>
+						</div>
+			</div>
+			
+				<div class="col-lg-6 mb-3">					
+						<div class="form-group">
+                                <label for="type">Tipo Estandar-Combo <span class="text-danger"></span></label>
+                                <select class="form-control" name="type" id="type" required>
+								    <option value="" {{ old('type', $item->type ?? '') == '' ? 'selected' : '' }}>Estandar</option>
+                                    <option value="Combo" {{ old('type', $item->type ?? '') == 'Combo' ? 'selected' : '' }}>Combo</option>
+                                </select>
+						</div>
+                    </div>	
+					
+					
+					<div class="col-lg-6 mb-3">
+                        <label>Productos Asociados <span class="text-danger">*</span></label>
+                        <select name="combo_producto[]" id="select-combo_producto" class="form-control @error('combo_producto') is-invalid @enderror" 
+                                multiple="multiple" style="width: 100%;" required>
+								  @php
+										$idsSeleccionados = old('combo_producto', $item->combo_producto ?? []);
+										if (is_string($idsSeleccionados)) {
+											$idsSeleccionados = json_decode($idsSeleccionados, true) ?? [];
+										}
+
+										$itemsSeleccionados = !empty($idsSeleccionados) 
+											? \App\Item::whereIn('id', $idsSeleccionados)->get() 
+											: collect();
+									@endphp
+
+									@foreach($itemsSeleccionados as $m)
+										<option value="{{ $m->id }}" selected>{{ $m->item_name }}</option>
+									@endforeach
+							
+                        </select>
+                        <small class="form-text text-muted">Escribe el nombre del producto para buscar.</small>
+                        @error('combo_producto') <span class="text-danger small">{{ $message }}</span> @enderror
+                    </div>
+					
 					<div class="col-lg-6 mb-3">	
 						<div class="form-group">
 									<label for="allcar">Predefinido <span class="text-danger"></span></label>
@@ -21,6 +75,18 @@
 									</select>
 						</div>
 					</div>
+					
+					
+					<div class="col-lg-6 mb-3">					
+						<div class="form-group">
+                                <label for="con_oblea">C / N° Oblea <span class="text-danger"></span></label>
+                                <select class="form-control" name="con_oblea" id="con_oblea" required>
+								    <option value="No" {{ old('con_oblea', $item->con_oblea ?? '') == 'No' ? 'selected' : '' }}>No</option>
+                                    <option value="Si" {{ old('con_oblea', $item->con_oblea ?? '') == 'Si' ? 'selected' : '' }}>Si</option>
+                                </select>
+						</div>
+                    </div>		
+				
 					
 			<div class="col-lg-6 mb-3">					
 						<div class="form-group">
@@ -50,3 +116,36 @@
 		</div>
 	</div>
 </form>
+
+<script>
+    $(document).ready(function() {
+    $('#select-combo_producto').select2({
+        placeholder: "Buscar modelos...",
+        allowClear: true,
+        minimumInputLength: 0,
+        ajax: {
+            //url: "{{ route('modelos.buscar.ajax') }}",
+			url: function () {
+                    var params = new URLSearchParams({
+                        table: 'items',
+                        value: 'id',
+                        display: 'item_name',
+                        where: '',
+                        whereraw: "activo='Si' and allcar=1"
+                    });
+                    return _url + '/ajax/get_table_data?' + params.toString();
+                },
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                return { results: data }; // Apuntamos a .data si usas paginate() de Laravel
+            },
+            cache: true
+        }
+    });
+}); 
+
+</script>

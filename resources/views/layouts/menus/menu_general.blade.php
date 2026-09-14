@@ -33,7 +33,7 @@ if ($isSuperAdmin) {
     </div>
 </li>
 {{-- MÓDULO COMERCIAL --}}
-@if (
+	{{-- @if (
     array_intersect([
         'contacts.index', 'contacts.create', 'contact_groups.index',
         'invoices.list_comision', 'buscador_de_piezas', 'invoices.index', 'invoices.ventasPorFacturar', 'reservas.index',
@@ -43,6 +43,23 @@ if ($isSuperAdmin) {
         'purchase_orders.index', 'purchase_orders.create', 'purchase_returns', 'sales_returns'
     ], $permissions)
     || auth()->user()->canAny(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia'])
+) --}}
+
+@if (
+    array_intersect([
+        'contacts.index', 'contacts.create', 'contact_groups.index',
+        'invoices.list_comision', 'buscador_de_piezas', 'invoices.index', 'invoices.ventasPorFacturar', 'reservas.index',
+        'vehiculo.index', 'aseguradora', 'provincia', 
+        'marcas.list', 'marcas.create', 'marcas.edit', 'marcas.destroy', 'marcas.actualizaactivos', 
+        'marcas.createLinea', 'marcas.storeLinea', 'marcas.createMarcaModeloLinea', 'marcas.storeMarcaModeloLinea',
+        'modelos.list', 'modelos.create', 'modelos.edit', 'modelos.destroy', 'modelos.buscar.ajax', 'modelos.actualizaactivos',
+        'products.create', 'products.index', 'products_returns.index', 'products_returns.create',
+        'suppliers.create', 'suppliers.index',
+        'purchase_orders.index', 'purchase_orders.create', 'purchase_returns', 'sales_returns'
+    ], $permissions)
+    || auth()->user()->canAny(['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia'])
+    || auth()->user()->canAny(['crear-marca', 'editar-marca', 'eliminar-marca', 'ver-marca'])
+    || auth()->user()->canAny(['crear-modelo', 'editar-modelo', 'eliminar-modelo', 'ver-modelo'])
 )
 
 <li>
@@ -158,10 +175,27 @@ if ($isSuperAdmin) {
         @endif
 
         {{-- MARCAS Y MODELOS --}}
-        @if (in_array('marcamodelo.index', $permissions))
+			{{-- @if (in_array('marcamodelo.index', $permissions))
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('marcamodelo.index') }}">{{ _lang('Marcas Modelos') }}</a>
             </li>
+			@endif --}}
+		
+		{{-- MARCAS Y MODELOS --}}
+        @if (array_intersect(['marcas.list', 'marcas.create', 'marcas.edit', 'marcas.destroy', 'marcas.actualizaactivos', 'marcas.createLinea', 'marcas.storeLinea', 'marcas.createMarcaModeloLinea', 'marcas.storeMarcaModeloLinea'], $permissions) || auth()->user()->canAny(['crear-marca', 'editar-marca', 'eliminar-marca', 'ver-marca']))
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('marcas.index') }}">
+                <i class="nav-icon bi bi-chevron-double-right" style="line-height: 1;"></i>{{ _lang('Marcas') }}
+            </a>
+        </li>
+        @endif
+        
+        @if (array_intersect(['modelos.list', 'modelos.create', 'modelos.edit', 'modelos.destroy', 'modelos.buscar.ajax', 'modelos.actualizaactivos'], $permissions) || auth()->user()->canAny(['crear-modelo', 'editar-modelo', 'eliminar-modelo', 'ver-modelo']))
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('modelos.index') }}">
+                <i class="nav-icon bi bi-chevron-double-right" style="line-height: 1;"></i>{{ _lang('Modelos') }}
+            </a>
+        </li>
         @endif
 
         {{-- PRODUCTOS --}}

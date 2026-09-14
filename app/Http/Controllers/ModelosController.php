@@ -194,7 +194,7 @@ class ModelosController extends Controller
 
 
 
-public function buscarAjax(Request $request) {
+/* public function buscarAjax(Request $request) {
     $q = $request->input('q');
     $paginator = Modelo::where('activo', 'Si')->where('modelo', 'LIKE', "%{$q}%")->paginate(30);
     $paginator->getCollection()->transform(function ($item) {
@@ -203,6 +203,26 @@ public function buscarAjax(Request $request) {
             'text' => $item->modelo,
         ];
     });
+    return response()->json($paginator);
+} */
+
+
+public function buscarAjax(Request $request) {
+    $q = $request->input('q');
+
+    $paginator = Modelo::where('activo', 'Si')
+        ->when($q, function ($query, $q) {
+            return $query->where('modelo', 'LIKE', "%{$q}%");
+        })
+        ->paginate(30);
+
+    $paginator->getCollection()->transform(function ($item) {
+        return [
+            'id'   => $item->id,
+            'text' => $item->modelo,
+        ];
+    });
+
     return response()->json($paginator);
 }
 
