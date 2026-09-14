@@ -33,8 +33,8 @@
 			
 				<div class="col-lg-6 mb-3">					
 						<div class="form-group">
-                                <label for="type">Tipo Estandar-Combo <span class="text-danger"></span></label>
-                                <select class="form-control" name="type" id="type" required>
+                                <label for="type">Tipo Estandar-Combo </label>
+                                <select class="form-control" name="type" id="type">
 								    <option value="" {{ old('type', $item->type ?? '') == '' ? 'selected' : '' }}>Estandar</option>
                                     <option value="Combo" {{ old('type', $item->type ?? '') == 'Combo' ? 'selected' : '' }}>Combo</option>
                                 </select>
@@ -43,9 +43,9 @@
 					
 					
 					<div class="col-lg-6 mb-3">
-                        <label>Productos Asociados <span class="text-danger">*</span></label>
+                        <label>Productos Asociados </label>
                         <select name="combo_producto[]" id="select-combo_producto" class="form-control @error('combo_producto') is-invalid @enderror" 
-                                multiple="multiple" style="width: 100%;" required>
+                                multiple="multiple" style="width: 100%;">
 								  @php
 										$idsSeleccionados = old('combo_producto', $item->combo_producto ?? []);
 										if (is_string($idsSeleccionados)) {
