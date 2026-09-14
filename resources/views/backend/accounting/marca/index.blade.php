@@ -1,6 +1,23 @@
 @extends('layouts.app')
 <style>
+/* Forzar visibilidad en tarjetas, wrappers y contenedores con scroll */
+.card, 
+.card-body, 
+.table-responsive, 
+.dataTables_wrapper, 
+.dataTables_scrollBody, 
+table.dataTable {
+    overflow: visible !important;
+}
 
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute !important;
+    z-index: 999999 !important;
+}
 </style>
 @section('content')
 <div class="card mb-4">
@@ -142,6 +159,13 @@ $(document).ready(function() {
 		if (table) {
 			table.ajax.reload(null, false);
 		}
+    });
+	
+	$('.select2').select2({
+        dropdownParent: $('#main_modal .modal-body'),
+		allowClear: true,
+				 dropdownAutoWidth: true,
+                closeOnSelect: false
     });
 	
 });

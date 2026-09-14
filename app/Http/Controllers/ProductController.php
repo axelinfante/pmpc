@@ -594,7 +594,11 @@ class ProductController extends Controller
 								$data->where("activo", 'Si');
 								break;
 							case 'activos':
-								$data->where("activo", 'Si');
+								$data->where(function ($query) {
+									$query->where('allCar', 0)
+									->orWhereNull('allCar');
+									});
+									$data->where("activo", 'Si');
 								break;
 							case 'inactivos':
 								$data->where("activo", 'No');
@@ -653,6 +657,9 @@ class ProductController extends Controller
         ]);*/
 		
 		$validator = Validator::make($request->all(), [
+		'categoria' => 'required|max:80',
+		'combo_producto' => 'nullable|array',
+		'combo_producto.*' => 'integer|exists:items,id',
     'item_name' => [
         'required',
         'max:150', // Límite de caracteres
@@ -671,10 +678,13 @@ class ProductController extends Controller
                     ->withInput();
             }
         }
-		
+		$productosSeleccionados = $request->input('combo_producto', []);
         $item = Item::find($id);
         $item->item_name = $request->item_name;
+        $item->categoria = $request->categoria;
+        $item->con_oblea = $request->con_oblea;
         $item->allCar = $request->allcar ?? 0;
+		$item->combo_producto = !empty($productosSeleccionados) ? json_encode($productosSeleccionados) : null;
         $item->activo = $request->activo;
 
         if ($request->item_name) {

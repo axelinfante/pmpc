@@ -1,5 +1,23 @@
 @extends('layouts.app')
 <style>
+/* Forzar visibilidad en tarjetas, wrappers y contenedores con scroll */
+.card, 
+.card-body, 
+.table-responsive, 
+.dataTables_wrapper, 
+.dataTables_scrollBody, 
+table.dataTable {
+    overflow: visible !important;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute !important;
+    z-index: 999999 !important;
+}
 </style>
 @section('content')
 <div class="row">
