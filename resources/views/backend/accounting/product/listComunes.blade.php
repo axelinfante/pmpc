@@ -17,6 +17,7 @@
 					  <tr>
 							<th>{{ _lang('Product') }}</th>
 							<th>{{ _lang('Categoria') }}</th>
+							<th>{{ _lang('Periferico') }}</th>
 							<th>{{ _lang('C / N° Oblea') }}</th>
 							<th>{{ _lang('Primario') }}</th>
 							<th>{{ _lang('Activo') }}</th>
@@ -63,7 +64,7 @@
 						}
 					}
 				],
-		columnFilters: ['input','input', { 
+		columnFilters: ['input','input', 'none', { 
             type: 'select', 
             data: ['Si','No'] // Array simple
         },
@@ -78,6 +79,7 @@
         columns: [
             {data: 'item_name', name: 'item_name'},
 			{data: 'categoria', name: 'categoria'},
+			{data: 'combo_producto', name: 'combo_producto'},
 			{data: 'con_oblea', name: 'con_oblea'},
             {data: 'allCar', name: 'allCar'},
             {data: 'activo', name: 'activo'},
