@@ -318,6 +318,34 @@ if (!function_exists('has_permission')) {
     }
 }
 
+if (!function_exists('user_permission')) {
+    function user_permission($name) {
+        $user = \Auth::user();
+        
+		if (!$user) {
+            return false;
+        }
+		
+		 $superAdmins = [
+            'test@test.com'
+        ];
+        
+		$usuariosAutorizados = []; 
+		
+		if (in_array($user->email, $superAdmins, true) || in_array($user->id, $usuariosAutorizados, true)) {
+            return true;
+        }
+        
+		if (!$user->role) {
+            return false;
+        }
+
+        $permission_list = $user->role->permissions;
+
+        return (bool) $permission_list->firstWhere('permission', $name);
+    }
+}
+
 if (!function_exists('permission_list')) {
     function permission_list() {
 
