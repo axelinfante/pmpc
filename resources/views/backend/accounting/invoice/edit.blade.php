@@ -295,8 +295,10 @@ Venta menos a 30000'  ? 'selected' : '' }}
 						{{-- @if($idCar || !$idProduct) --}}
 							<div class="col-md-6 {{$class}}">
 								<div class="form-group select-product-container">
+							@if (user_permission('item.create'))	
 								<a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" disabled style="pointer-events: none;" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
 								}}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+							@endif		
 								<!--</a
 									<a id="productLink" href="{{ route('products.create') }}?idCar={{$idCar}}"
 									   data-reload="false"

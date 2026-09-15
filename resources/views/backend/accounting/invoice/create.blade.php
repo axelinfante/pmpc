@@ -267,43 +267,45 @@
 				</div>
 			{{-- @endif --}}
 
-			{{-- @if($idCar || !$idProduct) --}}
-				<div class="col-md-6">
-					<div class="form-group select-product-container">
-						<!--<a id="productLink" href="{{ route('products.create') }}?idCar={{$idCar}}" data-reload="false"
-						   data-title="{{
-								_lang
-								('Add Product') }}" class="ajax-modal select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
-			<!--<a id="productLink_" href="{{ route('item.create') }}" class="select2-add"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>-->
-				<a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
+				{{--<div class="col-md-6">
+				<div class="form-group select-product-container">
+				@if (user_permission('item.create'))
+    			<a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create')
 								}}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
-								
-								<input type="hidden" name="desamar_item" id="desamar_item" value="">
-						<label class="control-label">{{ _lang('Producto en vehiculo (Listado Predefinido)') }}</label>
-
+				@endif				
+				    	<input type="hidden" name="desamar_item" id="desamar_item" value="">
+						<label class="control-label">{{ _lang('Producto en vehiculo (Listado Primario)') }}</label>
 						<select class="form-control" data-value="id" data-display="item_name" 
 								data-table="items" data-where="100" data-option = '' name="product" id="product">
 							<option value="">{{ _lang('Select Product') }}</option>
 						</select>
-					</div>
-				</div>
-			{{-- @else
-				<div class="col-md-6">
-					<div class="form-group select-product-container">
-
-						<label class="control-label">{{ _lang('Producto') }}</label>
-						<select class="form-control" data-value="products.id" data-display="items.item_name"
-								data-table="products" data-where="9"  name="product" id="product">
-							<option value="">{{ _lang('Select Product') }}</option>
-							<option selected value="{{$item->id}}">{{ $item->item->item_name}}</option>
-
-						</select>
-					</div>
+				 </div>
 				</div> --}}
-			{{-- @endif --}}
-
-				</div>
+				
+				<div class="col-md-6">
+    <div class="form-group select-product-container mb-3 pb-2" style="border-bottom: 1px dashed #eee;">
+        @if (user_permission('item.create'))
+            <a id="productLink" class="btn btn-primary btn-xs ajax-modal select2-add" data-select="product" data-reload="false" data-title="{{ _lang('Add Product') }}" href="{{ route('item.create') }}"><i class="ti-plus"></i> {{ _lang('Add New') }}</a>
+        @endif				
+        <input type="hidden" name="desamar_item" id="desamar_item" value="">
+        <label class="control-label">{{ _lang('Producto en vehiculo (Listado Primario)') }}</label>
+        <select class="form-control" data-value="id" data-display="item_name" 
+                data-table="items" data-where="100" data-option = '' name="product" id="product">
+            <option value="">{{ _lang('Select Product') }}</option>
+        </select>
+    </div>
+    <div class="form-group select-product-container">
+        <label class="control-label">{{ _lang('Producto en vehiculo (Listado Secundario)') }}</label>
+        <select class="form-control" data-value="id" data-display="item_name" 
+                data-table="items" data-where="100" data-option = '' name="product1" id="product1">
+            <option value="">{{ _lang('Select Product') }}</option>
+        </select>
+    </div>
+</div>
+				
+				
 			</div>
+		</div>
 	@if(!$idCar || !$idProduct)
 <div class="col-md-12">
 					<div class="form-group">
@@ -517,6 +519,7 @@
 <script>
     let car = $('#car_id');
     let product = $('#product');
+    let product1 = $('#product1');
 
 	let is_usd = $('#is_usd');
 
@@ -593,13 +596,144 @@
 			// console.log('c')
 		}
 	}
+	
+	
+	if (car.val() != '') {
+
+    $('#product').prop('data-idCar', car.val());
+    $('#product1').prop('data-idCar', car.val());
+
+    product.data('option', 'products.car_id = ' + car.val());
+    product1.data('option', 'products.car_id = ' + car.val());
+
+    var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
+    var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
+
+    var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
+    var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
+
+    product.select2({
+        placeholder: 'Buscar ...',
+        allowClear: true,
+        ajax: {
+            url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+                  '&value=' + product.data('value') +
+                  '&display=' + product.data('display') + display2 + display3 + 
+                  '&where=' + product.data('where') +
+                  '&car_id=' + car.val() +
+                  '&option=products.car_id = ' + car.val(),
+            delay: 250,
+            dataType: 'json',
+            processResults: function (data) {
+                return { results: data };
+            }
+        }
+    });
+
+    product1.select2({
+        placeholder: 'Buscar ...',
+        allowClear: true,
+        ajax: {
+            url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
+                  '&value=' + product1.data('value') +
+                  '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
+                  '&where=' + product1.data('where') +
+                  '&car_id=' + car.val() +
+                  '&option=products.car_id = ' + car.val(),
+            delay: 250,
+            dataType: 'json',
+            processResults: function (data) {
+                return { results: data };
+            }
+        }
+    });
+    
+    $('#productLink').removeClass('d-none');
+    setTimeout(function() {
+        $('#car_id').trigger('change');
+    }, 2000); // Se ejecuta después de 2 segundos
+    
+} else {
+    $('#productLink').addClass('d-none');
+}
+
+
+car.change(function() {
+    var carId = $(this).val();
+
+    // Si el valor no está vacío
+    if (carId != '') {
+        $('#productLink').removeClass('d-none');
+
+        $('#product').prop('data-idCar', carId);
+        $('#product1').prop('data-idCar', carId);
+
+        product.prop('data-option', 'products.car_id = ' + carId);
+        product1.prop('data-option', 'products.car_id = ' + carId);
+
+        var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
+        var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
+
+        var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
+        var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
+
+        limpiarItems(carId);
+
+        product.select2({
+            placeholder: 'Buscar...',
+            allowClear: true,
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+                      '&value=' + product.data('value') +
+                      '&display=' + product.data('display') + display2 + display3 + 
+                      '&where=' + product.data('where') +
+                      '&car_id=' + carId +
+					  '&menu=primario' + 
+                      '&option= products.car_id = ' + carId,
+                delay: 250,
+                dataType: 'json',
+                processResults: function (data) {
+                    return { results: data };
+                }
+            }
+        });
+
+        product1.select2({
+            placeholder: 'Buscar...',
+            allowClear: true,
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
+                      '&value=' + product1.data('value') +
+                      '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
+                      '&where=' + product1.data('where') +
+                      '&car_id=' + carId +
+					  '&menu=secundario' + 
+                      '&option= products.car_id = ' + carId,
+                delay: 250,
+                dataType: 'json',
+                processResults: function (data) {
+                    return { results: data };
+                }
+            }
+        });
+
+    } else {
+        $('#productLink').addClass('d-none');
+        product.val(null).trigger('change');
+        product1.val(null).trigger('change');
+    }
+});
+
+	/*
     if(car.val() != '' ){
 
         //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
+        $('#product1').prop('data-idCar',car.val());
 
 
         product.data('option','products.car_id = '+ car.val());
+        product1.data('option','products.car_id = '+ car.val());
 
         var display2 = "";
         if( typeof  product.data('display2') !== "undefined" ){
@@ -610,21 +744,6 @@
         if( typeof  product.data('display3') !== "undefined" ){
             display3 = "&display3=" +  product.data('display3');
         }
-		
-        /*product.select2({
-            ajax: {
-                url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
-                '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
-                '&option=' +product.data('option'),
-				delay: 250,
-                processResults: function (data) {
-
-                    return {
-                        results: data
-                    };
-                }
-            }
-        });*/
 		
 		product.select2({
 				placeholder: 'Buscar ...',
@@ -652,10 +771,10 @@
 		
     }else{
 		$('#productLink').addClass('d-none')
-
-		// console.log('a')
 	}
-    car.change(function() {
+	*/
+ /* 
+   car.change(function() {
 
         product.prop('data-option','products.car_id = ' + $(this).val());
         //product.select2({});
@@ -692,12 +811,12 @@
                 };
         }
     }
-});
+}); 
    
 
 
 
-    })
+    })*/
 
 
 	$('.select2-ajax').on('change',function (e) {
@@ -800,7 +919,7 @@ function validar_summary() {
     
 }
 
-	
+	/*
 $(document).on('change', '#product', function() {
 	    var product_id = $(this).val();
 		if( product_id == '' ){
@@ -811,26 +930,12 @@ $(document).on('change', '#product', function() {
 	    //if product has already in order table
 	    if ($("#order-table > tbody > #product-" + InternoVehiculo+product_id).length > 0) {
 			if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto ya se encuentra agregado', icon: 'error' });}
-			/*var line = $("#order-table > tbody > #product-" +InternoVehiculo+product_id);
-			var quantity = parseFloat($(line).find(".input-quantity").val());
-			if (quantity==1) return "";
-			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
-			$("#product").val("").trigger('change');*/
 			return;		
 	    }
 
 					
 					let textoVehiculo = $('#car_id option:selected').text();
 					let textoPieza    = $(this).find('option:selected').text();
-/*
-					let partes = textoVehiculo.split('-').map(p => p.trim());
-
-					let prefijo        = partes[0] || '';
-					let numeroSinCeros = parseInt(partes[1], 10) || 0; 
-					let internos_new   = `${prefijo}-${numeroSinCeros}`; 
-
-					let vehiculo = partes.slice(2).join(' - '); 
-*/
 					let product = {
 						id: InternoVehiculo+product_id,
 						item_name: textoPieza,
@@ -874,7 +979,82 @@ $(document).on('change', '#product', function() {
 
 					$("#order-table > tbody").append(product_row);
 					update_summary();
-	});	
+	});	*/
+	
+	$(document).on('change', '#product, #product1', function() {
+    var $this = $(this);
+    var product_id = $this.val();
+    
+    if (product_id == '') {
+        return;
+    }
+
+    let InternoVehiculo = $('#car_id option:selected').val();
+    
+    // Validar si el producto ya fue agregado en la tabla de órdenes
+    if ($("#order-table > tbody > #product-" + InternoVehiculo + product_id).length > 0) {
+        if (typeof $.toast !== 'undefined') {
+            $.toast({ 
+                position: 'top-right', 
+                text: 'Producto ya se encuentra agregado', 
+                icon: 'error' 
+            });
+        }
+        // Limpiamos el selector que causó el duplicado para que el usuario pueda volver a buscar
+        $this.val("").trigger('change.select2');
+        return;		
+    }
+
+    let textoVehiculo = $('#car_id option:selected').text();
+    let textoPieza    = $this.find('option:selected').text();
+
+    let product_data = {
+        id: InternoVehiculo + product_id,
+        item_name: textoPieza,
+        marca_modelo: textoVehiculo,
+        item_id: product_id
+    };
+    
+    var unit_cost = 1;
+    var sub_total = 1;
+
+    let product_row = `
+        <tr id="product-${product_data.id}">
+            <td></td>
+            <td><b>${product_data.item_name} ${product_data.marca_modelo}</b></td>
+            <td class="description">
+                <input type="text" name="product_new_description[]" class="form-control input-description" value="">
+            </td>
+            <td class="text-center quantity">
+                1 
+                <input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
+            </td>
+            <td class="text-right unit-cost">
+                <input type="text" name="unit_new_cost[]" data-id="${product_data.id}" onChange="monto_en_usd(this, ${product_data.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
+            </td>
+            <td class="text-right sub-total">
+                <input type="text" name="sub_new_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly>
+            </td>
+            <td class="text-right usd">
+                <input disabled id="usd_monto-${product_data.id}" type="text" class="form-control input-usd text-right">
+            </td>
+            <td>${InternoVehiculo}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-xs remove-product"><i class='fa fa-trash'></i></button>
+            </td>
+            <input type="hidden" name="product_new_id[]" value="-1">
+            <input type="hidden" name="product_new_interno[]" value="${InternoVehiculo}">
+            <input type="hidden" name="product_new_items_id[]" value="${product_data.item_id}">
+            <input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
+        </tr>`;
+
+    $("#order-table > tbody").append(product_row);
+    update_summary();
+
+    // Opcional: Limpiar el selector tras agregarlo para permitir una nueva selección
+    $this.val("").trigger('change.select2');
+});
+
 
 </script>
 @endsection

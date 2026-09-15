@@ -388,13 +388,16 @@ public function SearchItems(Request $request)
     $search = $request->input('q');
     $carId = $request->input('car_id');
     $currentId = $request->input('current_id');
+    $menu = $request->input('menu'); 
+	$allCarValor = ($menu === 'secundario') ? 0 : 1;
+
     
     // 1. Creamos la consulta base
     $query = Item::query()
         ->select('id', 'item_name as text')
-        ->where(function ($q) use ($currentId) {
-            $q->where('activo', 'Si');
-            // ->where('allCar', 1); // (Comentado según tu código)
+        ->where(function ($q) use ($currentId, $allCarValor) {
+            $q->where('activo', 'Si')
+             ->where('allCar',  $allCarValor);
             $q->when($currentId, fn($query) => $query->orWhere('id', $currentId));
         });
     
