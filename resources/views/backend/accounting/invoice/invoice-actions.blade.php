@@ -1,3 +1,4 @@
+<?php if ($invoice->status != 'Canceled') { ?>
 <?php $amount_due = $invoice->grand_total - $paid; ?>
 <input type="text" class="form-control mb-2" id="invoice_link_2" value="{{ url('client/view_invoice/'.md5($invoice->id)) }}" readOnly="true">
 <div>
@@ -54,3 +55,4 @@
 		</div>
 	</div>
 </div>
+<?php } ?>
