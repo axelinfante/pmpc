@@ -16,7 +16,7 @@
 			<div class="col-md-6">
 				<div class="form-group">
                                 <label class="control-label" for="categoria">Categoria </label>
-								<select class="form-control" name="categoria" id="categoria" required>
+								<select class="form-control" name="categoria" id="categoria">
 									<option value="">Seleccione una categoría</option>
 									<option value="AUTO" {{ old('categoria', $item->categoria ?? '') == 'AUTO' ? 'selected' : '' }}>AUTO</option>
 									<option value="CARROCERIA" {{ old('categoria', $item->categoria ?? '') == 'CARROCERIA' ? 'selected' : '' }}>CARROCERIA</option>
@@ -26,6 +26,7 @@
 									<option value="MOTOR" {{ old('categoria', $item->categoria ?? '') == 'MOTOR' ? 'selected' : '' }}>MOTOR</option>
 									<option value="MOTOR / Periferico" {{ old('categoria', $item->categoria ?? '') == 'MOTOR / Periferico' ? 'selected' : '' }}>MOTOR / Periferico</option>
 									<option value="MOTOR /TRANS" {{ old('categoria', $item->categoria ?? '') == 'MOTOR /TRANS' ? 'selected' : '' }}>MOTOR /TRANS</option>
+									<option value="MOTOR - BD" {{ old('categoria') == 'MOTOR - BD' ? 'selected' : '' }}>MOTOR - BD</option>
 									<option value="SUSPENSION" {{ old('categoria', $item->categoria ?? '') == 'SUSPENSION' ? 'selected' : '' }}>SUSPENSION</option>
 								</select>
 						</div>
