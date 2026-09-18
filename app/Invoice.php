@@ -93,7 +93,53 @@ class Invoice extends Model implements AuditableInvoice
 			->where('dr_cr', 'cr');
 	}
 	
+	
 	public static function boot() {
+    parent::boot();
+
+    static::creating(function ($model) {
+        \DB::transaction(function () use ($model) {
+            
+            $companyId = 1;//$model->company_id ?? null; 
+
+            // Buscamos o creamos de forma segura el registro único de la empresa
+            $setting = \DB::table('company_settings')
+                ->where('name', 'invoice_starting')
+                ->where('company_id', $companyId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$setting) {
+                // Si por alguna razón no existe, lo creamos de manera segura
+                \DB::table('company_settings')->insertOrIgnore([
+                    'name' => 'invoice_starting',
+                    'company_id' => $companyId,
+                    'value' => 1
+                ]);
+
+                // Volvemos a consultarlo con bloqueo
+                $setting = \DB::table('company_settings')
+                    ->where('name', 'invoice_starting')
+                    ->where('company_id', $companyId)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            $number = (int)$setting->value;
+
+            // Actualizamos al siguiente número
+            \DB::table('company_settings')
+                ->where('name', 'invoice_starting')
+                ->where('company_id', $companyId)
+                ->update(['value' => $number + 1]);
+
+            // Asignamos el número a la factura (ajusta el nombre de la columna si es distinto)
+            $model->invoice_number = $number; 
+        });
+    });
+}
+
+/*	public static function boot() {
     parent::boot();
 
     static::creating(function ($model) {
@@ -118,7 +164,35 @@ class Invoice extends Model implements AuditableInvoice
                 ->update(['value' => $number + 1]); 
         });
     });
-}
+}*/
+
+/*
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up()
+    {
+        Schema::table('nombre_tabla_facturas', function (Blueprint $table) {
+            // Si es un sistema multi-empresa (recomendado):
+            // Asegura que el número de factura sea único POR CADA compañía.
+            $table->unique(['company_id', 'invoice_number']);
+
+            // Si es una sola empresa global (sin company_id):
+            // $table->unique('invoice_number');
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('nombre_tabla_facturas', function (Blueprint $table) {
+            $table->dropUnique(['company_id', 'invoice_number']);
+        });
+    }
+};
+*/
 	
 	
 }
