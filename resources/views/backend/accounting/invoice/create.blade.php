@@ -744,226 +744,6 @@ car.change(function() {
     }
 });
 	
-	
-	/* if (car.val() != '') {
-
-    $('#product').prop('data-idCar', car.val());
-    $('#product1').prop('data-idCar', car.val());
-
-    product.data('option', 'products.car_id = ' + car.val());
-    product1.data('option', 'products.car_id = ' + car.val());
-
-    var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
-    var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
-
-    var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
-    var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
-
-    product.select2({
-        placeholder: 'Buscar ...',
-        allowClear: true,
-        ajax: {
-            url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
-                  '&value=' + product.data('value') +
-                  '&display=' + product.data('display') + display2 + display3 + 
-                  '&where=' + product.data('where') +
-                  '&car_id=' + car.val() +
-                  '&option=products.car_id = ' + car.val(),
-            delay: 250,
-            dataType: 'json',
-            processResults: function (data) {
-                return { results: data };
-            }
-        }
-    });
-
-    product1.select2({
-        placeholder: 'Buscar ...',
-        allowClear: true,
-        ajax: {
-            url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
-                  '&value=' + product1.data('value') +
-                  '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
-                  '&where=' + product1.data('where') +
-                  '&car_id=' + car.val() +
-                  '&option=products.car_id = ' + car.val(),
-            delay: 250,
-            dataType: 'json',
-            processResults: function (data) {
-                return { results: data };
-            }
-        }
-    });
-    
-    $('#productLink').removeClass('d-none');
-    setTimeout(function() {
-        $('#car_id').trigger('change');
-    }, 2000); // Se ejecuta después de 2 segundos
-    
-} else {
-    $('#productLink').addClass('d-none');
-}
-
-
-car.change(function() {
-    var carId = $(this).val();
-
-    // Si el valor no está vacío
-    if (carId != '') {
-        $('#productLink').removeClass('d-none');
-
-        $('#product').prop('data-idCar', carId);
-        $('#product1').prop('data-idCar', carId);
-
-        product.prop('data-option', 'products.car_id = ' + carId);
-        product1.prop('data-option', 'products.car_id = ' + carId);
-
-        var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
-        var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
-
-        var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
-        var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
-
-        limpiarItems(carId);
-
-        product.select2({
-            placeholder: 'Buscar...',
-            allowClear: true,
-            ajax: {
-                url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
-                      '&value=' + product.data('value') +
-                      '&display=' + product.data('display') + display2 + display3 + 
-                      '&where=' + product.data('where') +
-                      '&car_id=' + carId +
-					  '&menu=primario' + 
-                      '&option= products.car_id = ' + carId,
-                delay: 250,
-                dataType: 'json',
-                processResults: function (data) {
-                    return { results: data };
-                }
-            }
-        });
-
-        product1.select2({
-            placeholder: 'Buscar...',
-            allowClear: true,
-            ajax: {
-                url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
-                      '&value=' + product1.data('value') +
-                      '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
-                      '&where=' + product1.data('where') +
-                      '&car_id=' + carId +
-					  '&menu=secundario' + 
-                      '&option= products.car_id = ' + carId,
-                delay: 250,
-                dataType: 'json',
-                processResults: function (data) {
-                    return { results: data };
-                }
-            }
-        });
-
-    } else {
-        $('#productLink').addClass('d-none');
-        product.val(null).trigger('change');
-        product1.val(null).trigger('change');
-    }
-});
- */
-	/*
-    if(car.val() != '' ){
-
-        //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
-        $('#product').prop('data-idCar',car.val());
-        $('#product1').prop('data-idCar',car.val());
-
-
-        product.data('option','products.car_id = '+ car.val());
-        product1.data('option','products.car_id = '+ car.val());
-
-        var display2 = "";
-        if( typeof  product.data('display2') !== "undefined" ){
-            display2 = "&display2=" +  product.data('display2');
-        }
-
-        var display3 = "";
-        if( typeof  product.data('display3') !== "undefined" ){
-            display3 = "&display3=" +  product.data('display3');
-        }
-		
-		product.select2({
-				placeholder: 'Buscar ...',
-				allowClear: true,
-			ajax: {
-				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
-					  '&value=' + product.data('value') +
-					  '&display=' + product.data('display') + display2 + display3 + 
-					  '&where=' + product.data('where') +
-					  '&car_id=' + $(this).val() +
-					  '&option= products.car_id = ' + $(this).val(),
-        delay: 250,
-        dataType: 'json',
-        processResults: function (data) {
-			    return {
-                    results: data
-                };
-        }
-    }
-});
-		
-		setTimeout(function() {
-			$('#car_id').trigger('change');
-		}, 2000); // Executes after 2 seconds
-		
-    }else{
-		$('#productLink').addClass('d-none')
-	}
-	*/
- /* 
-   car.change(function() {
-
-        product.prop('data-option','products.car_id = ' + $(this).val());
-        //product.select2({});
-		$('#productLink').removeClass('d-none')
-        var display2 = "";
-        if( typeof  product.data('display2') !== "undefined" ){
-            display2 = "&display2=" +  product.data('display2');
-        }
-
-        var display3 = "";
-        if( typeof  product.data('display3') !== "undefined" ){
-            display3 = "&display3=" +  product.data('display3');
-        }
-
-        //$('#productLink').prop('href',"{{route('products.create')}}?idCar="+car.val());
-        $('#product').prop('data-idCar',car.val());
-
-		limpiarItems($(this).val());
-			product.select2({
-				placeholder: 'Buscar...', // ¡Aquí puedes meter el placeholder que querías!
-				allowClear: true,
-			ajax: {
-				url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
-					  '&value=' + product.data('value') +
-					  '&display=' + product.data('display') + display2 + display3 + 
-					  '&where=' + product.data('where') +
-					  '&car_id=' + $(this).val() +
-					  '&option= products.car_id = ' + $(this).val(),
-        delay: 250,
-        dataType: 'json',
-        processResults: function (data) {
-			                 return {
-                    results: data 
-                };
-        }
-    }
-}); 
-   
-
-
-
-    })*/
 
 
 	$('.select2-ajax').on('change',function (e) {
@@ -1065,68 +845,6 @@ function validar_summary() {
 	return valido;
     
 }
-
-	/*
-$(document).on('change', '#product', function() {
-	    var product_id = $(this).val();
-		if( product_id == '' ){
-			return;
-		}
-
-			let InternoVehiculo = $('#car_id option:selected').val();
-	    //if product has already in order table
-	    if ($("#order-table > tbody > #product-" + InternoVehiculo+product_id).length > 0) {
-			if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto ya se encuentra agregado', icon: 'error' });}
-			return;		
-	    }
-
-					
-					let textoVehiculo = $('#car_id option:selected').text();
-					let textoPieza    = $(this).find('option:selected').text();
-					let product = {
-						id: InternoVehiculo+product_id,
-						item_name: textoPieza,
-						marca_modelo: textoVehiculo,
-						item_id: product_id
-					};
-					
-					   var unit_cost = 1;
-					   var sub_total = 1;
-
-					let product_row = `
-						<tr id="product-${product.id}">
-							<td></td>
-							<td><b>${product.item_name} ${product.marca_modelo}</b></td>
-							<td class="description">
-								<input type="text" name="product_new_description[]" class="form-control input-description" value="">
-							</td>
-							<td class="text-center quantity">
-								1 
-								<input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
-							</td>
-							<td class="text-right unit-cost">
-								<input type="text" name="unit_new_cost[]" data-id="${product.id}" onChange="monto_en_usd(this, ${product.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
-							</td>
-							<td class="text-right sub-total">
-								<input type="text" name="sub_new_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly>
-							</td>
-							<td class="text-right usd">
-								<input disabled id="usd_monto-${product.id}" type="text" class="form-control input-usd text-right">
-							</td>
-							<td>${InternoVehiculo}</td>
-							<td class="text-center">
-												<button type="button" class="btn btn-danger btn-xs remove-product"><i class='fa fa-trash'></i></button>
-							</td>
-							<input type="hidden" name="product_new_id[]" value="-1">
-							<input type="hidden" name="product_new_interno[]" value="${InternoVehiculo}">
-							<input type="hidden" name="product_new_items_id[]" value="${product.item_id}">
-							<input type="hidden" name="product_new_tax[]" class="input-product-tax" value="0">
-						</tr>`;
-
-
-					$("#order-table > tbody").append(product_row);
-					update_summary();
-	});	*/
 	
 	$(document).on('change', '#product, #product1', function() {
     var $this = $(this);
@@ -1135,22 +853,26 @@ $(document).on('change', '#product', function() {
     if (product_id == '') {
         return;
     }
-
     let InternoVehiculo = $('#car_id option:selected').val();
-    
+	
+	var isImportado = importadoIds.includes(InternoVehiculo);
+
+	if (!isImportado) {
     // Validar si el producto ya fue agregado en la tabla de órdenes
-    if ($("#order-table > tbody > #product-" + InternoVehiculo + product_id).length > 0) {
-        if (typeof $.toast !== 'undefined') {
-            $.toast({ 
-                position: 'top-right', 
-                text: 'Producto ya se encuentra agregado', 
-                icon: 'error' 
-            });
-        }
-        // Limpiamos el selector que causó el duplicado para que el usuario pueda volver a buscar
-        $this.val("").trigger('change.select2');
-        return;		
-    }
+		if ($("#order-table > tbody > #product-" + InternoVehiculo + product_id).length > 0) {
+			if (typeof $.toast !== 'undefined') {
+				$.toast({ 
+					position: 'top-right', 
+					text: 'Producto ya se encuentra agregado', 
+					icon: 'error' 
+				});
+			}
+			// Limpiamos el selector que causó el duplicado para que el usuario pueda volver a buscar
+			$this.val("").trigger('change.select2');
+			return;		
+		}
+	}
+	  
 
     let textoVehiculo = $('#car_id option:selected').text();
     let textoPieza    = $this.find('option:selected').text();
