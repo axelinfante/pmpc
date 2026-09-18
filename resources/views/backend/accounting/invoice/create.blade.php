@@ -522,6 +522,7 @@
     let product1 = $('#product1');
 
 	let is_usd = $('#is_usd');
+	var importadoIds = ['111111', '11638'];
 
 	$(document).ready(function() {
         $('#acciones').select2({
@@ -599,6 +600,152 @@
 	
 	
 	if (car.val() != '') {
+    var carId = car.val();
+	var isImportado = importadoIds.includes(carId);
+
+    $('#product').prop('data-idCar', carId);
+    $('#product1').prop('data-idCar', carId);
+
+    product.data('option', 'products.car_id = ' + carId);
+    product1.data('option', 'products.car_id = ' + carId);
+
+    var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
+    var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
+
+    var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
+    var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
+
+    var menuParam = isImportado ? 'importado' : 'primario';
+
+    product.select2({
+        placeholder: 'Buscar ...',
+        allowClear: true,
+        ajax: {
+            url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+                 '&value=' + product.data('value') +
+                 '&display=' + product.data('display') + display2 + display3 + 
+                 '&where=' + product.data('where') +
+                 '&car_id=' + carId +
+                 '&menu=' + menuParam +
+                 '&option=products.car_id = ' + carId,
+            delay: 250,
+            dataType: 'json',
+            processResults: function (data) {
+                return { results: data };
+            }
+        }
+    });
+
+    if (isImportado) {
+        product1.prop('disabled', true);
+        product1.val(null).trigger('change');
+    } else {
+        product1.prop('disabled', false);
+        product1.select2({
+            placeholder: 'Buscar ...',
+            allowClear: true,
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
+                     '&value=' + product1.data('value') +
+                     '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
+                     '&where=' + product1.data('where') +
+                     '&car_id=' + carId +
+                     '&menu=secundario' +
+                     '&option=products.car_id = ' + carId,
+                delay: 250,
+                dataType: 'json',
+                processResults: function (data) {
+                    return { results: data };
+                }
+            }
+        });
+    }
+    
+    $('#productLink').removeClass('d-none');
+    setTimeout(function() {
+        $('#car_id').trigger('change');
+    }, 2000); // Se ejecuta después de 2 segundos
+    
+} else {
+    $('#productLink').addClass('d-none');
+}
+
+
+car.change(function() {
+    var carId = $(this).val();
+	var isImportado = importadoIds.includes(carId);
+    if (carId != '') {
+        $('#productLink').removeClass('d-none');
+
+        $('#product').prop('data-idCar', carId);
+        $('#product1').prop('data-idCar', carId);
+
+        product.prop('data-option', 'products.car_id = ' + carId);
+        product1.prop('data-option', 'products.car_id = ' + carId);
+
+        var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
+        var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
+
+        var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
+        var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
+
+        limpiarItems(carId);
+
+        var menuParam = isImportado ? 'importado' : 'primario';
+
+        product.select2({
+            placeholder: 'Buscar...',
+            allowClear: true,
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+                     '&value=' + product.data('value') +
+                     '&display=' + product.data('display') + display2 + display3 + 
+                     '&where=' + product.data('where') +
+                     '&car_id=' + carId +
+                     '&menu=' + menuParam + 
+                     '&option= products.car_id = ' + carId,
+                delay: 250,
+                dataType: 'json',
+                processResults: function (data) {
+                    return { results: data };
+                }
+            }
+        });
+
+        if (isImportado) {
+            product1.prop('disabled', true);
+            product1.val(null).trigger('change');
+        } else {
+            product1.prop('disabled', false);
+            product1.select2({
+                placeholder: 'Buscar...',
+                allowClear: true,
+                ajax: {
+                    url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
+                         '&value=' + product1.data('value') +
+                         '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
+                         '&where=' + product1.data('where') +
+                         '&car_id=' + carId +
+                         '&menu=secundario' + 
+                         '&option= products.car_id = ' + carId,
+                    delay: 250,
+                    dataType: 'json',
+                    processResults: function (data) {
+                        return { results: data };
+                    }
+                }
+            });
+        }
+
+    } else {
+        $('#productLink').addClass('d-none');
+        product.prop('disabled', false).val(null).trigger('change');
+        product1.prop('disabled', false).val(null).trigger('change');
+    }
+});
+	
+	
+	/* if (car.val() != '') {
 
     $('#product').prop('data-idCar', car.val());
     $('#product1').prop('data-idCar', car.val());
@@ -723,7 +870,7 @@ car.change(function() {
         product1.val(null).trigger('change');
     }
 });
-
+ */
 	/*
     if(car.val() != '' ){
 

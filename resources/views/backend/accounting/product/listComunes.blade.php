@@ -19,6 +19,7 @@
 							<th>{{ _lang('Categoria') }}</th>
 							<th>{{ _lang('Periferico') }}</th>
 							<th>{{ _lang('C / N° Oblea') }}</th>
+							<th>{{ _lang('Importado') }}</th>
 							<th>{{ _lang('Primario') }}</th>
 							<th>{{ _lang('Activo') }}</th>
 							<th class="text-center notexport">{{ _lang('Action') }}</th>
@@ -81,6 +82,7 @@
 			{data: 'categoria', name: 'categoria'},
 			{data: 'combo_producto', name: 'combo_producto'},
 			{data: 'con_oblea', name: 'con_oblea'},
+            {data: 'importado', name: 'importado'},
             {data: 'allCar', name: 'allCar'},
             {data: 'activo', name: 'activo'},
             {data: 'action', name: 'action', orderable: false, searchable: false},

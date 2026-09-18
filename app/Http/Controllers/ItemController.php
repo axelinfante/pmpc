@@ -71,6 +71,7 @@ class ItemController extends Controller
 				'company_id'  => company_id(),
 				'allCar' 	  => $request->allcar ?? Null,
 				'activo' 	  => $request->activo ?? 'No',
+				'importado' 	  => $request->importado ?? 'No',
 				'type' 	  => $request->type ?? '',
 				'combo_producto' => !empty($productosSeleccionados) ? json_encode($productosSeleccionados) : null
 				]
@@ -228,6 +229,31 @@ class ItemController extends Controller
 		
 		if (isset($request->activo)) {
 			$item->allCar = $request->activo;
+		}
+		
+        $item->save();
+		
+       return response()->json([
+				'result' => 'success',
+				'action' => 'update', // Mantener 'delete' para que tu JS detecte la acción
+				'message' => "Registro actualizado correctamente...",
+				'data' => $item->id
+			]);
+    }
+	
+	
+	 public function actualizaImportado(Request $request)
+    {
+        $id = $request->id;
+
+		$item = Item::where("id",$id)->first();
+//        $marca = Marca::find($id);
+		 if (!$item) {
+            return back()->with('error', _lang('Sorry, Car not found !'));
+        }
+		
+		if (isset($request->activo)) {
+			$item->importado = $request->activo;
 		}
 		
         $item->save();

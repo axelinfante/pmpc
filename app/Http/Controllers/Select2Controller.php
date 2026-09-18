@@ -390,14 +390,19 @@ public function SearchItems(Request $request)
     $currentId = $request->input('current_id');
     $menu = $request->input('menu'); 
 	$allCarValor = ($menu === 'secundario') ? 0 : 1;
-
     
     // 1. Creamos la consulta base
     $query = Item::query()
         ->select('id', 'item_name as text')
-        ->where(function ($q) use ($currentId, $allCarValor) {
-            $q->where('activo', 'Si')
-             ->where('allCar',  $allCarValor);
+        ->where(function ($q) use ($currentId, $allCarValor,$menu) {
+			if ($menu === 'importado'){
+             $q->where('activo', 'Si')
+			 ->where('importado',  'Si');
+			}else{
+				$q->where('activo', 'Si')
+				->where('allCar',  $allCarValor);
+			}
+			 
             $q->when($currentId, fn($query) => $query->orWhere('id', $currentId));
         });
     
@@ -413,7 +418,7 @@ public function SearchItems(Request $request)
        
   
     $productsInfo = $this->obtenerInfoProductos($items->pluck('id'), $carId);
-    $itemsFormateados = $this->formatearItems($items, $productsInfo);
+    $itemsFormateados = $this->formatearItems($items, $productsInfo, $menu);
 
 	return $itemsFormateados;
 }
@@ -436,26 +441,31 @@ private function obtenerInfoProductos($itemIds, $carId)
 /**
  * Formatea los items aplicando las reglas de negocio
  */
-private function formatearItems($items, $productsInfo)
+private function formatearItems($items, $productsInfo, $menu = 'importado')
 {
-    return $items->map(function ($item) use ($productsInfo) {
+    return $items->map(function ($item) use ($productsInfo,$menu) {
         $mensaje = "";
         $disabledRow = false;
         
         $product = $productsInfo->get($item->id);
 
-        if ($product) {
-            $estado = $product->estado ?? '';   
-            $id_producto = $product->idproducto ?? '';
+		if ($menu === 'importado'){
+			$mensaje = '';
+			$disabledRow = false;  
+		}else{	
+				if ($product) {
+					$estado = $product->estado ?? '';   
+					$id_producto = $product->idproducto ?? '';
 
-            if ($estado === "Anulado") {
-                $mensaje = " - $id_producto ($estado)";
-                $disabledRow = true; 
-            } else {
-                $mensaje = " ($id_producto)";
-                $disabledRow = true;  
-            }
-        }	
+					if ($estado === "Anulado") {
+						$mensaje = " - $id_producto ($estado)";
+						$disabledRow = true; 
+					} else {
+						$mensaje = " ($id_producto)";
+						$disabledRow = true;  
+					}
+				}	
+		}	
 
         return [
             'id'       => $item->id,
