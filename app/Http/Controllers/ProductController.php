@@ -644,6 +644,15 @@ class ProductController extends Controller
                     return $row->activo ?? "";
 				})
 				
+				->editColumn('importado', function ($car) {
+				
+					if (!isset($request->exportar)){
+                        return view('backend.accounting.item.include.importado', ['data' => $car]);
+                    }
+
+					return $row->importado ?? "";
+				})
+				
 				->rawColumns(['action','allCar','activo','combo_producto'])
                 ->make(true);
 		}	
@@ -699,6 +708,7 @@ class ProductController extends Controller
         $item->categoria = $request->categoria;
         $item->con_oblea = $request->con_oblea;
         $item->allCar = $request->allcar ?? 0;
+		$item->importado = $request->importado ?? 'No';
 		$item->combo_producto = !empty($productosSeleccionados) ? json_encode($productosSeleccionados) : null;
         $item->activo = $request->activo;
 

@@ -81,8 +81,18 @@
                                     <option value="No" {{ old('activo' ?? '') == 'No' ? 'selected' : '' }}>Desactivo</option>
                                 </select>
 						</div>
-                    </div>		
+             </div>		
 					
+			<div class="col-lg-4 mb-3">					
+						<div class="form-group">
+                                <label for="importado">Importado <span class="text-danger"></span></label>
+                                <select class="form-control" name="importado" id="importado" required>
+								    <option value="No" {{ old('importado' ?? '') == 'No' ? 'selected' : '' }}>Desactivo</option>
+                                    <option value="Si" {{ old('importado' ?? '') == 'Si' ? 'selected' : '' }}>Activo</option>
+                                </select>
+						</div>
+             </div>		
+							
 					
 				<input type="hidden" name="item_type" value="product">
 			<div class="col-md-12">
