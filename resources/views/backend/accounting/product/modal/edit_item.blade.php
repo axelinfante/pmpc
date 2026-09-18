@@ -99,7 +99,15 @@
 						</div>
                     </div>		
 			
-
+<div class="col-lg-4 mb-3">					
+						<div class="form-group">
+                                <label for="importado">Importado <span class="text-danger"></span></label>
+                                <select class="form-control" name="importado" id="importado" required>
+                                <option value="No" {{ old('importado', $item->importado ?? '') == 'No' ? 'selected' : '' }}>Desactivo</option>
+								<option value="Si" {{ old('importado', $item->importado ?? '') == 'Si' ? 'selected' : '' }}>Activo</option>
+                                </select>
+						</div>
+             </div>	
 
 
 			{{-- <div class="col-md-12">

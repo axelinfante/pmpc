@@ -1531,6 +1531,7 @@ Route::resource("puestos", "PuestosController");
 
 		   Route::post("Items/actualiza-activo", "ItemController@actualizaActivo",)->name("items.actualizaactivos");
 		   Route::post("Items/actualiza-predefinidos", "ItemController@actualizaPredefinido",)->name("items.actualizapredefinidos");
+		   Route::post("Items/actualiza-importado", "ItemController@actualizaImportado",)->name("items.actualizaimportado");
 		   
 		   Route::post('products/detalle/activos', 'ProductController@table_detalle_inventario')->name('products.table.detalle.inventario');
 		   //traslado de mercancia
