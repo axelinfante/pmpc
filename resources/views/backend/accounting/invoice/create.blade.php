@@ -522,7 +522,7 @@
     let product1 = $('#product1');
 
 	let is_usd = $('#is_usd');
-	var importadoIds = ['111111', '11638'];
+	var importadoIds = ['111111', '11628'];
 
 	$(document).ready(function() {
         $('#acciones').select2({
