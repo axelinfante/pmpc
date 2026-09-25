@@ -25,7 +25,6 @@
 								    <textarea class="form-control" name="description">{{ old('description') }}</textarea>
 							    </div>
 							</div>
-
 							
 							<div class="col-md-12">
 							    <div class="form-group">

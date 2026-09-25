@@ -29,8 +29,8 @@ class TransferenciaProductoController extends Controller
 		 if (request()->ajax()) {
 
             //$datos = Transfer::select('*')->withCount('TransfersProduct');
-			
-			
+			$status = $request->query('filtrado', "en transito");
+					//d.filtrado = "predefinido";//$('select[name=filtrado]').val();
 			$datos = Transfer::select('*')->withCount([
 				'TransfersProduct as pendientes_count' => function ($query) {
 				$query->whereNull('recibido');
@@ -38,7 +38,9 @@ class TransferenciaProductoController extends Controller
 				'TransfersProduct as recibido_count' => function ($query) {
 					$query->where('recibido', true);
 				}
-			]);
+			])
+			->where("status", $status)
+			->orderBy('id', 'desc');
 			
             return DataTables::eloquent($datos)
 				 ->addColumn('transfers_product_count', function ($data) {
@@ -240,7 +242,7 @@ class TransferenciaProductoController extends Controller
                 // 1. Buscar la cabecera del traslado masivo
                 $shipment = Shipment::findOrFail($id);
 
-                if ($shipment->status !== 'in_transit') {
+                if ($shipment->status !== 'en transito') {
                     throw new \Exception('Este traslado ya ha sido procesado o cerrado.');
                 }
 

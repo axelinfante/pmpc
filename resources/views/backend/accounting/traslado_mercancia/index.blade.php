@@ -60,13 +60,31 @@
 
 			var table = $('#table-data').appTable({
 					title:"Traslado de Mercancia",
-					ajax: "{{ route('transfers.index') }}",
+					ajax: {
+						url: "{{ route('transfers.index') }}", // Substitua pela sua rota
+						data: function (d) {
+							// Aqui você envia o valor do select/input como o parâmetro 'filtrado'
+							d.filtrado = $('#filtrado').val();
+						}
+					},
+					//ajax: "{{ route('transfers.index') }}",
 					visibleButtonsFilter:false,
 					visibleButtons: {
 					reset: true,
 					excel: true,
 					print: false
 					},
+					customButtons: [{
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
+                      '<option value="en transito">En transito</option>' +
+                      '<option value="entregado">Entregado</option>' +
+                      '</select>',
+					className: 'botones-custom',
+					action: function ( e, dt, node, config ) {
+						}
+					}
+				],
 				   columns: [
                     { data: 'fecha_traslado', name: 'fecha_traslado' },
                     { data: 'reference', name: 'reference' },
@@ -75,6 +93,12 @@
                     { data: 'action', name: 'action', orderable: false}
 					],
 				});
+				
+				$('#filtrado').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
         });
     </script>
        

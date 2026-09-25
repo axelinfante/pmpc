@@ -86,10 +86,17 @@ class ExpenseController extends Controller
 
 		return Datatables::eloquent($transactions)
 			->filterColumn('trans_date', function ($query, $keyword) {
+				
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('trans_date', '>=', $date_range[0])
+                            ->whereDate('trans_date', '<=', $date_range[1]);
+                    }      
+				
 				//fecha en formato Y-m-d
-				$fecha = date('Y-m-d', strtotime($keyword));
+				/*$fecha = date('Y-m-d', strtotime($keyword));
 				// dd($fecha);
-				$query->where('trans_date', 'like', '%' . $fecha . '%');
+				$query->where('trans_date', 'like', '%' . $fecha . '%');*/
 			})
 
 
