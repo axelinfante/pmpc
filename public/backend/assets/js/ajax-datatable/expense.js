@@ -19,6 +19,11 @@
                 }
 
             });
+			
+			if(i == 1){
+						$(this).html( '<input style="width:100%;" type="text" id="fecha_ingreso" name="fecha_ingreso" value="" class="form-control select-filter" placeholder="Search...'+title+'" />' );
+			}
+			
             if (i == 19) {
 
                 $(this).html('<select class="form-control filtros"><option value="">Todas</option> <option value="-1">Normal</option> <option value="urgente">Urgente</option> <option value="muy_urgente">Muy Urgente</option> <option value="no_pagar">No Pagar</option></select>');
@@ -35,6 +40,9 @@
                 });
 
             }
+			
+
+			
         } else {
             // $(this).html( '' );
             $(this).html('<select class="form-control filtros"> <option value="">Seleccione</option> <option value="1">pendiente</option> <option value="2">resuelto</option> </select>');
@@ -202,5 +210,33 @@
         }
     });
     table.search('').columns().search('').draw();
+	
+	
+	
+		 $('#fecha_ingreso').daterangepicker({
+            autoUpdateInput: false,
+            locale: {
+                format: 'YYYY-MM-DD',
+                cancelLabel: 'Clear'
+            }
+        });
+
+         $('#fecha_ingreso').on('change', function(e) {
+            let val = $(this).val();
+            table.columns(1).search(val ? val : '', true, false );
+            table.draw();
+        });
+    
+    
+        $('#fecha_ingreso').on('apply.daterangepicker', function(ev, picker) {
+                let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+                    $(this).val(daterango);
+                    table.columns(1).search(daterango);
+                    table.draw();
+            });
+
+            $('#fecha_ingreso').on('cancel.daterangepicker', function(ev, picker) {
+                $('#fecha_ingreso').val(null).trigger('change');    
+        });
 })(jQuery);
 

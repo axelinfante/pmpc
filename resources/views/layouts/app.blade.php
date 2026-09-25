@@ -125,8 +125,8 @@
 				</div>
 
 				<div class="user-details">
-					<img class="avatar" src="{{ Auth::user()->profile_picture != '' ? asset('public/uploads/profile/'.Auth::user()->profile_picture) :  asset('public/images/avatar.png') }}" alt="avatar">
-					<span class="text-white d-inline-block">{{ Auth::user()->name }} </span><br>
+					<img class="avatar" src="{{ Auth::user()?->profile_picture != '' && Auth::user()?->profile_picture != null ? asset('public/uploads/profile/'.Auth::user()->profile_picture) : asset('public/images/avatar.png') }}" alt="avatar">
+					<span class="text-white d-inline-block">{{ Auth::user()?->name ?? 'Invitado' }}</span><br>
 				</div>
 
 				<div class="main-menu">
@@ -134,7 +134,11 @@
 						<nav>
 							<ul class="metismenu" id="menu">
 							    <li><a href="{{ url('dashboard') }}"><i class="ti-dashboard"></i> <span>{{ _lang('Dashboard') }}</span></a></li>
-								@include('layouts.menus.'.Auth::user()->user_type)
+								@auth
+									@if(Auth::user()->user_type)
+										@include('layouts.menus.' . Auth::user()->user_type)
+									@endif
+								@endauth
 							</ul>
 						</nav>
 					</div>
@@ -160,53 +164,50 @@
 
 						<!-- profile info & task notification -->
 						<div class="col-md-6 col-sm-4 clearfix">
+<ul class="notification-area float-right">
+    @auth
+        @if(Auth::user()->user_type != 'admin')
+            <li class="dropdown">
+                <i class="ti-bell dropdown-toggle" data-toggle="dropdown">
+                    <span>{{ Auth::user()->unreadNotifications->count() }}</span>
+                </i>
+                <div class="dropdown-menu bell-notify-box notify-box">
+                    <span class="notify-title">{{ _lang('You have').' '.Auth::user()->unreadNotifications->count().' '._lang('new notifications') }}</span>
+                    <div class="nofity-list">
+                        @foreach (Auth::user()->notifications->take(15) as $notification)
+                            <a href="{{ url('notification/'.$notification->id) }}" class="notify-item {{ $notification->read_at == null ? 'unread-notification' : '' }}">
+                                <div class="notify-thumb">
+                                    <img src="{{ asset('public/uploads/profile/'.($notification->user->profile_picture ?? 'avatar.png')) }}">
+                                </div>
+                                <div class="notify-text">
+                                    <p><b>{{ $notification->user->name ?? 'Usuario' }}</b> {{ $notification->data['title'] ?? '' }}</p>
+                                    <span>{{ $notification->data['content'] ?? '' }}</span><br>
+                                    <span>{{ $notification->created_at->diffForHumans() }}</span>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </li>
+        @endif
 
-							<ul class="notification-area float-right">
-	                            @if(Auth::user()->user_type != 'admin')
-									<li class="dropdown">
-										<i class="ti-bell dropdown-toggle" data-toggle="dropdown">
-											<span>{{ Auth::user()->unreadNotifications->count() }}</span>
-										</i>
-										<div class="dropdown-menu bell-notify-box notify-box">
-											<span class="notify-title">{{ _lang('You have').' '.Auth::user()->unreadNotifications->count().' '._lang('new notifications') }}</span>
-											<div class="nofity-list">
-												@foreach (Auth::user()->notifications->take(15) as $notification)
-													<a href="{{ url('notification/'.$notification->id) }}" class="notify-item {{ $notification->read_at == null ? 'unread-notification' : '' }}">
-														<div class="notify-thumb">
-															<img src="{{ asset('public/uploads/profile/'.$notification->user->profile_picture) }}">
-														</div>
-														<div class="notify-text">
-															<p><b>{{ $notification->user->name }}</b> {{ $notification->data['title'] }}</p>
-															<span>{{ $notification->data['content'] }}</span><br>
-															<span>{{ $notification->created_at->diffForHumans() }}</span>
-														</div>
-													</a>
-												@endforeach
-											</div>
-										</div>
-									</li>
-								@endif
-
-	                            <li>
-									<div class="user-profile">
-										<h4 class="user-name dropdown-toggle" data-toggle="dropdown">
-											<img class="avatar user-thumb" id="my-profile-img" src="{{ Auth::user()->profile_picture != '' ? asset('public/uploads/profile/'.Auth::user()->profile_picture) :  asset('public/images/avatar.png') }}" alt="avatar"> {{ Auth::user()->name }} <i class="fa fa-angle-down"></i>
-										</h4>
-										<div class="dropdown-menu">
-											{{--@if(Auth::user()->user_type == 'user' && get_option('membership_system') == 'enabled')--}}
-												{{--<a class="dropdown-item" href="{{ url('membership/my_subscription') }}"><i class="ti-package text-muted mr-2"></i> {{ _lang('My Subscription') }}</a>--}}
-
-												{{--<a class="dropdown-item" href="{{ url('membership/extend') }}"><i class="ti-wallet text-muted mr-2"></i> {{ _lang('Upgrade Subscription') }}</a>--}}
-											{{--@endif--}}
-											<a class="dropdown-item" href="{{ url('profile/edit') }}"><i class="ti-settings text-muted mr-2"></i> {{ _lang('Profile Settings') }}</a>
-											<a class="dropdown-item" href="{{ url('profile/change_password') }}"><i class="ti-pencil text-muted mr-2"></i> {{ _lang('Change Password') }}</a>
-											<div class="dropdown-divider mb-0"></div>
-											<a class="dropdown-item" href="{{ url('logout') }}"><i class="ti-power-off text-muted mr-2"></i> {{ _lang('Logout') }}</a>
-										</div>
-									</div>
-	                            </li>
-
-	                        </ul>
+        <li>
+            <div class="user-profile">
+                <h4 class="user-name dropdown-toggle" data-toggle="dropdown">
+                    <img class="avatar user-thumb" id="my-profile-img" src="{{ Auth::user()->profile_picture ? asset('public/uploads/profile/'.Auth::user()->profile_picture) : asset('public/images/avatar.png') }}" alt="avatar"> 
+                    {{ Auth::user()->name }} 
+                    <i class="fa fa-angle-down"></i>
+                </h4>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{{ url('profile/edit') }}"><i class="ti-settings text-muted mr-2"></i> {{ _lang('Profile Settings') }}</a>
+                    <a class="dropdown-item" href="{{ url('profile/change_password') }}"><i class="ti-pencil text-muted mr-2"></i> {{ _lang('Change Password') }}</a>
+                    <div class="dropdown-divider mb-0"></div>
+                    <a class="dropdown-item" href="{{ url('logout') }}"><i class="ti-power-off text-muted mr-2"></i> {{ _lang('Logout') }}</a>
+                </div>
+            </div>
+        </li>
+    @endauth
+</ul>
 
 						</div>
 					</div>
@@ -251,50 +252,52 @@
 						</div>
 					</div>
 				</div><!-- page title area end -->
+<div class="main-content-inner">
+    <!-- Trial and Membership Alert -->
+    @auth
+        @php $user = Auth::user(); @endphp
 
-				<div class="main-content-inner">
-					<!-- Trial and Membership Alert -->
-					@php $user = Auth::user(); @endphp
+        @if(has_membership_system() == 'enabled' && $user->user_type == 'user')
 
-					@if(has_membership_system() == 'enabled' && $user->user_type == 'user')
+            @if( membership_validity() < date('Y-m-d'))
+                <div class="alert alert-danger">
+                   <b class="float-left pt-2">{{ _lang('Please make your membership payment for further process !') }}</b>
+                   <a href="{{ url('membership/extend') }}" class="btn btn-primary btn-xs float-right"><b>{{ _lang('Pay Now') }}</b></a>
+                   <div class="clearfix"></div>
+                </div>
+            @endif
 
-					    @if( membership_validity() < date('Y-m-d'))
-							<div class="alert alert-danger">
-							   <b class="float-left pt-2">{{ _lang('Please make your membership payment for further process !') }}</b>
-							   <a href="{{ url('membership/extend') }}" class="btn btn-primary btn-xs float-right"><b>{{ _lang('Pay Now') }}</b></a>
-							   <div class="clearfix"></div>
-							</div>
-						@endif
+            @if( optional($user->company)->membership_type == 'trial' && membership_validity() > date('Y-m-d'))
+                <div class="alert alert-warning">
+                   <b>{{ _lang('You Are Currenly Using Trial Account !') }}&emsp;<a href="{{ url('membership/extend') }}" class="btn btn-danger btn-xs">{{ _lang('Upgrade Now') }}</a></b>
+                </div>
+            @endif
 
-						@if( $user->company->membership_type == 'trial' && membership_validity() > date('Y-m-d'))
-							<div class="alert alert-warning">
-							   <b>{{ _lang('You Are Currenly Using Trial Account !') }}&emsp;<a href="{{ url('membership/extend') }}" class="btn btn-danger btn-xs">{{ _lang('Upgrade Now') }}</a></b>
-							</div>
-						@endif
+        @endif
+    @endauth
+    <!-- End Trial and Membership Alert -->
 
-					@endif
-					<!-- End Trial and Membership Alert -->
+    <div class="alert alert-success alert-dismissible mt-2" id="main_alert" role="alert">
+        <button type="button" id="close_alert" class="close">
+            <span aria-hidden="true"><i class="far fa-times-circle"></i></span>
+        </button>
+        <span class="msg"></span>
+    </div>
 
-					<div class="alert alert-success alert-dismissible mt-2" id="main_alert" role="alert">
-						<button type="button" id="close_alert" class="close">
-							<span aria-hidden="true"><i class="far fa-times-circle"></i></span>
-						</button>
-						<span class="msg"></span>
-					</div>
+    @yield('content')
 
-					@yield('content')
+    @auth
+        @if(get_option('live_chat') == 'enabled' && has_feature('live_chat'))
+            @if(! Request::is('live_chat') && Auth::user()->user_type != 'admin')
+                @include('backend.live_chat.chat-widget')
+            @endif
+        @endif
+    @endauth
 
-
-					@if(get_option('live_chat') == 'enabled' && has_feature('live_chat'))
-						@if(! Request::is('live_chat') && Auth::user()->user_type != 'admin')
-							@include('backend.live_chat.chat-widget')
-						@endif
-					@endif
-
-					<audio id="chatSound">
-					  <source src="{{ asset('public/sounds/messenger.mp3') }}" type="audio/mpeg" muted>
-					</audio>
-				</div><!--End main content Inner-->
+    <audio id="chatSound">
+      <source src="{{ asset('public/sounds/messenger.mp3') }}" type="audio/mpeg" muted>
+    </audio>
+</div><!--End main content Inner-->
 
 			</div><!--End main content-->
 

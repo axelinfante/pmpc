@@ -15,6 +15,7 @@
                         <tr>
                             <th>{{ _lang('Id') }}</th>
                             <th>{{ _lang('Lugar de entregas') }}</th>
+                            <th>{{ _lang('Activo') }}</th>
                             <th class="text-center notexport">{{ _lang('Action') }}</th>
                         </tr>
                     </thead>
@@ -23,6 +24,7 @@
                         <tr data-id="row_{{ $m_m->id }}">
                             <td class='name'>{{ $m_m->id }}</td>
                             <td class='name'>{{ $m_m->nombre }}</td>
+                            <td class='name'>{{ $m_m->activo }}</td>
                             
                             <td class="text-center">
                                 <div class="dropdown">
@@ -55,7 +57,25 @@
 
 @section('js-script')
 <script>
-    var table; 
+
+			var table = $('#roles_table').appTable({
+					title:"Depositos",
+					serverSide:false,
+					visibleButtonsFilter:false,
+					visibleButtons: {
+					reset: true,
+					excel: true,
+					print: false
+					},
+				   columns: [
+                    { data: 'id', name: 'id'},
+                    { data: 'nombre', name: 'nombre' },
+                    { data: 'action', name: 'action', orderable: false}
+					],
+				});
+
+
+/*    var table; 
 
     $(function() {
         $('#roles_table').css('width', '100%');
@@ -77,6 +97,6 @@
                 }
             ]
         });
-    });
+    });*/
 </script>
 @endsection

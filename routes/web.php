@@ -14,6 +14,8 @@ use App\Jobs\ActualizarCheckPointsVehiculos;
 |
  */
 
+Auth::routes(["verify" => true]);
+
 Route::group(["middleware" => ["install"]], function () {
     Route::get("/", "WebsiteController@index");
     Route::get("sign_up", "WebsiteController@sign_up");
@@ -21,7 +23,7 @@ Route::group(["middleware" => ["install"]], function () {
     Route::post("emaiL_subscribed", "WebsiteController@emaiL_subscribed");
     Route::post("contact/send_message", "WebsiteController@send_message");
 
-    Auth::routes(["verify" => true]);
+    //Auth::routes(["verify" => true]);
 
     Route::get("/logout", "\App\Http\Controllers\Auth\LoginController@logout");
     Route::match(

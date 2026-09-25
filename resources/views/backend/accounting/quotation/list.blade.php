@@ -45,7 +45,7 @@
 		$('#quotation-table thead tr').clone(true).appendTo('#quotation-table thead');
             $('#quotation-table thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 3 && i != 7) {
+                if (i != 3 && i != 7) {
 					
 					if (i == 6) {
 							$(this).html('<select style="width:100%;" class="form-control filtros"><option value="">Todas</option> <option value="pendiente">Pendiente</option> <option value="anulada">Anulada</option><option value="convertida">Convertida</option></select>');

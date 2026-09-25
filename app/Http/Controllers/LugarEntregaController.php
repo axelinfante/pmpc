@@ -63,6 +63,7 @@ class LugarEntregaController extends Controller
 
         $lugar_entrega = new Lugar_entregas();
         $lugar_entrega->nombre = $request->input('nombre');
+        $lugar_entrega->activo = $request->input('activo');
 
 
         $lugar_entrega->save();
@@ -137,6 +138,7 @@ class LugarEntregaController extends Controller
 
         $lugar_entrega = Lugar_entregas::find($id);
         $lugar_entrega->nombre = $request->input('nombre');
+		$lugar_entrega->activo = $request->input('activo');
 
         //$role->company_id = company_id();
 
@@ -156,10 +158,31 @@ class LugarEntregaController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+   /*  public function destroy($id)
     {
         $lugar_entrega = Lugar_entregas::where("id",$id);
         $lugar_entrega ->delete();
         return redirect()->route('lugarentrega.index')->with('success',_lang('Deleted Successfully'));
+    } */
+	
+	public function destroy($id)
+{
+    try {
+        // Busca el registro o lanza un error si no existe
+        $lugar_entrega = Lugar_entregas::findOrFail($id);
+        
+        // En lugar de delete(), actualizamos el estado a 'No'
+        $lugar_entrega->update([
+            'activo' => 'No'
+        ]);
+
+        return redirect()->route('lugarentrega.index')
+                         ->with('success', _lang('Deactivated Successfully'));
+
+    } catch (\Exception $e) {
+        return redirect()->route('lugarentrega.index')
+                         ->with('error', _lang('An error occurred while trying to deactivate the record.'));
     }
+}
+	
 }
