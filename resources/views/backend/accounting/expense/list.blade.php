@@ -49,7 +49,7 @@
 
 				<div>
 					<div>
-						<h4>Monto total: {{$total}}</h4>
+						<h4>Monto total: ${{ number_format($total, 2, ',', '.') }}</h4>
 					</div>
 				</div>
 			</div>

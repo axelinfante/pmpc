@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Transfer;
+use App\TransfersProduct;
 use App\Estado;
 use App\Lugar_entregas;
 use App\Cars;
@@ -422,9 +424,9 @@ class ProductController extends Controller
                     return $data->motor_nro ?? '';
                 })
 				->editColumn('deposito', function ($data) use ($request,$lugar_entregas) {
-                    if (!isset($request->exportar)){
+                    /*if (!isset($request->exportar)){
                         return view('backend.accounting.product.include.product-deposito', ['data' => $data,'lugar_entregas'=> $lugar_entregas]);
-                    }
+                    }*/
 					return $data->deposito->nombre ?? '';
                 })
                 ->editColumn('mercado_libre', function ($data) use ($request) {
@@ -3040,6 +3042,48 @@ if (isset($car)) {
         }
     }   
     
+	// proceso de emision de traslados
+	
+	if ($car->company_id==1){
+		
+			$data = [
+					'reference'   => 0,
+					'fecha_traslado' => now(),
+					'detalles' => "Inicio desde Precarga Masiva nro interno $nro_interno",
+					'almacen_origen_id' => 17,
+					'almacen_destino_id' => $request->input('idDeposito', 'NULL'),
+					'user_id' => auth()->user()->id ?? 1,
+					'status' => 'en transito'
+					];
+			 
+			//$transfer = new Transfer($request->except($data));
+			$transfer = new Transfer($data);
+			$transfer->save();
+			
+			//$products = $productosCreadosIds;
+            $itemsData = [];
+            $timestamp = now();
+			
+			foreach ($productosCreadosIds as $key => $id) {
+				$itemsData[] = [
+                        'transfers_id' => $transfer->id,
+                        'product_id'  => $id,
+                        'created_at'  => $timestamp,
+                        'updated_at'  => $timestamp
+                    ];
+            }
+          
+		  TransfersProduct::insert($itemsData); 
+		  
+		  Product::whereIn('id',$productosCreadosIds)
+		     ->update(['estado' => 'en transito']);
+		
+		}
+	
+	
+	
+	
+	
     DB::commit();
 }
 $lock->release(); 

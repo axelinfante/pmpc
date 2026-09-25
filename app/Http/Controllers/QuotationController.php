@@ -245,7 +245,7 @@ class QuotationController extends Controller
 				 $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
                     if (count($date_range) == 2) {
                         $query->whereDate('quotation_date', '>=', $date_range[0])
-                            ->whereDate('.quotation_date', '<=', $date_range[1]);
+                            ->whereDate('quotation_date', '<=', $date_range[1]);
                     }                   
                 })
 				
