@@ -354,7 +354,7 @@ class Select2Controller extends Controller
         ->where('products.stock', 1)
         ->where(function ($q) {
             //$q->where('products.estado', '!=', 'descompuesto')
-				$q->whereNotIn('products.estado', ['desarme', 'desarme-stock','descompuesto'])
+				$q->whereNotIn('products.estado', ['desarme', 'desarme-stock','descompuesto','en transito','pendiente'])
               ->orWhereNull('products.estado');
         })
         ->whereIn("products.company_id", $companias_global);
