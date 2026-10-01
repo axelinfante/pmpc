@@ -1041,7 +1041,7 @@ $ordenes = Orden_desarme::with([
             })
             ->editColumn('venta', function ($orden) {
 				
-			if (in_array($stock->estado, array("desarme-stock",
+			if (in_array($orden->producto->estado, array("desarme-stock",
 				 "pendiente","en transito"))) {
 				return "Precarga Masiva";
 			  }	
@@ -1196,7 +1196,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         
         $ventaCompanyId = $orden->venta->company_id ?? null;
 		
-		if (in_array($stock->estado, array("desarme","desarme-stock","en transito","pendiente"))){
+		if (in_array($orden->producto->estado ?? '', array("desarme","desarme-stock","en transito","pendiente"))){
 		//if (($orden->producto->estado ?? '') == "desarme-stock"){
 						 $ventaCompanyId= $orden->producto->company_id ?? 1;
 				}
