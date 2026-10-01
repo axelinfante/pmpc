@@ -3713,7 +3713,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             ->where('stock', '>=', 1)->where('car_id', null)
             //->whereNotIn('estado', ['desarme','desarme-stock'])
             ->where(function ($query) {
-                    $query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
+                    $query->whereNotIn('products.estado', ['desarme', 'desarme-stock','en transito','pendiente'])
                           ->orWhereNull('products.estado');
                 })
             //->where('stock', 1)->where('car_id', null)

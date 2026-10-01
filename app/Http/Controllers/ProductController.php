@@ -71,9 +71,11 @@ class ProductController extends Controller
 			->whereNull('products.car_id') 
 			->where('products.stock', '>=', 1)
 			->where(function ($query) {
-				$query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
+				$query->whereNotIn('products.estado', ['desarme', 'desarme-stock','en transito','pendiente'])
+				 /*$query->whereRaw('LOWER(products.estado) NOT IN (?, ?, ?)', [
+        'desarme','desarme-stock','en transito'])
 					  ->orWhereNull('products.estado');
-			})
+			})*/
 			->whereIn('products.company_id', $company_id)
 			->with([
 				'category', 
