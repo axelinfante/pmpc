@@ -730,7 +730,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 				 //$stock = Product::where("id", $orden_desarme->product_id)->first();
 				 
 				 //if ($stock->estado=="desarme"){
-				 if (in_array($stock->estado, array("desarme","desarme-stock"))) {
+				 if (in_array($stock->estado, array("desarme","desarme-stock",
+				 "pendiente","en transito"))) {
 					$stock->estado = "optimo";
 				  }
 				 
@@ -764,7 +765,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 			}		
 			/// proceso para desarme-stock
-				 if (in_array($stock->estado, array("desarme-stock"))) {
+				 if (in_array($stock->estado, array("desarme-stock","pendiente","en transito"))) {
 					$stock->estado = "optimo";
 					$stock->save();
 				  }
@@ -1040,9 +1041,13 @@ $ordenes = Orden_desarme::with([
             })
             ->editColumn('venta', function ($orden) {
 				
-				if (($orden->producto->estado ?? '') == "desarme-stock"){
+			if (in_array($stock->estado, array("desarme-stock",
+				 "pendiente","en transito"))) {
+				return "Precarga Masiva";
+			  }	
+				/*if (($orden->producto->estado ?? '') == "desarme-stock"){
 						return "Precarga Masiva";
-				}	
+				}*/
                 $in = 'VEN-';
                 if (!isset($orden->venta)) {
                     return '';
@@ -1191,7 +1196,8 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         
         $ventaCompanyId = $orden->venta->company_id ?? null;
 		
-		if (($orden->producto->estado ?? '') == "desarme-stock"){
+		if (in_array($stock->estado, array("desarme","desarme-stock","en transito","pendiente"))){
+		//if (($orden->producto->estado ?? '') == "desarme-stock"){
 						 $ventaCompanyId= $orden->producto->company_id ?? 1;
 				}
 
@@ -1690,7 +1696,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 										//$item_invoice->product_id=$orden_desarme->product_id;
 										//$item_invoice->save();
 
-										 if (in_array($stock->estado, array("desarme","desarme-stock"))) {
+										 if (in_array($stock->estado, array("desarme","desarme-stock","en transito","pendiente"))) {
 											$stock->estado = "optimo";
 										  }
 										 
@@ -1716,7 +1722,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 									}		
 									/// proceso para desarme-stock
-										 if (in_array($stock->estado, array("desarme-stock"))) {
+										 if (in_array($stock->estado, array("desarme-stock","en trnasito","pendiente"))) {
 											$stock->estado = "despacho";
 											$stock->save();
 										  }
