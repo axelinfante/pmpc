@@ -93,8 +93,30 @@ class Invoice extends Model implements AuditableInvoice
 			->where('dr_cr', 'cr');
 	}
 	
-	
 	public static function boot() {
+    parent::boot();
+
+    static::created(function ($model) {
+		//22450 - 24100 
+        // Supongamos que tu base de datos va por el ID 100, 
+        // pero tu próxima factura real debe ser la 5501.
+        // La diferencia (offset) constante que debes sumar es: 5400
+        $offset = 600; 
+
+        $realInvoiceNumber = $model->id + $offset;
+
+        // Actualizamos directamente en la base de datos para evitar bucles de eventos
+        $model->newQuery()
+            ->where($model->getKeyName(), $model->id)
+            ->update(['invoice_number' => $realInvoiceNumber]);
+
+        // Sincronizamos el modelo en memoria
+        $model->setAttribute('invoice_number', $realInvoiceNumber);
+    });
+}
+
+	
+	/*public static function boot() {
     parent::boot();
 
     static::creating(function ($model) {
@@ -137,7 +159,7 @@ class Invoice extends Model implements AuditableInvoice
             $model->invoice_number = $number; 
         });
     });
-}
+}*/
 
 /*	public static function boot() {
     parent::boot();
