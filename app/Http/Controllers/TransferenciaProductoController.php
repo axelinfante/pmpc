@@ -29,35 +29,80 @@ class TransferenciaProductoController extends Controller
 		 if (request()->ajax()) {
 
             //$datos = Transfer::select('*')->withCount('TransfersProduct');
-			$status = $request->query('filtrado', "en transito");
+			/*$status = $request->query('filtrado', "en transito");
 					//d.filtrado = "predefinido";//$('select[name=filtrado]').val();
-			$datos = Transfer::select('*')->withCount([
+			/*$datos = Transfer::select('*')->withCount([
 				'TransfersProduct as pendientes_count' => function ($query) {
 				$query->whereNull('recibido');
 				},
 				'TransfersProduct as recibido_count' => function ($query) {
-					$query->where('recibido', true);
+					$query->where('recibido', true)
 				}
 			])
 			->where("status", $status)
-			->orderBy('id', 'desc');
+			->orderBy('id', 'desc');*/
+			
+			
+			$status = $request->query('filtrado', "en transito");
+			$datos = Transfer::select('transfers.*') 
+				->withCount([
+					'TransfersProduct as pendientes_count' => function ($query) {
+						$query->join('products', 'transfers_products.product_id', '=', 'products.id')
+							  ->whereNull('transfers_products.recibido')
+							  ->whereNull('products.deleted_at'); 
+					},
+					'TransfersProduct as recibido_count' => function ($query) {
+						$query->join('products', 'transfers_products.product_id', '=', 'products.id')
+							  ->where(function ($q) {
+								  $q->where('transfers_products.recibido', true)
+									->WhereNull('products.deleted_at'); 
+							  });
+					},
+					
+					'TransfersProduct as anulado_count' => function ($query) {
+						$query->join('products', 'transfers_products.product_id', '=', 'products.id')
+							  ->where(function ($q) {
+									$q->whereNotNull('products.deleted_at'); 
+							  });
+					},
+				])
+				->where("transfers.status", $status)
+				->orderBy('transfers.id', 'desc');
+			
 			
             return DataTables::eloquent($datos)
 				 ->addColumn('transfers_product_count', function ($data) {
 						$total = $data->pendientes_count + $data->recibido_count;
 				return "<strong>Pendientes:</strong> {$data->pendientes_count}<br>" .
+						"<strong>Anulados:</strong> {$data->anulado_count}<br>" .
 						"<strong>Recibidos:</strong> {$data->recibido_count}<br>" .
 							"<strong>Total:</strong> {$total}";
                 })
+				 ->addColumn('datos_cotizacion', function ($data) {
+				$html = '';
+				$string_productos = $data->TransfersProduct->implode('product_id', ', ');	
+				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega, '%d/%m/%Y'), '') AS fecha_entrega, 
+				COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
+				LEFT JOIN  users t2 ON t2.id= t.user_id
+				WHERE t1.product_id IN (".$string_productos.") 
+				GROUP BY invoice_number");
+
+                if (isset($vend)) {
+                    foreach ($vend as $item) {
+						$html .= ($html != '') ? "----------------------</br>":"";
+                        $html .= "<strong>Cotizacion:</strong> $item->invoice_number" . '<br>';
+                        $html .= "<strong>Vendedor:</strong> $item->vendedor" . '<br>';
+                        $html .= "<strong>Fecha Emision:</strong> $item->fecha_venta" . '<br>';
+                        $html .= "<strong>Fecha Entrega:</strong> $item->fecha_entrega" . '<br>';
+                    }
+                }
+                return $html;
+                })
+				
 				->addColumn('action', function ($data) {
 					return view('backend.accounting.traslado_mercancia.partials.actions', compact('data'));
 				})
-                /*->addColumn('action', function ($data) {
-                    $result = "<a href='" . action('transfers@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
-                    $result .= csrf_field();
-                    return $result;
-                })*/
-				->rawColumns(['transfers_product_count', 'action']) 
+				->rawColumns(['transfers_product_count','datos_cotizacion', 'action']) 
 				->tojson();
         }
 		
@@ -141,14 +186,27 @@ class TransferenciaProductoController extends Controller
 			//return redirect()->route('transfers.index');
     }
 	
-	public function show(Transfer $transfer) {
+	public function show(Transfer $transfer1, $id) {
+
+		 $transfer = Transfer::with([
+				'TransfersProduct.inventario' => function ($query) {
+					$query->withTrashed(); // Permite leer el inventario aunque esté eliminado lógicamente
+				}
+			])->findOrFail($id);
+	
         return view('backend.accounting.traslado_mercancia.show', compact('transfer'));
     }
 	
 	 public function edit(Request $request, $id)
     {
 		
-		$transfer = Transfer::with('TransfersProduct.inventario')->findOrFail($id);
+		//$transfer = Transfer::with('TransfersProduct.inventario')->findOrFail($id);
+		
+		$transfer = Transfer::with([
+    'TransfersProduct.inventario' => function ($query) {
+        $query->withTrashed();
+    }
+])->findOrFail($id);
 
 		$almacenes = DB::table('lugar_entregas')
 			->select('id', 'nombre') 
@@ -200,9 +258,18 @@ class TransferenciaProductoController extends Controller
 				
 				$transfer->save();
 				
-				$itemsFaltantes = TransfersProduct::where('transfers_id', $transfer->id)
+				/* $itemsFaltantes = TransfersProduct::where('transfers_id', $transfer->id)
 				->whereNull('recibido')
 				->pluck('product_id')
+				->toArray(); */
+				
+				$itemsFaltantes = TransfersProduct::join('products', 'transfers_products.product_id', '=', 'products.id')
+				->where('transfers_products.transfers_id', $transfer->id)
+				->where(function ($query) {
+					$query->whereNull('transfers_products.recibido') // Faltantes
+							->WhereNull('products.deleted_at'); 
+				})
+				->pluck('transfers_products.product_id')
 				->toArray();
 
 
@@ -310,7 +377,46 @@ class TransferenciaProductoController extends Controller
 
         if ($request->ajax()) {
 			
-			 $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+				$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+
+				$products = Product::query()
+					->select([
+						'products.id',
+						'products.nro_interno',
+						'products.item_id', 
+						'products.marca_modelo',
+						'products.nro_oblea',
+						'products.idDeposito',
+						'products.ubicacion',
+						'products.fecha_ultimogiro',
+						'cars.tipo_vehiculo', 
+						'cars.dominio', 
+						'cars.motor_nro'
+					])
+					->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+					->whereNull('products.car_id') 
+					->whereIn('products.company_id', $company_id)
+					->where(function ($query) {
+						$query->where('products.stock', '>=', 1) // Trae los que tienen stock disponible
+							  ->orWhereNull('products.fecha_ingreso_a_stock'); // O los que no han ingresado formalmente a stock
+					})
+					->when($request->almacen_id, function ($query, $almacenId) {
+							return $query->where('products.idDeposito', $almacenId);
+					});
+					/*->when($request->almacen_id, function ($query, $almacenId) {
+						   return $query->where('products.idDeposito', $almacenId);
+					}, function ($query) {
+						   return $query->where(function ($subQuery) {
+							$subQuery->whereNull('products.idDeposito')
+									 ->orWhere('products.idDeposito', '=', '');
+						});
+					});*/
+					
+
+				$products->orderBy('products.nro_interno', 'asc');
+
+			
+			/* $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 						$products = Product::query()
 						->select([
 							'products.id',
@@ -343,7 +449,7 @@ class TransferenciaProductoController extends Controller
 							return $query->where('products.idDeposito', $almacenId);
 						});
 
-					$products->orderBy('products.nro_interno', 'asc');
+					$products->orderBy('products.nro_interno', 'asc');*/
 					
 
             return DataTables::of($products)
@@ -383,8 +489,15 @@ class TransferenciaProductoController extends Controller
 	
 	 public function descargarGuiaMasiva($id)
     {
-		$datos = Transfer::select('*')
-		->findOrFail($id);
+		/*$datos = Transfer::select('*')
+		->findOrFail($id);*/
+		
+		$datos = Transfer::with([
+    'TransfersProduct.inventario' => function ($query) {
+        $query->withTrashed();
+    }
+])->findOrFail($id);
+		
         $depositoOrigen = \DB::table('lugar_entregas')->where('id', $datos->almacen_origen_id)->first();
         $depositoDestino = \DB::table('lugar_entregas')->where('id', $datos->almacen_destino_id)->first();
 		//return view('backend.accounting.traslado_mercancia.guia_traslado_masivo', compact('datos', 'depositoOrigen','depositoDestino'));

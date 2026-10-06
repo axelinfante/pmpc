@@ -198,7 +198,7 @@
             @if(isset($datos->TransfersProduct) && count($datos->TransfersProduct) > 0)
                 @foreach($datos->TransfersProduct as $items)
                     <tr>
-                         <td>{{ $items->product_id ?? '' }}</td>
+                         <td>{{ $items->product_id ?? '' }} {{ ($items->inventario->deleted_at) ? 'Anulado':'' }} </td>
                                         <td>{{ $items->inventario->item->item_name  ?? '' }}</td>
 										<td>{{ nroInternoAlias($items->inventario->company_id, $items->inventario->tipo_vehiculo, $items->inventario->nro_interno)  }}</td>
 										<td>{{ $items->inventario->nro_oblea ?? '' }}</td>
