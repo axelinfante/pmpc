@@ -106,7 +106,7 @@
 								@foreach($transfer->TransfersProduct as $items)
                                     <tr>	
                                         <td>
-										@if(!$items->recibido)
+										@if(!$items->recibido && !$items->inventario->deleted_at)
 											<input name="bank_check" type="checkbox" class="fila-seleccionada" data-id="{{ $items->id }}">
 										@endif
 										</td>
@@ -116,6 +116,8 @@
 										<td>{{ $items->inventario->nro_oblea ?? '' }}</td>
 										<td> @if($items->recibido)
 											<span class="badge badge-success">Recibido</span>
+										@elseif($items->inventario->deleted_at)
+											<span class="badge badge-danger">Anulado</span>
 										@else
 											<span class="badge badge-warning">Pendiente</span>
 										@endif</td>

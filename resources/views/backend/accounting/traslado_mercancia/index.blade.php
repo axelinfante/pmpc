@@ -33,6 +33,7 @@
 						<th>Referencia</th>
 						<th>Estado</th>
 						<th>Productos</th>
+						<th>Datos</th>
 						<th class="text-center notexport">{{ _lang('Action') }}</th> 
 					  </tr>
 					</thead>
@@ -90,6 +91,7 @@
                     { data: 'reference', name: 'reference' },
                     { data: 'status', name: 'status' },
                     { data: 'transfers_product_count', name: 'transfers_product_count' },
+                    { data: 'datos_cotizacion', name: 'datos_cotizacion' },
                     { data: 'action', name: 'action', orderable: false}
 					],
 				});

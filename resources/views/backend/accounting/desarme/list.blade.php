@@ -110,10 +110,14 @@
 						<div class="col-lg-6  mb-3">	
 						<div class="form-group">
 									<label for="company_id">Compañia <span class="text-danger"></span></label>
-									<select {{ count($company) == 1  ? 'readonly':""; }} class="form-control" name="company_id" id="company_id">
+									<select  {{ (isset($company) && is_countable($company) && count($company) == 1) ? 'readonly' : '' }}  class="form-control" name="company_id" id="company_id">
+									 @if(isset($company) && is_countable($company))
 								     @foreach ($company as $itemci)
 										<option value="{{ $itemci->id }}">{{  $itemci->business_name }}</option>
 									 @endforeach
+										@else
+											<option value="">No hay empresas disponibles</option>
+										@endif
 									</select>
 						</div>
 					</div>
@@ -184,12 +188,13 @@
 
 @section('js-script')
     <script>
-        var adminDesarme = {{ (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial') ? 'true' : 'false' }};
-		
+//        var adminDesarme = {{ (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial') ? 'true' : 'false' }};
+		var adminDesarme = {{ (auth()->check() && (strtolower(auth()->user()->role->name) == 'administrativo de desarme' || strtolower(auth()->user()->role->name) == 'gerencial')) ? 'true' : 'false' }};
+
     </script>
 
     <script>
-			const usuario_json = JSON.parse('<?php echo $usuario; ?>');
+			const usuario_json = @json($usuario ?? null);
 				 function mostrarPuestos() {
 			 	var url = "{{route('puestos.index')}}";
 						$.ajax({

@@ -5,6 +5,8 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableTable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Product extends Model implements AuditableTable
 {
@@ -13,7 +15,7 @@ class Product extends Model implements AuditableTable
      *
      * @var string
      */
-    use Auditable;
+    use SoftDeletes, Auditable;
 
     protected $table = 'products';
 
