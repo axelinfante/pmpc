@@ -556,6 +556,7 @@ class InvoiceController extends Controller
 				$product->carga_rapida = 0;
 				$product->company_id = $car->company_id;
 				$product->user_id = auth()->user()->id;
+				$product->idDeposito = 17;
 			
 			if ($item_id  == "1612"  || strtoupper($product->item->item_name)=="MOTOR SEMIARMADO") {
                 $product->nro_motor = $car->motor_nro ?? '';
@@ -1467,7 +1468,7 @@ class InvoiceController extends Controller
 
                 //Notificar a vendedor
                 if ($invoice->user_id != null) {
-                    Notification::send($invoice->vendedor, new InvoiceUbicationChange($invoice));
+                    Notification::send($invoice->user_id, new InvoiceUbicationChange($invoice));
                 }
             }
         }
