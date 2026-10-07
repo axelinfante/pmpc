@@ -353,7 +353,7 @@ class Select2Controller extends Controller
         ->whereNull('products.allCar')
         ->where('products.stock', 1)
         ->where(function ($q) {
-				$q->whereNotNull('products.fecha_ingreso_a_stock');
+				$q->whereNotNull('products.fecha_desarme_a_stock');
             //$q->where('products.estado', '!=', 'descompuesto')
 				//$q->whereNotIn('products.estado', ['desarme', 'desarme-stock','descompuesto','en transito','pendiente'])
               //->orWhereNull('products.estado');

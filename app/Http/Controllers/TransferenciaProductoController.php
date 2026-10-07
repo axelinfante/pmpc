@@ -67,16 +67,41 @@ class TransferenciaProductoController extends Controller
 					},
 				])
 				->where("transfers.status", $status)
+				//->having('pendientes_count', '>', 0) 
 				->orderBy('transfers.id', 'desc');
 			
 			
             return DataTables::eloquent($datos)
 				 ->addColumn('transfers_product_count', function ($data) {
+							   $lineas = [];
+								if ($data->pendientes_count > 0) {
+									$lineas[] = "<strong>Pendientes:</strong> {$data->pendientes_count}";
+								}
+								if ($data->anulado_count > 0) {
+									$lineas[] = "<strong>Anulados:</strong> {$data->anulado_count}";
+								}
+								if ($data->recibido_count > 0) {
+									$lineas[] = "<strong>Recibidos:</strong> {$data->recibido_count}";
+								}
+								$total = $data->pendientes_count + $data->anulado_count + $data->recibido_count;
+								if ($total > 0) {
+									$lineas[] = "<strong>Total:</strong> {$total}";
+								}
+								if (empty($lineas)) {
+									return ""; 
+								}
+								return implode('<br>', $lineas);
+					 
+/*					 
+					 
+					 
+					 
+					 
 						$total = $data->pendientes_count + $data->recibido_count;
 				return "<strong>Pendientes:</strong> {$data->pendientes_count}<br>" .
 						"<strong>Anulados:</strong> {$data->anulado_count}<br>" .
 						"<strong>Recibidos:</strong> {$data->recibido_count}<br>" .
-							"<strong>Total:</strong> {$total}";
+							"<strong>Total:</strong> {$total}";*/
                 })
 				 ->addColumn('datos_cotizacion', function ($data) {
 				$html = '';
@@ -200,19 +225,81 @@ class TransferenciaProductoController extends Controller
 	 public function edit(Request $request, $id)
     {
 		
+		
+				$transfer = DB::transaction(function () use ($id) {
+					$transferData = Transfer::with([
+						'TransfersProduct.inventario' => function ($query) {
+							$query->withTrashed();
+						}
+					])
+					->withCount([
+						'TransfersProduct as pendientes_count' => function ($query) {
+							$query->join('products', 'transfers_products.product_id', '=', 'products.id')
+								  ->whereNull('transfers_products.recibido')
+								  ->whereNull('products.deleted_at'); 
+						}
+					])
+					->findOrFail($id);
+
+							if ($transferData->pendientes_count == 0) {
+						$transferData->update([
+							'status' => 'entregado' 
+						]);
+						
+					return redirect()->back()->with('success', '¡El proceso ya no tiene productos pendientes!')->send();	
+					}
+					return $transferData; 
+				});
+
+				$almacenes = DB::table('lugar_entregas')
+					->select('id', 'nombre') 
+					->get();
+
+				return view('backend.accounting.traslado_mercancia.edit', compact('transfer', 'almacenes'));
+
+		
 		//$transfer = Transfer::with('TransfersProduct.inventario')->findOrFail($id);
 		
-		$transfer = Transfer::with([
+/*		$transfer = Transfer::with([
     'TransfersProduct.inventario' => function ($query) {
         $query->withTrashed();
     }
-])->findOrFail($id);
+])->findOrFail($id);*/
+
+
+
+	/* DB::transaction(function () use ($id) {
+				$transfer = Transfer::with([
+					'TransfersProduct.inventario' => function ($query) {
+						$query->withTrashed();
+					}
+				])
+				->withCount([
+					'TransfersProduct as pendientes_count' => function ($query) {
+						$query->join('products', 'transfers_products.product_id', '=', 'products.id')
+							  ->whereNull('transfers_products.recibido')
+							  ->whereNull('products.deleted_at'); 
+					}
+				])
+				->findOrFail($id);
+
+				// 2. Evaluar si el conteo de pendientes llegó a cero
+				if ($transfer->pendientes_count == 0) {
+					$transfer->update([
+						'status' => 'culminado' // O 'culminada' según manejes el string en tu BD
+					]);
+					return redirect()->back()->with('success', '¡Proceso no tiene productos pendiente !');	
+				}
+			});
+
+
+
 
 		$almacenes = DB::table('lugar_entregas')
 			->select('id', 'nombre') 
 			->get();
 
-		return view('backend.accounting.traslado_mercancia.edit', compact('transfer', 'almacenes'));
+		return view('backend.accounting.traslado_mercancia.edit', compact('transfer', 'almacenes')); */
     }
 	
 	 public function update(Request $request, $id)
@@ -398,7 +485,7 @@ class TransferenciaProductoController extends Controller
 					->whereIn('products.company_id', $company_id)
 					->where(function ($query) {
 						$query->where('products.stock', '>=', 1) // Trae los que tienen stock disponible
-							  ->orWhereNull('products.fecha_ingreso_a_stock'); // O los que no han ingresado formalmente a stock
+							  ->orWhereNull('products.fecha_desarme_a_stock'); // O los que no han ingresado formalmente a stock
 					})
 					->when($request->almacen_id, function ($query, $almacenId) {
 							return $query->where('products.idDeposito', $almacenId);
@@ -501,7 +588,29 @@ class TransferenciaProductoController extends Controller
         $depositoOrigen = \DB::table('lugar_entregas')->where('id', $datos->almacen_origen_id)->first();
         $depositoDestino = \DB::table('lugar_entregas')->where('id', $datos->almacen_destino_id)->first();
 		//return view('backend.accounting.traslado_mercancia.guia_traslado_masivo', compact('datos', 'depositoOrigen','depositoDestino'));
-        $pdf = Pdf::loadView('backend.accounting.traslado_mercancia.guia_traslado_masivo', compact('datos', 'depositoOrigen','depositoDestino'));
+		
+		$datos_cotizacion = '';
+				$string_productos = $datos->TransfersProduct->implode('product_id', ', ');	
+				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega, '%d/%m/%Y'), '') AS fecha_entrega, 
+				COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
+				LEFT JOIN  users t2 ON t2.id= t.user_id
+				WHERE t1.product_id IN (".$string_productos.") 
+				GROUP BY invoice_number");
+
+                if (isset($vend)) {
+                    foreach ($vend as $item) {
+						$datos_cotizacion .= ($datos_cotizacion != '') ? "----------------------</br>":"";
+                        $datos_cotizacion .= "<strong>Cotizacion:</strong> $item->invoice_number" . '<br>';
+                        $datos_cotizacion .= "<strong>Vendedor:</strong> $item->vendedor" . '<br>';
+                        $datos_cotizacion .= "<strong>Fecha Emision:</strong> $item->fecha_venta" . '<br>';
+                        $datos_cotizacion .= "<strong>Fecha Entrega:</strong> $item->fecha_entrega" . '<br>';
+                    }
+                }
+         // $html;
+		
+		//$datos_cotizacion=$string_productos;
+		
+        $pdf = Pdf::loadView('backend.accounting.traslado_mercancia.guia_traslado_masivo', compact('datos', 'depositoOrigen','depositoDestino','datos_cotizacion'));
 
         // Configuración de tamaño de hoja A4 vertical
         $pdf->setPaper('a4', 'portrait');

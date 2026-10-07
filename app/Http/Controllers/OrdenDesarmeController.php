@@ -528,7 +528,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 
 			}		
-			$stock->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+			$stock->fecha_desarme_a_stock = date('Y-m-d H:i:s');
 			$stock->save();
 			/// proceso para desarme-stock
 			//	 if (in_array($stock->estado, array("desarme-stock","pendiente","en transito"))) {
@@ -563,7 +563,10 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
 			Historial_ordenes_desarme::create($orden);
 			Product::where('id', $orden['product_id'])->delete();
-			Orden_desarme::where('id', $id)->delete();
+			//Orden_desarme::where('id', $id)->delete();
+			Orden_desarme::where('id', $id)->update([
+				'estado' => 'anulada', 'procesar' => 0 // O 'Si', según el tipo de columna en tu base de datos
+			]);
 	});
 		
         //
@@ -1502,7 +1505,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 									/// proceso para desarme-stock
 										// if (in_array($stock->estado, array("desarme-stock","en trnasito","pendiente"))) {
 										//	$stock->estado = "despacho";
-											$stock->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+											$stock->fecha_desarme_a_stock = date('Y-m-d H:i:s');
 											$stock->save();
 										  //}
 								}
