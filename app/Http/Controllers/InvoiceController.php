@@ -692,8 +692,23 @@ class InvoiceController extends Controller
      */
     public function show(Request $request, $id)
     {
-		
-		$invoice = Invoice::with(['retiros_cliente_origen'])
+			/*$invoice = Invoice::where("id", $id)
+		->with([
+			'invoice_items' => function ($q) {
+				$q->with(['product' => function ($queryProducto) {
+					$queryProducto->withTrashed(); // <-- Aquí se activa para los productos eliminados
+				}]);
+			}
+		])
+		->first();*/
+		$invoice = Invoice::with([
+			'retiros_cliente_origen',
+			'invoice_items' => function ($q) {
+            $q->with(['product' => function ($queryProducto) {
+                $queryProducto->withTrashed(); // <-- Trae productos borrados del catálogo
+				}]);
+			}
+			])
 				->select(
 				'invoices.*', 
 				DB::raw("CASE 
@@ -757,9 +772,21 @@ class InvoiceController extends Controller
      */
     public function edit(Request $request, $id)
     {
-        $invoice = Invoice::where("id", $id)->with('invoice_items', function ($q) {
-            $q->with('product');
-        })->first(); //->where("company_id", company_id())
+/*        $invoice = Invoice::where("id", $id)->with('invoice_items', function ($q) {
+			$q->withTrashed() 
+            ->with('product');
+        })->first(); //->where("company_id", company_id())*/
+		
+		$invoice = Invoice::where("id", $id)
+		->with([
+			'invoice_items' => function ($q) {
+				$q->with(['product' => function ($queryProducto) {
+					$queryProducto->withTrashed(); // <-- Aquí se activa para los productos eliminados
+				}]);
+			}
+		])
+		->first();
+		
         $status = $this->status;
 
         $rol = Role::where('name', 'Vendedor')->first()->id;
@@ -1490,6 +1517,7 @@ class InvoiceController extends Controller
      */
     public function destroy($id, Request $request)
     {
+		dd("11");
 		$resultado=$this->nota_debito($id, $request);
 		return redirect('invoices')->with('success', _lang('Invoice deleted sucessfully'));
     }
@@ -1541,46 +1569,7 @@ class InvoiceController extends Controller
     ->values()
     ->toArray();
 
-/*  $result = Invoice::where('client_id', $invoice->client_id)
-    ->where('id', '!=', $id) 
-    ->withSum('payments as total_paid', 'base_amount')
-    ->withSum('salesReturns as total_dev', 'grand_total')
-	->withSum('retiros_cliente as total_retiro', 'amount')
-	->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
-    ->get()
-    ->filter(function ($inv) {
-        $paid         = (float) ($inv->total_paid ?? 0);
-        $paidDev      = (float) ($inv->total_dev ?? 0);
-        $retiro       = (float) ($inv->total_retiro ?? 0);
-        $retiroOrigen = (float) ($inv->total_retiro_origen ?? 0);
 
-        $saldo = ($inv->grand_total + $retiro + $retiroOrigen) - ($paid + $paidDev);
-        $inv->saldo_calculado = $saldo;
-
-        return $saldo < 0;
-    })
-    ->map(function ($inv) {
-        $montoDeseable = abs($inv->saldo_calculado);
-
-        return [
-            'idCotizacion'   => $inv->id,
-            'paid_coti'      => $inv->invoice_number,
-            'paid_dev'       => $inv->saldo_calculado,
-            'monto_deseable' => $montoDeseable,
-            'mensaje'        => 'La factura #' . $inv->invoice_number . ' posee un saldo a favor disponible de $' . number_format($montoDeseable, 2) . '.',
-        ];
-    })
-    ->values()
-    ->toArray();
-	
-	dd($result);
-	/*$product_returns = ProductReturn::select('invoice_id','status')
-		->where('status','pendiente')->whereIn("company_id",$company_id)->groupBy('invoice_id'); */
-	
- 
-    //$mainInvoicePaid = $invoices->find($id)->transaction->sum('base_amount');
-	//$mainInvoicePaid = $invoice->payments()->sum('base_amount');
-	//$mainInvoicePaid = (float) $invoice->payments()->sum('base_amount');
 	 $mainInvoiceReturn = (float) $invoice->payments()->sum('base_amount');
 	 $mainInvoicePaid = (float) $invoice->salesReturns()->sum('grand_total');
 	 $mainInvoiceRetiros = (float) $invoice->retiros_cliente()->sum('amount');
@@ -1592,54 +1581,7 @@ class InvoiceController extends Controller
     }
 }
 
-    /* public function create_payment(Request $request, $id)
-    {
-        $invoice = Invoice::where("id", $id)->first(); //->where("company_id", company_id())
-		//dd($invoice);
-
-        $invoices = Invoice::where('client_id', $invoice->client_id)->get();
-        //buscar el saldo y la cotizacion cancelada con saldo a favor
-        $result = [];
-        foreach ($invoices as $invoice_) :
-
-
-            $paid = 0;
-            foreach ($invoice_->transaction as $pagos) {
-                if ($pagos->type == 'income') {
-                    $paid = $paid + $pagos->base_amount;
-                }
-            }
-            $html = "";
-            $paid_dev = 0;
-            $product_return_ = DB::select("select invoices.id,invoices.invoice_number,invoice_items.product_id,products_returns.product_id as productoid, invoice_items.sub_total from `invoices` inner join `invoice_items` on `invoice_items`.`invoice_id` = `invoices`.`id` left join `products_returns` on products_returns.invoice_id=invoices.id and  products_returns.product_id=invoice_items.product_id AND products_returns.status='procesada' WHERE `invoices`.`related_to` = 'contacts' AND invoices.id IN ($invoice_->id)
-            GROUP BY invoices.id,invoices.invoice_number,invoice_items.product_id");
-
-            if (isset($product_return_)) {
-                //$html='Anulado</br>';
-                foreach ($product_return_  as $pieza) {
-                    if (!is_null($pieza->productoid)) {
-                        $paid_dev = $paid_dev + $pieza->sub_total;
-                    }
-                }
-
-                $paid_to = $invoice_->grand_total - ($paid + $paid_dev);
-                if ($paid_to < 0) {
-                    $result[] = [
-                        'idCotizacion' => $invoice_->id,
-                        'paid_dev' => $paid_to
-                    ];
-                }
-            }
-
-        endforeach;
-		
-
-           // dd($result,$invoice);
-        if ($request->ajax()) {
-            return view('backend.accounting.invoice.modal.create_payment', compact('invoice', 'id', 'result'))->with(['paid' => $paid]);
-        }
-    } */
-
+   
     public function store_payment(Request $request)
     {
 		
@@ -2274,6 +2216,7 @@ $validator = Validator::make($request->all(), [
 	
 	public function mark_as_cancelled($id, Request $request)
     {
+		dd("112222222");
         $observacion = $request->get('note');
         $invoice = Invoice::where("id", $id)->first(); //->where("company_id", company_id())
         if ($invoice) {
@@ -2330,18 +2273,22 @@ $validator = Validator::make($request->all(), [
 									}	
 									
 									//
-									
-									$productReturn = new ProductReturn();
-									$productReturn->return_date = $salesReturn->return_date;
-									$productReturn->invoice_id = $salesReturn->invoice_id;
-									$productReturn->product_id = $p_item->product_id;
-									$productReturn->quantity =  $p_item->quantity;
-									$productReturn->note = $observacion;
-									$productReturn->status = $estatus;
-									$productReturn->company_id = $p_item->company_id;
-									$productReturn->return_number =  $salesReturn->id;
-									$productReturn->save();
-									
+									 if (is_null($p_item->product->fecha_desarme_a_stock))
+									 {
+										Product::where('id', $p_item->product_id)->delete();
+									 }else{
+										$productReturn = new ProductReturn();
+										$productReturn->return_date = $salesReturn->return_date;
+										$productReturn->invoice_id = $salesReturn->invoice_id;
+										$productReturn->product_id = $p_item->product_id;
+										$productReturn->quantity =  $p_item->quantity;
+										$productReturn->note = $observacion;
+										$productReturn->status = $estatus;
+										$productReturn->company_id = $p_item->company_id;
+										$productReturn->return_number =  $salesReturn->id;
+										$productReturn->save();
+									 }
+									 
 									//Orden_desarme::where('id_venta', $invoice->id)->where('product_id', $p_item->product_id)->delete();
 									
 									Orden_desarme::where('id_venta', $invoice->id)->where('product_id', $p_item->product_id)
@@ -4553,14 +4500,19 @@ return Datatables::eloquent($comisiones)
         $observacion = $request->input('observacion-text');
         $coti = $request->input('id_coti');
 		
+		
 		DB::beginTransaction();
 		try {
-		//dd($estatus);
-        if (!empty($id)) {
+         if (!empty($id)) {
 			$invoice = Invoice::where("id", $coti)->first();
 			if  ($invoice->status == 'Canceled'){
+				DB::rollBack();
 				return redirect()->back()->with('error', 'Ya se encuentra anulada'); 
 			}
+			
+		//$string_productos = $invoice->invoice_items->implode('product_id', ', ');	
+		//DB::rollBack();
+		//dd($string_productos);	
 			
 		if ($invoice) {
 			
@@ -4601,27 +4553,35 @@ return Datatables::eloquent($comisiones)
 									$salesReturnItem->save();
 									$estatus_item='procesada';
 									//aumenta stock
+								
 									if ($estatus=="Item inventario"){
 										Product::where('id', $p_item->product_id)->update(['stock' => 1]);
 									}else{
 										Product::where('id', $p_item->product_id)->update(['stock' => 0]);
 										$estatus_item='pendiente';
 									}	
-									//
-									$productReturn = new ProductReturn();
-									$productReturn->return_date = $salesReturn->return_date;
-									$productReturn->invoice_id = $salesReturn->invoice_id;
-									$productReturn->product_id = $p_item->product_id;;
-									$productReturn->quantity =  $p_item->quantity;
-									$productReturn->note = $observacion;
-									$productReturn->status = $estatus_item;
-									$productReturn->company_id = $p_item->company_id;
-									$productReturn->return_number =  $salesReturn->id;
-									$productReturn->save();
+									//---
 									
-									Orden_desarme::where('id_venta', $invoice->id)->where('product_id', $p_item->product_id)
-									->update(['estado' => 'anulada','procesar' => 0,'updated_at' => now()]);
-									
+									 if (is_null($p_item->product->fecha_desarme_a_stock))
+									 {
+										Product::where('id', $p_item->product_id)->delete();
+									 }else{
+										$productReturn = new ProductReturn();
+										$productReturn->return_date = $salesReturn->return_date;
+										$productReturn->invoice_id = $salesReturn->invoice_id;
+										$productReturn->product_id = $p_item->product_id;;
+										$productReturn->quantity =  $p_item->quantity;
+										$productReturn->note = $observacion;
+										$productReturn->status = $estatus_item;
+										$productReturn->company_id = $p_item->company_id;
+										$productReturn->return_number =  $salesReturn->id;
+										$productReturn->save();
+									 }	
+										
+										Orden_desarme::where('id_venta', $invoice->id)->where('product_id', $p_item->product_id)
+										->update(['estado' => 'anulada','procesar' => 0,'updated_at' => now()]);
+									 	
+									//----
 									
 									DB::insert("INSERT INTO anulados_comisions(invoiceitem_id,invoice_id,item_id,description,quantity,unit_cost,discount,tax_method,tax_id,tax_amount,sub_total,company_id,idCar,product_id,observaciones,estatus,monto_anulado) SELECT id,invoice_id,item_id,description,quantity,unit_cost,discount,tax_method,tax_id,tax_amount,sub_total,company_id,idCar,product_id,'{$observacion}','{$estatus}',sub_total FROM invoice_items where id={$p_item->id}");
 									
@@ -5505,6 +5465,10 @@ $totalC2 = $results->total_c2;*/
 									Product::where('id', $p_item->product_id)->update(['stock' => 0]);
 									$estatus_item='pendiente';
 									//
+									 if (is_null($p_item->product->fecha_desarme_a_stock))
+									 {
+										Product::where('id', $p_item->product_id)->delete();
+									 }else{
 									$productReturn = new ProductReturn();
 									$productReturn->return_date = $salesReturn->return_date;
 									$productReturn->invoice_id = $salesReturn->invoice_id;
@@ -5515,6 +5479,7 @@ $totalC2 = $results->total_c2;*/
 									$productReturn->company_id = $p_item->company_id;
 									$productReturn->return_number =  $salesReturn->id;
 									$productReturn->save();
+									 }
 									
 									Orden_desarme::where('id_venta', $invoice->id)->where('product_id', $p_item->product_id)
 									->update(['estado' => 'anulada','procesar' => 0,'updated_at' => now()]);
@@ -5546,21 +5511,6 @@ $totalC2 = $results->total_c2;*/
 				}
 			}// final
 			DB::commit();
-
-			// Recalcular despues de commit para que el FIFO vea el saldo correcto
-		//	if (isset($invoice) && $invoice) {
-		//	    \App\CuentaCorriente::recalcular($invoice->client_id);
-		//	}
-
-			// FIFO automático: reimputar saldo a favor a facturas impagas (excluir la factura anulada)
-		/*	try {
-			    if (isset($invoice) && $invoice) {
-			        \App\CuentaCorriente::reimputarSaldoFavorFIFO($invoice->client_id, "reimputacion FIFO de coti {$invoice->invoice_number}", $invoice->id);
-			    }
-			} catch (\Throwable $e) {
-			    \Log::error('Error en FIFO reimputation: ' . $e->getMessage());
-			}
-*/
 			return redirect('invoices')->with('success', _lang('Invoice deleted sucessfully'));
 		} catch (Throwable $e) {
             DB::rollBack();

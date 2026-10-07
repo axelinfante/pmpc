@@ -71,7 +71,7 @@ class ProductController extends Controller
 			->whereNull('products.car_id') 
 			->where('products.stock', '>=', 1)
 			->where(function ($query) {
-				$query->whereNotNull('products.fecha_ingreso_a_stock')
+				$query->whereNotNull('products.fecha_desarme_a_stock')
 				->whereNull('products.deleted_at');
 				//$query->whereNotNull('products.fecha_ingreso_a_stock');
 				//$query->whereNotIn('products.estado', ['desarme', 'desarme-stock','en transito','pendiente'])
@@ -1112,7 +1112,7 @@ public function store(Request $request)
             $product->user_id = auth()->user()->id;
 
             if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
-               // $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+                $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
             };
 			
 			
@@ -1416,7 +1416,7 @@ public function store(Request $request)
                 $product->fecha_ultimogiro = $request->filled('fecha_ultimogiro') ? $request->input('fecha_ultimogiro') : null;
 
                 if ($product->ubicacion != ""  && (is_null($product->fecha_ingreso_a_stock))) {
-                 //   $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
+                    $product->fecha_ingreso_a_stock = date('Y-m-d H:i:s');
                 };
 
                 $product->mercado_libre = $request->input('mercado_libre') ?? 0;
