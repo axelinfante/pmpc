@@ -182,7 +182,14 @@
             <td style="text-transform: uppercase; font-weight: bold; color: #0d6efd;">{{ $datos->status ?? 'Pendiente' }}</td>
         </tr>
     </table>
-
+	@if($datos_cotizacion!="") 
+	<div class="section-title">Información Cotización</div>
+    <table class="info-table">
+        <tr>
+            <td>{!! $datos_cotizacion !!}</td>
+        </tr>
+    </table>
+	@endif 
     <!-- Tabla Dinámica con la carga masiva de productos -->
     <div class="section-title">Listado de Artículos Solicitados (Total: {{ isset($datos->TransfersProduct) ? $datos->TransfersProduct->count() : 0 }})</div>
     <table class="items-table">
