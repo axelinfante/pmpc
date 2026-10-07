@@ -1517,7 +1517,7 @@ class InvoiceController extends Controller
      */
     public function destroy($id, Request $request)
     {
-		dd("11");
+//		dd("11");
 		$resultado=$this->nota_debito($id, $request);
 		return redirect('invoices')->with('success', _lang('Invoice deleted sucessfully'));
     }
@@ -2216,7 +2216,7 @@ $validator = Validator::make($request->all(), [
 	
 	public function mark_as_cancelled($id, Request $request)
     {
-		dd("112222222");
+//		dd("112222222");
         $observacion = $request->get('note');
         $invoice = Invoice::where("id", $id)->first(); //->where("company_id", company_id())
         if ($invoice) {
