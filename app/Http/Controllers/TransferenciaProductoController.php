@@ -225,8 +225,7 @@ class TransferenciaProductoController extends Controller
 	 public function edit(Request $request, $id)
     {
 		
-		
-				$transfer = DB::transaction(function () use ($id) {
+			$transfer = DB::transaction(function () use ($id) {
 					$transferData = Transfer::with([
 						'TransfersProduct.inventario' => function ($query) {
 							$query->withTrashed();
@@ -241,7 +240,34 @@ class TransferenciaProductoController extends Controller
 					])
 					->findOrFail($id);
 
-							if ($transferData->pendientes_count == 0) {
+					if ($transferData->pendientes_count == 0) {
+						// Asegúrate de que el modelo guarde el estado correcto
+						$transferData->update([
+							'status' => 'entregado' // Si tu base de datos usa 'culminado', cámbialo aquí
+						]);
+						//return redirect()->back()->with('success', '¡El proceso ya no tiene productos pendientes!')->send();	
+					}
+					
+					return $transferData; 
+				});
+		
+		
+				/*$transfer = DB::transaction(function () use ($id) {
+					$transferData = Transfer::with([
+						'TransfersProduct.inventario' => function ($query) {
+							$query->withTrashed();
+						}
+					])
+					->withCount([
+						'TransfersProduct as pendientes_count' => function ($query) {
+							$query->join('products', 'transfers_products.product_id', '=', 'products.id')
+								  ->whereNull('transfers_products.recibido')
+								  ->whereNull('products.deleted_at'); 
+						}
+					])
+					->findOrFail($id);
+
+				if ($transferData->pendientes_count == 0) {
 						$transferData->update([
 							'status' => 'entregado' 
 						]);
@@ -249,7 +275,7 @@ class TransferenciaProductoController extends Controller
 					return redirect()->back()->with('success', '¡El proceso ya no tiene productos pendientes!')->send();	
 					}
 					return $transferData; 
-				});
+				});*/
 
 				$almacenes = DB::table('lugar_entregas')
 					->select('id', 'nombre') 
@@ -329,29 +355,31 @@ class TransferenciaProductoController extends Controller
 				
 				
 				 $products = $request->input('product_ids');
-				
-								/*
-				Product::whereIn('id',$products)
+				 
+				 Product::whereIn('id',$products)
 				->update([
 					'idDeposito' => $transfer->almacen_destino_id,
 					'estado' => ''
-				]); */
+				]); 
 				
 				
-
-					if ($request->has('confirmar_recepcion') && $request->input('confirmar_recepcion') == '1') {
-						Product::whereIn('id', $products)->update([
-							'idDeposito' => $transfer->almacen_destino_id,
-							'estado'     => '', 
+				if ($request->has('confirmar_recepcion') && $request->input('confirmar_recepcion') == '1') {
+					
+					Product::from('products as t1')
+					->withTrashed() 
+					->join('ordenes_desarme as t2', 't2.product_id', '=', 't1.id')
+					->whereIn('t1.id', $products)
+					->whereNull('t1.fecha_desarme_a_stock')
+					->whereNull('t1.deleted_at')
+					->update([
+						't1.fecha_desarme_a_stock' => date('Y-m-d H:i:s')
+						]);
+						/* Product::whereIn('id', $products)->whereNull('fecha_desarme_a_stock')->whereNull('t1.deleted_at')->update([
 							'fecha_desarme_a_stock' => date('Y-m-d H:i:s')
-						]);
-					} else {
-						Product::whereIn('id', $products)->update([
-							'idDeposito' => $transfer->almacen_destino_id,
-							'estado'     => '' 
-						]);
-
-					}
+						]);*/
+				};
+					
+				
 				
 				$transfer->TransfersProduct()->whereIn('product_id', $products)->update([
 						'recibido' => true,
