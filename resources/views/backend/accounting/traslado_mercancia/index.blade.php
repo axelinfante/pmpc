@@ -94,7 +94,6 @@
                       '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
                       '<option value="en transito">En transito</option>' +
                       '<option value="entregado">Entregado</option>' +
-                      '<option value="stock">Pendiente ingreso a stock</option>' +
                       '</select>',
 					className: 'botones-custom',
 					action: function ( e, dt, node, config ) {
