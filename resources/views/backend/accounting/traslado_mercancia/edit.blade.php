@@ -170,12 +170,30 @@
             </div>
         </div>
 
-<!-- Footer de la Tarjeta con Envío de Formulario -->
 <div class="card-footer text-center bg-light border-top mt-4">
     @can('crear-trasladomercancia') 
-        <button id="submitupdate" type="submit" class="btn btn-success px-5 fw-bold">Guardar Traslado</button>
+        <div class="d-flex justify-content-center">
+            <div class="input-group w-auto shadow-sm">
+                <button id="submitupdate" type="submit" class="btn btn-success px-4 fw-bold" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                    Guardar Traslado
+                </button>
+                <div class="input-group-text bg-white border-success" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                    <div class="form-check m-0 d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0 border-success" type="checkbox" name="confirmar_recepcion" id="confirmar_recepcion" value="1"
+                               {{ old('confirmar_recepcion', '1') == '1' ? 'checked' : '' }}>
+                        <label class="form-check-label fw-bold text-success small" for="confirmar_recepcion">
+                            Ingresar a Stock
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
     @endcan 
 </div>
+
+
 
 <!-- Modal de Advertencia para Cancelación -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
