@@ -10,6 +10,20 @@
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
         }*/
+		
+		/* Fuerza a que los botones se queden en una sola fila */
+.col-acciones {
+    white-space: nowrap !important;
+    text-align: center;
+    width: 1%; /* Forza a la columna a colapsar al tamaño mínimo de los botones */
+}
+
+/* Espaciado opcional entre los botones internos */
+.col-acciones .btn, .col-acciones button {
+    display: inline-block;
+    margin: 0 2px;
+}
+		
 </style>
 @section('content')
 
@@ -34,7 +48,7 @@
 						<th>Estado</th>
 						<th>Productos</th>
 						<th>Datos</th>
-						<th class="text-center notexport">{{ _lang('Action') }}</th> 
+						<th class="col-acciones text-center notexport">{{ _lang('Action') }}</th> 
 					  </tr>
 					</thead>
 					<tbody>
@@ -80,6 +94,7 @@
                       '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
                       '<option value="en transito">En transito</option>' +
                       '<option value="entregado">Entregado</option>' +
+                      '<option value="stock">Pendiente ingreso a stock</option>' +
                       '</select>',
 					className: 'botones-custom',
 					action: function ( e, dt, node, config ) {
