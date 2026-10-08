@@ -2588,6 +2588,8 @@ if ($request->ajax()) {
 		$car = Cars::find($nro_interno);
 
 		$productosCreadosIds = [];
+		
+		
 
 if (isset($car)) {
     $estado = $request->input('estado', 'despacho');
@@ -2604,12 +2606,12 @@ if (isset($car)) {
      
         $now = now();
 
-        $sql = "INSERT INTO products (item_id, nro_interno, stock, description, product_price, tax_method, estado, company_id, idDeposito, ubicacion, carga_rapida, user_id, mercado_libre, created_at, marca_modelo,nro_motor,fecha_ingreso_a_stock)
+        $sql = "INSERT INTO products (item_id, nro_interno, stock, description, product_price, tax_method, estado, company_id, idDeposito, ubicacion, carga_rapida, user_id, mercado_libre, created_at, marca_modelo,nro_motor,fecha_desarme_a_stock)
                 SELECT items.id, {$nro_interno}, 1, '" . $request->input('description', '') . "', 0, 'exclusive', '" . $estado . "', " . $car->company_id . ", " . $request->input('idDeposito', 'NULL') . ", '" . $request->input('ubicacion', '') . "', " . $request->input('carga_rapida', 0) . ", " . auth()->user()->id . ", 0, '{$now}', {$marca_modelo_valor} AS marcamodelo,
 				CASE WHEN items.id = 1612 THEN '{$nro_motor}' ELSE '' END,
                 '{$now}' FROM items
                 WHERE id IN($idsString)";
-        
+
         DB::statement($sql);
 //---------------------
 				$productosCreados = Product::where('user_id', auth()->id())
@@ -2647,6 +2649,8 @@ if (isset($car)) {
 
         $idsArray = is_array($ids) ? $ids : explode(",", $ids);
         $items = Item::whereIn('id', $idsArray)->get();
+		
+		$depositodesarme = ($car->company_id==1 && $estado=='desarme-stock') ? '17' : ($request->input('idDeposito') ?? null);
 
         foreach ($items as $item) {
             $product = new Product();
@@ -2661,7 +2665,7 @@ if (isset($car)) {
             $product->estado = $request->input('estado') ?? "desarme-stock";
             $product->company_id = $car->company_id ?? company_id();
             $product->mercado_libre = 0;
-            $product->idDeposito = $request->input('idDeposito') ?? null;
+            $product->idDeposito = $depositodesarme;//$request->input('idDeposito') ?? null;
             $product->nro_motor = $item->id == "1612" ? $nro_motor : '';
             $product->ubicacion = $request->input('ubicacion') ?? '';
             $product->user_id = auth()->user()->id;
@@ -2684,7 +2688,7 @@ if (isset($car)) {
     
 	// proceso de emision de traslados
 	
-	if ($car->company_id==1){
+	if ($car->company_id==1 && $estado=='desarme-stock'){
 		
 			$data = [
 					'reference'   => 0,
