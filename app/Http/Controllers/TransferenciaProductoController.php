@@ -328,14 +328,30 @@ class TransferenciaProductoController extends Controller
 				}
 				
 				
-				$products = $request->input('product_ids');
+				 $products = $request->input('product_ids');
 				
-								
+								/*
 				Product::whereIn('id',$products)
 				->update([
 					'idDeposito' => $transfer->almacen_destino_id,
 					'estado' => ''
-				]);
+				]); */
+				
+				
+
+					if ($request->has('confirmar_recepcion') && $request->input('confirmar_recepcion') == '1') {
+						Product::whereIn('id', $products)->update([
+							'idDeposito' => $transfer->almacen_destino_id,
+							'estado'     => '', 
+							'fecha_desarme_a_stock' => date('Y-m-d H:i:s')
+						]);
+					} else {
+						Product::whereIn('id', $products)->update([
+							'idDeposito' => $transfer->almacen_destino_id,
+							'estado'     => '' 
+						]);
+
+					}
 				
 				$transfer->TransfersProduct()->whereIn('product_id', $products)->update([
 						'recibido' => true,
