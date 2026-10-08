@@ -1120,7 +1120,7 @@ public function store(Request $request)
                 $product->nro_motor = $car->motor_nro ?? '';
             };
 			
-
+			$product->fecha_desarme_a_stock = date('Y-m-d H:i:s');
             $product->save();
             if (!empty($request->file())) {
 				$path = public_path('uploads/products');
