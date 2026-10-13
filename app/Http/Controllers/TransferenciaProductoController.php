@@ -106,7 +106,7 @@ class TransferenciaProductoController extends Controller
 				 ->addColumn('datos_cotizacion', function ($data) {
 				$html = '';
 				$string_productos = $data->TransfersProduct->implode('product_id', ', ');	
-				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega, '%d/%m/%Y'), '') AS fecha_entrega, 
+				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega_posible, '%d/%m/%Y'), '') AS fecha_entrega, 
 				COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
 				LEFT JOIN  users t2 ON t2.id= t.user_id
 				WHERE t1.product_id IN (".$string_productos.") 
@@ -635,7 +635,7 @@ class TransferenciaProductoController extends Controller
 		
 		$datos_cotizacion = '';
 				$string_productos = $datos->TransfersProduct->implode('product_id', ', ');	
-				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega, '%d/%m/%Y'), '') AS fecha_entrega, 
+				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega_posible, '%d/%m/%Y'), '') AS fecha_entrega, 
 				COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
 				LEFT JOIN  users t2 ON t2.id= t.user_id
 				WHERE t1.product_id IN (".$string_productos.") 
@@ -647,7 +647,7 @@ class TransferenciaProductoController extends Controller
                         $datos_cotizacion .= "<strong>Cotizacion:</strong> $item->invoice_number" . '<br>';
                         $datos_cotizacion .= "<strong>Vendedor:</strong> $item->vendedor" . '<br>';
                         $datos_cotizacion .= "<strong>Fecha Emision:</strong> $item->fecha_venta" . '<br>';
-                        $datos_cotizacion .= "<strong>Fecha Entrega:</strong> $item->fecha_entrega" . '<br>';
+                        $datos_cotizacion .= "<strong>Fecha Posible de Entrega:</strong> $item->fecha_entrega" . '<br>';
                     }
                 }
          // $html;

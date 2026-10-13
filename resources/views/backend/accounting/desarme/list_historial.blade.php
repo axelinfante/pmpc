@@ -21,7 +21,7 @@
 					<table id="orden-desarme-table" class="table table-bordered">
 						<thead>
 						<tr>
-                            {{-- <th style="width: 100px;min-width: 100px" class="text-center">{{ _lang('Action') }}</th> --}}
+                            {{-- <th style="width: 100px;min-width: 100px" class="text-center notexport">{{ _lang('Action') }}</th> --}}
                             {{-- <th style="width: 150px;min-width: 150px" class="text-center">{{ _lang('Procesar') }}</th> --}}
 							{{-- <th style="width: 100px;min-width: 100px" >{{ _lang('Id') }}</th> --}}
 							{{-- <th style="width: 100px;min-width: 100px" >{{ _lang('Pedido pasado') }}</th> --}}
@@ -84,18 +84,88 @@
             }
         })
     } 
+	
+	
+	$(function() {
+            /*$.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });*/
+
+
+			var table = $('#orden-desarme-table').appTable({
+					title:"Historico de Orden de desarme",
+					ajax: {
+						url: "{{ url('orden-desarme/get_table_data') }}", // Substitua pela sua rota
+						type: 'POST',
+						data: function (d) {
+							// Aqui você envia o valor do select/input como o parâmetro 'filtrado'
+							//d.filtrado = $('#filtrado').val();
+							  d._token = $('meta[name="csrf-token"]').attr('content');
+							  d.id = "{{$id ?? null}}";  // ID dinámico que puedes enviar
+							  d.estado = "completado";    // Estado enviado
+							  d.isHistorial = 1;          // Historial
+						}
+					},
+					//ajax: "{{ route('transfers.index') }}",
+					//visibleButtonsFilter:false,
+					visibleButtons: {
+					reset: true,
+					excel: true,
+					print: false
+					},
+					/*customButtons: [{
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado" name="filtrado"  class="form-control-sm select2">' +
+                      '<option value="en transito">En transito</option>' +
+                      '<option value="entregado">Entregado</option>' +
+                      '</select>',
+					className: 'botones-custom',
+					action: function ( e, dt, node, config ) {
+						}
+					}
+				],*/
+				   columnFilters: ['daterangepicker', { 
+					 type: 'select', 
+					 data: @json($puestos)
+					},,,,'daterangepicker','input'],
+				   columns: [
+                    { data : "f_ingreso_puesto", name : "f_ingreso_puesto" },
+                    { data : "puesto", name : "puesto" },
+                    { data : "interno", name : "interno" },
+                    { data : "cotizacion", name : "cotizacion" },
+                    { data : "venta", name : "venta" },
+                    { data : "fecha_venta", name : "fecha_venta" },
+                    { data : "lugar_venta", name : "lugar_venta" },
+                    { data : "marca_modelo", name : "marca_modelo" },
+                    { data : "pieza", name : "pieza" },
+					{ data : "vendedor", name : "vendedor" },
+                    { data : "ubicacion", name : "ubicacion" },
+                    { data : "estado", name : "estado" }
+                    //{ data: 'action', name: 'action', orderable: false}
+					],
+				});
+				
+				$('#filtrado').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
+        });
 
 
 
-        $(function() {
+   /*     $(function() {
             $('#orden-desarme-table thead tr')
                 .clone(true)
                 .addClass('filters')
                 .appendTo('#orden-desarme-table thead');
-          var table  = $('#orden-desarme-table').DataTable({
+        
+		var table  = $('#orden-desarme-table').DataTable({
                 scrollX:true,
                 processing: true,
-                serverSide: false,
+                serverSide: true,
                 searching: true,
               orderCellsTop: true,
               fixedHeader: true,
@@ -273,9 +343,9 @@
 
 
 
-            table.search('').columns().search('').draw();
+           // table.search('').columns().search('').draw();
 
-        });
+        });*/
 	</script>
 @endsection
 
