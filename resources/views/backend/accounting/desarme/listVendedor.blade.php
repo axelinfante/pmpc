@@ -91,9 +91,87 @@
                 }
             })
         }
+		
+		$(function() {
+            /*$.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+				
+				var sourceData = [
+    { id: 1, text: 'Si' }, // Objeto estructurado
+    'No'                   // Valor plano
+];
+
+            });*/
 
 
+			var table = $('#orden-desarme-table').appTable({
+					title:"Historico de Orden de desarme",
+					ajax: {
+						url: "{{ url('orden-desarme/get_table_data') }}", // Substitua pela sua rota
+						type: 'POST',
+						data: function (d) {
+							  d._token = $('meta[name="csrf-token"]').attr('content');
+							  d.id = "{{$id ?? null}}";  // ID dinámico que puedes enviar
+						}
+					},
+					visibleButtons: {
+					reset: true,
+					excel: true,
+					print: false
+					},
+				   columnFilters: ['none',
+				    { 
+					 type: 'select', 
+					 data: @json($puestos) // Array simple
+					}
+					,'daterangepicker',,,'daterangepicker','input'],
+				   columns: [
+				    { data: 'action', name: 'action', orderable: false},
+					{ data : "puesto", name : "puesto" },
+					{ data : "fecha_venta", name : "fecha_venta" },
+					{ data: "venta", name: "venta" }, 
+					{ data: "interno", name: "interno" }, 
+					{ data: "cotizacion", name: "cotizacion" }, 
+					{ data: "lugar_venta", name: "lugar_venta" }, 
+					{ data: "marca_modelo", name: "marca_modelo" }, 
+					{ data: "pieza", name: "pieza" }, 
+					{ data: "detalle_pieza", name: "detalle_pieza" }, 
+					{ data: "detalle_anulado", name: "detalle_anulado" }, 
+					{ data: "cliente", name: "cliente" }, 
+					{ data: "vendedor", name: "vendedor" }, 
+					{ data: "ubicacion", name: "ubicacion" }, 
+					{ data: "estado", name: "estado" }, 					
+					{ data: "fecha_estimada_pieza_disponible", name: "fecha_estimada_pieza_disponible" },
+					{ data: "existe", name: "existe" }, 
+					{ data: "falta", name: "falta" },
+					{ data: "obs_desarme_busqueda", name: "obs_desarme_busqueda" },
+					{ data: "fecha_desarmado_anulado", name: "fecha_desarmado_anulado" }
+                    
+					/*{ data : "f_ingreso_puesto", name : "f_ingreso_puesto" },
+                    { data : "interno", name : "interno" },
+                    { data : "cotizacion", name : "cotizacion" },
+                    { data : "venta", name : "venta" },
+                    { data : "fecha_venta", name : "fecha_venta" },
+                    { data : "lugar_venta", name : "lugar_venta" },
+                    { data : "marca_modelo", name : "marca_modelo" },
+                    { data : "pieza", name : "pieza" },
+					{ data : "vendedor", name : "vendedor" },
+                    { data : "ubicacion", name : "ubicacion" },
+                    { data : "estado", name : "estado" }*/
+					],
+				});
+				
+				$('#filtrado').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
+        });
 
+
+/*
         $(function() {
             $('#orden-desarme-table thead tr')
                 .clone(true)
@@ -102,7 +180,7 @@
             var table = $('#orden-desarme-table').DataTable({
                 scrollX: true,
                 processing: true,
-                serverSide: false,
+                serverSide: true,
                 searching: true,
                 orderCellsTop: true,
                 fixedHeader: true,
@@ -294,39 +372,39 @@
 											}
 									});
 
-                              /* const opciones = ['1C', '1P', '2C', '2P', '3', '4C', '4P','GENERAL'];
+                              //  const opciones = ['1C', '1P', '2C', '2P', '3', '4C', '4P','GENERAL'];
 
-                                let selectString = `<select name="puesto_filter" style="width:100%" class="puesto_filter">`;
-                                selectString += '<option value=""> </option>';
+                                // let selectString = `<select name="puesto_filter" style="width:100%" class="puesto_filter">`;
+                                // selectString += '<option value=""> </option>';
 
-                                opciones.forEach(opcion => {
+                                // opciones.forEach(opcion => {
                                    
-                                    selectString += `<option value="${opcion}" >${opcion}</option>`;
-                                });
+                                    // selectString += `<option value="${opcion}" >${opcion}</option>`;
+                                // });
 
-                                selectString += '</select>';
+                                // selectString += '</select>';
 
 
-                                $(cell).html(selectString);
+                                // $(cell).html(selectString);
 
-                                $('.puesto_filter').on('change', function() {
-                                var puestoFilterValue = $(this).val();
+                                // $('.puesto_filter').on('change', function() {
+                                // var puestoFilterValue = $(this).val();
 
-                                // Usa una función de filtrado personalizada para manejar el select
-                                $.fn.dataTable.ext.search.push(
-                                    function(settings, data, dataIndex) {
-                                        var puestoSelectValue =data[1];
-                                       // var puestoSelectValue = $(table.cell(dataIndex, 2).node()).find('select').val(); // Obtiene el valor del select en la fila
-                                        if (puestoFilterValue === "" || puestoSelectValue === puestoFilterValue) {
-                                            return true;
-                                        }
-                                        return false;
-                                    }
-                                );
-                                table.draw(); // Redibuja la tabla para aplicar el filtro
-                                $.fn.dataTable.ext.search.pop(); // Remueve la función de filtrado para no interferir con otros filtros
-                            });
-                               */             
+                                Usa una función de filtrado personalizada para manejar el select
+                                // $.fn.dataTable.ext.search.push(
+                                    // function(settings, data, dataIndex) {
+                                        // var puestoSelectValue =data[1];
+                                       var puestoSelectValue = $(table.cell(dataIndex, 2).node()).find('select').val(); // Obtiene el valor del select en la fila
+                                        // if (puestoFilterValue === "" || puestoSelectValue === puestoFilterValue) {
+                                            // return true;
+                                        // }
+                                        // return false;
+                                    // }
+                                // );
+                                // table.draw(); // Redibuja la tabla para aplicar el filtro
+                                // $.fn.dataTable.ext.search.pop(); // Remueve la función de filtrado para no interferir con otros filtros
+                            // });
+                               //              
                             }else{							
                                 //console.log($(api.column(colIdx).header()).index());
                                 $(cell).html('<input style="width:100%" type="text" placeholder="' +
@@ -389,6 +467,6 @@
 
 
             table.search('').columns().search('').draw();
-        });
+        });*/
     </script>
 @endsection

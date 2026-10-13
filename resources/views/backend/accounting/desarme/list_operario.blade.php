@@ -21,23 +21,23 @@
 					<table id="orden-desarme-table" class="table table-bordered">
 						<thead>
 						<tr>
-                            <th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Fecha de venta')
+                            <th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Fecha de venta')
 							}}</th>
-                            <th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('venta') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Interno') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Reserva') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Marca y modelo') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('pieza') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Detalle de pieza') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Vendedor') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Estado') }}</th>
+                            <th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('venta') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Interno') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Reserva') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Marca y modelo') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('pieza') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Detalle de pieza') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Vendedor') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Estado') }}</th>
 							<th style="min-width: 300px" class="text-right">{{ _lang('OBS. Al desarme o
 							busqueda') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-right">{{ _lang('Desarmado o anulado') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-center">{{ _lang('Ubicación Vehiculo') }}</th>
-							<th style="width: 200px;min-width: 200px" class="text-center">{{ _lang('Ubicación Piezas') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-right">{{ _lang('Desarmado o anulado') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-center">{{ _lang('Ubicación Vehiculo') }}</th>
+							<th style="width: 150px;min-width: 150px" class="text-center">{{ _lang('Ubicación Piezas') }}</th>
 
-							<th class='act' style="width: 200px;min-width: 200px" class="text-center">{{ _lang('Action') }}</th>
+							<th class='act notexport text-center' style="width: 150px;min-width: 150px" >{{ _lang('Action') }}</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -53,7 +53,54 @@
 @section('js-script')
 	<script>
 	var lugarentregas_tables = <?php echo json_encode($lugar_entregas); ?>;
-        $(function() {
+	
+	$(function() {
+			var table = $('#orden-desarme-table').appTable({
+					title:"Historico de Orden de desarme",
+					ajax: {
+						url: "{{ url('orden-desarme/get_table_data_nb') }}", // Substitua pela sua rota
+						type: 'POST',
+						data: function (d) {
+							  d._token = $('meta[name="csrf-token"]').attr('content');
+							  d.id = "{{$id ?? null}}";  // ID dinámico que puedes enviar
+						}
+					},
+					visibleButtons: {
+					reset: true,
+					excel: true,
+					print: false
+					},
+				   columnFilters: ['daterangepicker',,,,,,,,,,,{ 
+					 type: 'select', 
+					 data: @json($lugar_entregas)
+					}],
+				   columns: [
+				     { data : "fecha_venta", name : "fecha_venta" },
+                    { data : "invoice_number", name : "invoice_number" },
+                    { data : "interno", name : "interno" },
+                    { data : "cotizacion", name : "cotizacion" },
+                    { data : "marca_modelo", name : "marca_modelo" },
+                    { data : "pieza", name : "pieza" },
+                    { data : "detalle_pieza", name : "detalle_pieza" },
+                    { data : "vendedor", name : "vendedor" },
+                    { data : "estado", name : "estado" },
+                    { data : "obs_desarme_busqueda", name : "obs_desarme_busqueda" },
+                    { data : "fecha_desarmado_anulado", name : "fecha_desarmado_anulado" },
+					{ data : "ubicacion_vehiculo", name : "ubicacion_vehiculo" },
+					{ data : "ubicacion_pieza", name : "ubicacion_pieza" },
+                    { data: 'action', name: 'action', orderable: false}
+					],
+				});
+				
+				$('#filtrado').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; 
+			});
+        });
+
+        
+		/*$(function() {
           var table  = $('#orden-desarme-table').DataTable({
                 scrollX:true,
                 processing: true,
@@ -233,7 +280,7 @@
 		
     });
 
-        });
+        });*/
 		
 		  
 			

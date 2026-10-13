@@ -412,7 +412,7 @@
 					 attr: {
 						title: "Confirmación de desarme",
 						id: "desarme-button",
-						"data-reload": "false" // <--- Agregado de forma fija aquí
+						"data-reload": "false" 
 					},
 					init: function (dt, node, config) {
 						 /*var selectedIds = [];
@@ -670,7 +670,7 @@
             });
 
 
-            table.search('').columns().search('').draw();
+            //table.search('').columns().search('').draw();
 
             $(document).on('click', '#select-all', function() {
                 var isChecked = $(this).is(':checked');
@@ -938,7 +938,7 @@
 		});
 		 
 		 
-		 	$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
+		$('#modalConfirmarEntregaMax').on('hidden.bs.modal', function () {
 			// Limpiar la validación al cerrar el modal
 			$('#miFormulario').parsley().reset();
 			// Limpiar los campos del formulario
@@ -983,37 +983,6 @@ $( document ).ready(function() {
         
     });
 });	
- 
-	
-	/*$('#fecha_venta').daterangepicker({
-			autoUpdateInput: false,
-			locale: {
-				format: 'YYYY-MM-DD',
-				cancelLabel: 'Clear'
-			}
-		});
-
-		
-		$('#fecha_venta').on('change', function(e) {
-			let val = $(this).val();
-			table.columns(6).search(val ? val : '', true, false );
-			table.draw();
-		});
-	
-	
-		$('#fecha_venta').on('apply.daterangepicker', function(ev, picker) {
-				let daterango =(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
-					$(this).val(daterango);
-					table.columns(6).search(daterango);
-					table.draw();
-			});
-
-			$('#fecha_venta').on('cancel.daterangepicker', function(ev, picker) {
-				//$(this).val('');
-				$('#fecha_venta').val(null).trigger('change');	
-		});
-	*/
-			
 
         });
     </script>
