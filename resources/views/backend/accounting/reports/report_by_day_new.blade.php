@@ -116,9 +116,9 @@
                         @endphp
                         {{-- {{ dd($current_day_income_expense_by_account) }} --}}
                         @foreach ($current_day_income_expense_by_account as $report)
-                            @if ($report['saldoARS'] == 0 && $report['saldoUSD'] == 0)
+						{{--  @if ($report['saldoARS'] == 0 && $report['saldoUSD'] == 0)
                                 @php continue; @endphp
-                            @endif
+						@endif --}}
                             <tr>
                                 <td>{{ $report['account_title'] }}</td>
 
