@@ -44,13 +44,19 @@ class OrdenDesarmeController extends Controller
 	 
     public function index()
     {
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		$puestos = Puesto::whereIn('company_id', $company_id)
+		->orderBy("company_id", "asc")
+		->pluck('puesto') 
+		->all();
+		
         if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete') {
             return redirect(route('list_operarios'));
         }
         if (strtolower(auth()->user()->role->name) == 'vendedor') {
-            return view('backend.accounting.desarme.listVendedor');
+            return view('backend.accounting.desarme.listVendedor', compact('puestos'));
         }
-		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		//$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 		//$company = \App\Company::where('business_name', 'Pentacar')->orwhere('business_name', 'Paternal')->get();
 		$company_id=count($company_id) > 1 ? array(1,2):$company_id;
 		$company = \App\Company::whereIn('id', $company_id)->get();
@@ -60,7 +66,23 @@ class OrdenDesarmeController extends Controller
 
     public function index_operario()
     {
-        $lugar_entregas = Lugar_entregas::all();
+        $lugar_entregas = Lugar_entregas::orderBy("nombre", "asc")
+		->get()
+		->map(function ($item) {
+        return [
+            'id'   => $item->id,
+            'text' => $item->nombre 
+        ];
+		})
+		->values()
+		->all();
+		
+		/*$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		$puestos = Puesto::whereIn('company_id', $company_id)
+		->orderBy("company_id", "asc")
+		->pluck('puesto') 
+		->all();*/
+
         return view('backend.accounting.desarme.list_operario',["lugar_entregas" => $lugar_entregas]);
     }
 
@@ -68,8 +90,13 @@ class OrdenDesarmeController extends Controller
     public function historial()
     {
         //
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		$puestos = Puesto::whereIn('company_id', $company_id)
+		->orderBy("company_id", "asc")
+		->pluck('puesto') 
+		->all();
 
-        return view('backend.accounting.desarme.list_historial');
+        return view('backend.accounting.desarme.list_historial', compact('puestos'));
     }
 
     public function crear($id = false, $tipo = false)
@@ -599,6 +626,17 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 
     public function consultaOrden(Request $request)
     {
+		
+		$lugar_entregas = Lugar_entregas::orderBy("nombre", "asc")
+		->pluck('nombre') 
+		->all();
+		
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+		$puestos = Puesto::whereIn('company_id', $company_id)
+		->orderBy("company_id", "asc")
+		->pluck('puesto') 
+		->all();
+		
         if ($request->ajax()) {
 
             $data = Orden_desarme::select('ordenes_desarme.id', 'id_cotizacion', 'interno', 'fecha_venta', 'marca_modelo', 'pieza', 'id_venta', 'idCar', 'estado', 'f_ingreso_puesto', 'falta', 'informo_ausencia', 'obs_desarme_busqueda', 'fecha_desarmado_anulado','puesto','puesto_final','ordenes_desarme.product_id')
@@ -652,10 +690,39 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                         //return $data->venta->invoice_number ?? '';   
                     }
                 })
+				->editColumn('fecha_venta', function ($data) {
+					return formatDate($data->fecha_venta);
+				
+				})->editColumn('f_ingreso_puesto', function ($data) {
+					return formatDate($data->f_ingreso_puesto);
+				
+				})->editColumn('fecha_desarmado_anulado', function ($data) {
+					return formatDate($data->fecha_desarmado_anulado);
+				
+				})
                 /* ->addColumn('fecha_desarmado_anulado', function ($data) {
                 $date_format = get_company_option('date_format', 'Y-m-d');
                 return isset($data->fecha_desarmado_anulado) ? date($date_format, strtotime($data->fecha_desarmado_anulado)) : null;
             })*/
+			 ->filterColumn('fecha_desarmado_anulado', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha_desarmado_anulado', '>=', $date_range[0])
+                            ->whereDate('fecha_desarmado_anulado', '<=', $date_range[1]);
+                    }
+					})->filterColumn('fecha_venta', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha_venta', '>=', $date_range[0])
+                            ->whereDate('fecha_venta', '<=', $date_range[1]);
+                    }
+                })->filterColumn('f_ingreso_puesto', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('f_ingreso_puesto', '>=', $date_range[0])
+                            ->whereDate('f_ingreso_puesto', '<=', $date_range[1]);
+                    }
+                })
                 ->filterColumn('marcamodelo', function ($query, $keyword) {
                     $query->orwhereHas('marcamodelo', function ($str) use ($keyword) {
                         $str->whereHas('marca', function ($str) use ($keyword) {
@@ -715,29 +782,22 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                 ->make(true);
         }
 
-        return view('backend.accounting.desarme.list_orden_consul');
+        return view('backend.accounting.desarme.list_orden_consul', compact('lugar_entregas','puestos'));
     }
 
-
-    public function get_table_data(Request $request)
+public function get_table_data(Request $request)
     {
+	if ($request->ajax()) {
         $estEnv = $request->input('estado');       // Parámetro 'estado'
         $isHistorial = $request->input('isHistorial'); // Parámetro 'isHistorial'
-		//$company_id = empty(session('cia')) ? company_id() : company_id(session('cia'));
 		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 
-    //    $nro_interno_datos = Cars::All();
-	
+
         $opciones = Puesto::with('asignado')->with('company')
 		->whereIn('company_id', $company_id)
 		->orderBy("company_id", "asc")
 		->get();
 		
-		//$this->opciones_puestos;
-
-        //if (auth()->user()->role->name != 'Gerencial') {
-       //     $nro_interno_datos->whereIn('company_id', $company_id);
-        //}
         $gerenciales_autorizado = Puesto::where("predeterminada", 1)->pluck('user_id')->toArray();
    	
 		   $ocultar = '';
@@ -745,7 +805,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 		$role = strtolower($user->role->name);
 
 
-$ordenes = Orden_desarme::with([
+		$ordenes = Orden_desarme::with([
 			'venta', 
 			'cotizacion', 
 			'car.estado_relacion' 
@@ -760,9 +820,6 @@ $ordenes = Orden_desarme::with([
 				$q->whereIn('company_id', (array)$company_id); // Asegura que sea un array
 			}
 			
-			/*if (!$isHistorial) {
-				$q->where('idEstado', '!=', 1);
-			}*/
 		});
 
 		$ordenes->where(function ($mainQuery) use ($role) {
@@ -812,10 +869,348 @@ $ordenes = Orden_desarme::with([
             ->editColumn('pedido_pasado', function ($orden) {
                 return $orden->pedido_pasado;
             })
-           /* ->editColumn('prioridad', function ($orden) {
+            ->editColumn('cotizacion', function ($orden) {
+                return ($orden->cotizacion->quotation_number ?? null);
+            })
+            ->editColumn('venta', function ($orden) {
+				
+                $in = 'VEN-';
+                if (!isset($orden->venta)) {
+                    return "Precarga Masiva";
+                }
+                if ($orden->venta->company_id == 1) {
+                    $in .= 'PM-';
+                } elseif ($orden->venta->company_id == 2) {
+                    $in .= 'PC-';
+                }
+                $text = $in . $orden->venta->invoice_number ?? null;
+                $ruta = action('InvoiceController@show', $orden->venta->id);
+                $a = "<a href='$ruta'>$text </a>";
+                return $a;
+            })
+            ->editColumn('fecha_venta', function ($orden) {
+				return formatDate($orden->fecha_venta);
+				
+            })
+            ->editColumn('lugar_venta', function ($orden) {
+                return $orden->lugar_venta;
+            })
+            ->editColumn('marca_modelo', function ($orden) {
+                return ($orden->producto->marcaModelo->marca->marca ?? '') . ' ' .
+                    ($orden->producto->marcaModelo->modelo->modelo ?? '');
+            })
+            ->editColumn('detalle_pieza', function ($orden) {
+                return $orden->detalle_pieza;
+            })
+            ->editColumn('detalle_anulado', function ($orden) {
+                return $orden->detalle_anulado;
+            })
+            ->editColumn('cliente', function ($orden) {
+                if (!empty($orden->cotizacion) || !empty($orden->venta)) {
+                    return $orden->cotizacion->client->contact_name ?? $orden->venta->client->contact_name;
+                }
 
-                return $orden->prioridad;
-            })*/
+                return '';
+            })
+           ->editColumn('vendedor', function ($orden) {
+                return ($orden->cotizacion->vendedor->name ?? null) ?? ($orden->venta->vendedor->name ?? '');
+            })
+            ->editColumn('ubicacion', function ($orden) {
+                return $orden->car->lugar_entrega->nombre ?? '';
+            })
+            ->editColumn('estado_veh', function ($orden) {
+                return $orden->car->estado->estado ?? 'Sin Estado';
+            })
+           ->editColumn('autorizo', function ($orden) {
+                return $orden->autorizo;
+            })
+            ->editColumn('fecha_estimada_pieza_disponible', function ($orden) {
+
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                return isset($orden->fecha_estimada_pieza_disponible) ? date($date_format, strtotime($orden->fecha_estimada_pieza_disponible)) : null;
+            })
+            ->editColumn('existe', function ($orden) {
+                return $orden->existe;
+            })
+            ->editColumn('falta', function ($orden) {
+                return $orden->falta;
+            })
+            ->editColumn('informo_ausencia', function ($orden) {
+                return $orden->informo_ausencia."--------";
+            })->editColumn('obs_desarme_busqueda', function ($orden) {
+				
+                return ($orden->obs_desarme_busqueda ?? '')."<br/>".($orden->venta->note ?? '')."<br/>".($orden->venta->descripcion ?? '');
+            })
+            ->editColumn('fecha_desarmado_anulado', function ($orden) {
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                return isset($orden->fecha_desarmado_anulado) ? date($date_format, strtotime($orden->fecha_desarmado_anulado)) : null;
+            })
+            ->editColumn('cargando_camioneta', function ($orden) {
+                return $orden->cargando_camioneta;
+            })->editColumn('entregado', function ($orden) {
+                return $orden->entregado;
+            })
+            ->editColumn('fecha_embalado', function ($orden) {
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                return isset($orden->fecha_embalado) ? date($date_format, strtotime($orden->fecha_embalado)) : null;
+            })
+
+            ->editColumn('fecha_avisado_vendedor', function ($orden) {
+                $date_format = get_company_option('date_format', 'Y-m-d');
+                return isset($orden->fecha_avisado_vendedor) ? date($date_format, strtotime($orden->fecha_avisado_vendedor)) : null;
+            })
+			 ->editColumn('f_ingreso_puesto', function ($orden) use ($gerenciales_autorizado) {
+
+                if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
+					$fecha = isset($orden->f_ingreso_puesto) ? date('Y-m-d\TH:i', strtotime($orden->f_ingreso_puesto)) : date('Y-m-d\TH:i');
+						return '<input type="datetime-local" name="f_ingreso_puesto" value="' . $fecha . '" class="f-ingreso-puesto-input form-control">';	
+                } else {
+                    return '<span>' . $orden->f_ingreso_puesto . '</span>';
+                }
+            })
+			  ->addColumn('pieza', function ($orden) {
+				return  "(".($orden->producto->id ?? ''). ") " .$orden->item->item_name ?? null;
+            })
+            ->addColumn('interno', function ($orden) {
+                return nroInternoAlias($orden->car->company_id ?? null, $orden->car->tipo_vehiculo ?? null, $orden->car->id ?? null);  
+            })
+
+            ->addColumn('cliente', function ($orden) {
+                return $orden->venta->client->contact_name ?? '';
+            })
+            ->addColumn('action', function ($orden) use ($ocultar) {
+				 $url = route('orden-desarme-one.generar-pdf', $orden->id);
+
+                $ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarame '.$orden->id.' " data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
+                      <i class="ti-printer"></i>
+                    </a>';
+					
+                return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
+
+                    . '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" 
+data-title="' . _lang('Update Vehicle') . '" data-reload="false" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
+
+                    . csrf_field()
+                    . '<input name="_method" type="hidden" value="DELETE">'
+                    . '<button 
+class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
+                    . '</form>'.$ordenDesarmeBtn;
+					
+					
+					
+            })
+			->editColumn('puesto', function ($orden) use ($opciones, $gerenciales_autorizado) {
+    if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
+        
+		$ventaCompanyId = $orden?->venta?->company_id ?? $orden?->producto?->company_id ?? 1;
+		
+
+        $filteredCompany = $opciones->filter(function ($opcion) use ($ventaCompanyId) {
+            return $opcion->company_id == $ventaCompanyId;
+        });
+
+        $select = '<select name="puesto" class="puesto-select form-control" data-id=' . $orden->id . '>';
+        $select .= '<option value=""> </option>';
+		
+				
+
+        foreach ($filteredCompany as $opcion) {
+            $selected = ($orden->puesto == $opcion->puesto) ? 'selected' : '';
+            $select .= '<option value="' . $opcion->puesto . '" ' . $selected . ' data-operario ="' . ($opcion->asignado->email ?? '') . 
+            '" data-compania ="'. ($ventaCompanyId ?? '') .'">' . $opcion->puesto . '</option>';
+        }
+
+        $select .= '</select>';
+        return $select;
+    } else {
+        return '<span>' . $orden->puesto . '</span>';
+    }
+})
+			->filterColumn('f_ingreso_puesto', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('f_ingreso_puesto', '>=', $date_range[0])
+                            ->whereDate('f_ingreso_puesto', '<=', $date_range[1]);
+                    }
+                })
+			->filterColumn('puesto', function ($query, $keyword) {
+				  $query->where('puesto', 'like', "%{$keyword}%");
+            })
+			->filterColumn('interno', function ($query, $keyword) {
+                $query->whereHas('car', function ($q) use ($keyword) {
+                    $q->where('id', 'LIKE', "%{$keyword}%");
+					});
+			})
+			
+			->filterColumn('cotizacion', function ($query, $keyword) {
+                $query->whereHas('cotizacion', function ($q) use ($keyword) {
+                    $q->where('quotation_number', 'LIKE', "%{$keyword}%");
+					});
+			})
+			 ->filterColumn('ubicacion', function ($query, $keyword) {
+                $query->orwhereHas('lugares', function ($str) use ($keyword) {
+                    $str->where('nombre', 'like', "%{$keyword}%");
+                });
+            })		
+			->filterColumn('lugar_venta', function ($query, $keyword) {
+				  $query->where('lugar_venta', 'like', "%{$keyword}%");
+            })
+			->filterColumn('venta', function ($query, $keyword) {
+					$query->whereHas('venta', function ($str) use ($keyword) {
+                    $str->where('invoice_number', 'like', "%{$keyword}%");
+                });
+            })
+			 ->filterColumn('fecha_venta', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha_venta', '>=', $date_range[0])
+                            ->whereDate('fecha_venta', '<=', $date_range[1]);
+                    }
+                })
+			
+			 ->filterColumn('cliente', function ($query, $keyword) {
+				 $query->whereHas('venta.client', function ($str) use ($keyword) {
+						$str->where('contact_name', 'like', "%{$keyword}%");
+				  });
+            })
+			
+            ->filterColumn('marca_modelo', function ($query, $keyword) {
+              $query->orwhereHas('producto.marcaModelo', function ($str) use ($keyword) {
+                    $str->whereHas('marca', function ($str) use ($keyword) {
+                        $str->where('marca', 'like', "%{$keyword}%");
+                    });
+                    $str->orwhereHas('modelo', function ($str) use ($keyword) {
+                        $str->where('modelo', 'like', "%{$keyword}%");
+                    });
+                });
+            })
+			->filterColumn('pieza', function ($query, $keyword) {
+				$query->orwhereHas('producto', function ($str) use ($keyword) {
+                         $str->where('products.id', 'like', "%{$keyword}%");
+						$str->orwhereHas('item', function ($str) use ($keyword) {
+							$str->where('items.item_name', 'like', "%{$keyword}%");
+						});
+				});
+            })
+			->filterColumn('vendedor', function ($query, $keyword) {
+                $query->orwhereHas('venta.vendedor', function ($str) use ($keyword) {
+                        $str->where('name', 'like', "%{$keyword}%");
+                    });
+            })
+			->filterColumn('ubicacion', function ($query, $keyword) {
+                $query->orwhereHas('car.lugar_entrega', function ($str) use ($keyword) {
+                        $str->where('nombre', 'like', "%{$keyword}%");
+                    });
+            })
+			->filterColumn('estado_veh', function ($query, $keyword) {
+                $query->orwhereHas('car.estado', function ($str) use ($keyword) {
+                        $str->where('estado', 'like', "%{$keyword}%");
+                    });
+            })
+            ->setRowId(function ($orden) {
+                return "row_" . $orden->id;
+            })
+            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado','obs_desarme_busqueda'])
+            ->make(true);
+	   }	
+    }
+
+ /*   public function get_table_data_x(Request $request)
+    {
+        $estEnv = $request->input('estado');       // Parámetro 'estado'
+        $isHistorial = $request->input('isHistorial'); // Parámetro 'isHistorial'
+		//$company_id = empty(session('cia')) ? company_id() : company_id(session('cia'));
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+
+    //    $nro_interno_datos = Cars::All();
+	
+        $opciones = Puesto::with('asignado')->with('company')
+		->whereIn('company_id', $company_id)
+		->orderBy("company_id", "asc")
+		->get();
+		
+		//$this->opciones_puestos;
+
+        //if (auth()->user()->role->name != 'Gerencial') {
+       //     $nro_interno_datos->whereIn('company_id', $company_id);
+        //}
+        $gerenciales_autorizado = Puesto::where("predeterminada", 1)->pluck('user_id')->toArray();
+   	
+		   $ocultar = '';
+		$user = auth()->user();
+		$role = strtolower($user->role->name);
+
+
+$ordenes = Orden_desarme::with([
+			'venta', 
+			'cotizacion', 
+			'car.estado_relacion' 
+		]);
+
+		$ordenes->whereHas('car', function ($q) use ($isHistorial, $company_id, $user, $role) {
+			if (in_array($role, ['operario', 'cadete', 'administrativo de desarme'])) {
+				if (!$isHistorial) {
+					$q->where('company_id', $user->company_id);
+				}
+			} else {
+				$q->whereIn('company_id', (array)$company_id); // Asegura que sea un array
+			}
+			
+			//if (!$isHistorial) {
+			//	$q->where('idEstado', '!=', 1);
+			//}
+		});
+
+		$ordenes->where(function ($mainQuery) use ($role) {
+			$mainQuery->whereHas('venta', function ($q) use ($role) {
+				$q->where('status', '!=', 'Canceled');
+				
+				if ($role === 'vendedor' && auth()->check()) {
+					$q->where('user_id', auth()->id());
+				}
+			})->orDoesntHave('venta');
+		});
+
+		if (in_array($role, ['operario', 'cadete']) && !$isHistorial) {
+			$ordenes->where('procesar', 1)
+				  ->where('idCadete_operario', auth()->id());
+		}
+
+		$estEnv = $request->estado;
+		if (!$estEnv && !$isHistorial) {
+			$ordenes->where(function ($q) {
+				//$q->where('estado', '!=', 'completado')
+				$q->whereNotIn('estado', ['completado', 'anulada'])
+				  ->orWhereNull('estado'); 
+			});
+		}
+
+		$ordenes->orderBy('created_at', 'desc');
+
+
+        return DataTables::eloquent($ordenes)
+            ->editColumn('procesar', function ($orden) {
+                $selected = $orden->procesar == 1 ? 'selected' : '';
+                $disable = '';
+                if ($orden->estado == 'completado')
+                    $disable = 'disabled';
+
+                $a = "<select $disable class='form-control' onchange='changeProcesar(this)' data-id='$orden->id' name='procesar[$orden->id]'>
+                    <option value = '' > No procesado</option>
+                    <option $selected value = '1' > Procesar</option>
+                </select>";
+                return $a;
+            })
+
+            ->addColumn('id_link', function ($orden) {
+                return '<a href="' . action('OrdenDesarmeController@show', $orden->id) . '">' . $orden->id . '</a>';
+            })
+            ->editColumn('pedido_pasado', function ($orden) {
+                return $orden->pedido_pasado;
+            })
+           // ->editColumn('prioridad', function ($orden) {
+//                return $orden->prioridad;
+  //          })
             ->editColumn('cotizacion', function ($orden) {
                 return ($orden->cotizacion->quotation_number ?? null);
             })
@@ -825,9 +1220,9 @@ $ordenes = Orden_desarme::with([
 			//	 "pendiente","en transito"))) {
 		//		return "Precarga Masiva";
 		//	  }	
-				/*if (($orden->producto->estado ?? '') == "desarme-stock"){
-						return "Precarga Masiva";
-				}*/
+			//	if (($orden->producto->estado ?? '') == "desarme-stock"){
+			//			return "Precarga Masiva";
+			//	}
                 $in = 'VEN-';
                 if (!isset($orden->venta)) {
                     return "Precarga Masiva";
@@ -857,9 +1252,9 @@ $ordenes = Orden_desarme::with([
                 return ($orden->producto->marcaModelo->marca->marca ?? '') . ' ' .
                     ($orden->producto->marcaModelo->modelo->modelo ?? '');
             })
-          /*  ->editColumn('pieza', function ($orden) {
-				return  "($orden->producto->id) " . $orden->item->item_name ?? null;
-            })*/
+          //  ->editColumn('pieza', function ($orden) {
+			//	return  "($orden->producto->id) " . $orden->item->item_name ?? null;
+           // })
             ->editColumn('detalle_pieza', function ($orden) {
                 return $orden->detalle_pieza;
             })
@@ -925,18 +1320,18 @@ $ordenes = Orden_desarme::with([
                 if (strTolower(auth()->user()->role->name) == 'administrativo de desarme' || strTolower(auth()->user()->role->name) == 'gerencial' || in_array(auth()->user()->id, $gerenciales_autorizado)) {
                 //if (true == true ) {
 					$fecha = isset($orden->f_ingreso_puesto) ? date('Y-m-d\TH:i', strtotime($orden->f_ingreso_puesto)) : date('Y-m-d\TH:i');
-					/* if (isset($orden->f_ingreso_puesto)){
-						return '<span>' . $orden->f_ingreso_puesto . '</span>';
-					}*/
+			//		 if (isset($orden->f_ingreso_puesto)){
+			//			return '<span>' . $orden->f_ingreso_puesto . '</span>';
+			//		}
 						return '<input type="datetime-local" name="f_ingreso_puesto" value="' . $fecha . '" class="f-ingreso-puesto-input form-control">';	
                 } else {
                     return '<span>' . $orden->f_ingreso_puesto . '</span>';
                 }
             })
-			/*->editColumn('f_ingreso_puesto', function ($orden) {
-                $date_format = get_company_option('date_format', 'Y-m-d');
-                return isset($orden->f_ingreso_puesto) ? date($date_format, strtotime($orden->f_ingreso_puesto)) : null;
-            })*/
+			//->editColumn('f_ingreso_puesto', function ($orden) {
+            //    $date_format = get_company_option('date_format', 'Y-m-d');
+            //    return isset($orden->f_ingreso_puesto) ? date($date_format, strtotime($orden->f_ingreso_puesto)) : null;
+            //})
 			  ->addColumn('pieza', function ($orden) {
 				return  "(".($orden->producto->id ?? ''). ") " .$orden->item->item_name ?? null;
             })
@@ -976,12 +1371,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         
         //$ventaCompanyId = $orden->venta->company_id ?? null; 
 		$ventaCompanyId = $orden?->venta?->company_id ?? $orden?->producto?->company_id ?? 1;
-		
-		/*if (in_array($orden->producto->estado ?? '', array("desarme","desarme-stock","en transito","pendiente"))){
-		//if (($orden->producto->estado ?? '') == "desarme-stock"){
-						 $ventaCompanyId= $orden->producto->company_id ?? 1;
-				}*/
-
+	
         $filteredCompany = $opciones->filter(function ($opcion) use ($ventaCompanyId) {
             return $opcion->company_id == $ventaCompanyId;
         });
@@ -1016,12 +1406,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                     $str->where('nombre', 'like', "%{$keyword}%");
                 });
             })		
-			/*->filter(function ($query) use ($request) {
-                if ($request->has('id')) {
-                    if ($request->post('id'))
-                        $query->where('id', $request->post('id'));
-                }
-            })*/
+			
 			->filterColumn('lugar_venta', function ($query, $keyword) {
 				  $query->where('lugar_venta', 'like', "%{$keyword}%");
             })
@@ -1030,10 +1415,6 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                     $str->where('invoice_number', 'like', "%{$keyword}%");
                 });
             })
-			 /*->filterColumn('fecha_venta', function ($query, $keyword) {
-				   $query->whereRaw("DATE_FORMAT(fecha_venta,'%d/%m/%Y') LIKE ?", ["%$keyword%"]);
-                   // $query->whereDate('fecha_venta', $keyword);
-            })*/
 			
 			 ->filterColumn('fecha_venta', function ($query, $keyword) {
                     $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
@@ -1088,7 +1469,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
             ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado','obs_desarme_busqueda'])
             ->make(true);
     }
-
+*/
     public function updatePuesto(Request $request)
     {
         /*$request->validate([
@@ -1296,6 +1677,13 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
                         $query->where('id', $request->post('id'));
                 }
             })*/
+				 ->filterColumn('fecha_venta', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha_venta', '>=', $date_range[0])
+                            ->whereDate('fecha_venta', '<=', $date_range[1]);
+                    }
+                })
 			->filterColumn('invoice_number', function ($query, $keyword) {
                     $query->orwhereHas('venta', function ($str) use ($keyword) {
                         $str->where('invoice_number', 'like', "%{$keyword}%");
@@ -1357,7 +1745,10 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
 				->editColumn('vendedor', function ($orden) {
 						return ($orden->cotizacion->vendedor->name ?? null) ?? ($orden->venta->vendedor->name ?? '');
 					})
-			
+			 ->editColumn('fecha_venta', function ($orden) {
+				return formatDate($orden->fecha_venta);
+				
+            })
 			->editColumn('cotizacion', function ($orden) {
 
                 return $orden->cotizacion->quotation_number ?? null;

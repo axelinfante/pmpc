@@ -311,7 +311,8 @@ class InvoiceController extends Controller
     $invoice->company_id = $company_id;
     //$invoice->car_id = $request->input('car_id',null);
     $invoice->fecha_entrega = $request->input('fecha_entrega', null);
-
+	$invoice->fecha_entrega_posible = $request->input('fecha_entrega_posible', null);
+   
     if (in_array('retirar', $facturarOptions)) {
         $invoice->retiro = true;
     } else {
