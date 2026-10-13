@@ -319,7 +319,7 @@ class Select2Controller extends Controller
     $company = company_id(); 
     $companias_global = company_id_arr(); 
 
-    $rawText = "
+    /*$rawText = "
     CONCAT(
         'IdProducto ', products.id, 
         ' - Interno : ', 
@@ -332,7 +332,35 @@ class Select2Controller extends Controller
         IFNULL(CONCAT(' - ','Motor : ', cars.motor_nro), ''), 
         IFNULL(CONCAT(' - ',marcas.marca), ''), 
         IFNULL(CONCAT(' / ',modelos.modelo), '')
-    )";
+    )";*/
+	
+	$rawText = "
+    CONCAT(
+        'IdProducto ', products.id, 
+        IF(products.nro_interno > 0 AND cars.id IS NOT NULL,
+            CONCAT(
+                ' - Interno : ',
+                IF(cars.company_id = 1, 
+                    CONCAT('PM', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0')), 
+                    CONCAT('PC', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0'))
+                )
+            ),
+            ' - Sin Vehículo Asociado'
+        ), 
+        ' - ', 
+        items.item_name,
+        IF(products.nro_interno > 0 AND cars.motor_nro IS NOT NULL, 
+            CONCAT(' - ', 'Motor : ', cars.motor_nro), 
+            ''
+        ), 
+        IFNULL(CONCAT(' - ', marcas.marca), ''), 
+        IFNULL(CONCAT(' / ', modelos.modelo), '')
+    )
+"; 
+
+
+
+
 
     $selectArray = [
         'products.id',
@@ -358,7 +386,11 @@ class Select2Controller extends Controller
 				//$q->whereNotIn('products.estado', ['desarme', 'desarme-stock','descompuesto','en transito','pendiente'])
               //->orWhereNull('products.estado');
         })
-        ->whereIn("products.company_id", $companias_global);
+        ->whereIn("products.company_id", $companias_global)
+		->where(function ($q) {
+        $q->where('products.nro_interno', 0)
+          ->orWhereNull('products.nro_interno');
+		});
 
     if (empty($search)) {
         $result = $query->limit(30)
