@@ -315,24 +315,110 @@ class Select2Controller extends Controller
 	
 	private function SearchProducts(Request $request)
 {
-    $search = $request->input('q');
-    $company = company_id(); 
-    $companias_global = company_id_arr(); 
+$search = $request->input('q');
+$company = company_id(); 
+$companias_global = company_id_arr(); 
 
-    /*$rawText = "
+// Se actualiza el string SQL dinámico ya que ahora nro_interno puede ser 0
+$rawText = "
     CONCAT(
         'IdProducto ', products.id, 
-        ' - Interno : ', 
-        IF(cars.company_id = 1, 
-            CONCAT('PM', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0')), 
-            CONCAT('PC', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0'))
+        IF(products.nro_interno >= 0 AND cars.id IS NOT NULL,
+            CONCAT(
+                ' - Interno : ',
+                IF(cars.company_id = 1, 
+                    CONCAT('PM', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0')), 
+                    CONCAT('PC', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0'))
+                )
+            ),
+            ' - Sin Vehículo Asociado'
         ), 
         ' - ', 
         items.item_name,
-        IFNULL(CONCAT(' - ','Motor : ', cars.motor_nro), ''), 
-        IFNULL(CONCAT(' - ',marcas.marca), ''), 
-        IFNULL(CONCAT(' / ',modelos.modelo), '')
-    )";*/
+        IF(products.nro_interno >= 0 AND cars.motor_nro IS NOT NULL, 
+            CONCAT(' - ', 'Motor : ', cars.motor_nro), 
+            ''
+        ), 
+        IFNULL(CONCAT(' - ', marcas.marca), ''), 
+        IFNULL(CONCAT(' / ', modelos.modelo), '')
+    )
+"; 
+
+$selectArray = [
+    'products.id',
+    DB::raw("($rawText) AS text")
+];
+
+if (!empty($company) && $company !== 'undefined') {
+    $selectArray[] = DB::raw("IF(products.company_id = " . intval($company) . ", false, true) as disabled");
+}
+
+$query = Product::query()
+    ->select($selectArray)
+    ->leftJoin('items', 'products.item_id', '=', 'items.id')
+    ->leftJoin('marca_modelos', 'products.marca_modelo', '=', 'marca_modelos.id')
+    ->leftJoin('marcas', 'marca_modelos.idMarca', '=', 'marcas.id')
+    ->leftJoin('modelos', 'marca_modelos.idModelo', '=', 'modelos.id')
+    
+    // 1. REESTRUCTURACIÓN DEL LEFT JOIN CON CONDICIONES ESPECÍFICAS
+    ->leftJoin('cars', function ($join) use ($companias_global) {
+        $join->on('cars.id', '=', 'products.nro_interno')
+             ->whereIn("products.company_id", $companias_global)
+             ->where(function ($q) {
+                 $q->where('products.nro_interno', '>=', 0)
+                   ->orWhereNull('products.nro_interno');
+             });
+    })
+    
+    // 2. Filtros base de la tabla principal (products)
+    ->whereNull('products.allCar')
+    ->where('products.stock', 1)
+    ->where(function ($q) {
+        $q->whereNotNull('products.fecha_desarme_a_stock');
+    });
+
+// 3. Bloque de búsqueda condicional
+if (empty($search)) {
+    $result = $query->limit(30)
+        ->groupBy('products.id')
+        ->orderBy('products.id', 'ASC')
+        ->get();
+} else {
+    $query->where(function ($str) use ($search) {
+        $str->orWhere('marcas.marca', 'LIKE', "%$search%")
+            ->orWhere('items.item_name', 'LIKE', "%$search%")
+            ->orWhere('modelos.modelo', 'LIKE', "%$search%")
+            ->orWhere('products.nro_interno', 'LIKE', "%$search%")
+            ->orWhere('cars.motor_nro', 'LIKE', "%$search%")
+            ->orWhere('products.id', 'LIKE', "%$search%");
+    });
+    
+    $result = $query->groupBy('products.id')
+        ->orderBy('products.id', 'ASC')
+        ->get();
+}
+
+return $result;
+
+
+    /* $search = $request->input('q');
+    $company = company_id(); 
+    $companias_global = company_id_arr(); 
+
+    // $rawText = "
+    // CONCAT(
+        // 'IdProducto ', products.id, 
+        // ' - Interno : ', 
+        // IF(cars.company_id = 1, 
+            // CONCAT('PM', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0')), 
+            // CONCAT('PC', COALESCE(cars.tipo_vehiculo,''), '-', LPAD(cars.id, 10, '0'))
+        // ), 
+        // ' - ', 
+        // items.item_name,
+        // IFNULL(CONCAT(' - ','Motor : ', cars.motor_nro), ''), 
+        // IFNULL(CONCAT(' - ',marcas.marca), ''), 
+        // IFNULL(CONCAT(' / ',modelos.modelo), '')
+    // )";
 	
 	$rawText = "
     CONCAT(
@@ -412,7 +498,7 @@ class Select2Controller extends Controller
             ->get();
     }
 
-    return $result;
+    return $result; */
 }
 
 
