@@ -175,7 +175,7 @@
 				<div class="col-md {{ $ve }}">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Posible Fecha de entrega a cliente') }}</label>
-					<input type="date" class="form-control" name="fecha_entrega_posible">
+					<input type="date" class="form-control" name="fecha_entrega_posible" required>
 				</div>
 			</div>
 
@@ -529,7 +529,7 @@
     let product1 = $('#product1');
 
 	let is_usd = $('#is_usd');
-	var importadoIds = ['111111', '11628'];
+	var importadoIds = ['11156', '11628'];
 
 	$(document).ready(function() {
         $('#acciones').select2({
@@ -890,6 +890,10 @@ function validar_summary() {
         marca_modelo: textoVehiculo,
         item_id: product_id
     };
+	
+   let maxCantidad = isImportado ? 100 : 1;
+   let esBloqueado = isImportado ? '':'readonly style="background-color: #eee; cursor: not-allowed;"';
+
     
     var unit_cost = 1;
     var sub_total = 1;
@@ -902,8 +906,7 @@ function validar_summary() {
                 <input type="text" name="product_new_description[]" class="form-control input-description" value="">
             </td>
             <td class="text-center quantity">
-                1 
-                <input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
+                <input type="text" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="${maxCantidad}"  ${esBloqueado} >
             </td>
             <td class="text-right unit-cost">
                 <input type="text" name="unit_new_cost[]" data-id="${product_data.id}" onChange="monto_en_usd(this, ${product_data.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
@@ -929,6 +932,18 @@ function validar_summary() {
 
     // Opcional: Limpiar el selector tras agregarlo para permitir una nueva selección
     $this.val("").trigger('change.select2');
+});
+
+$(document).on('input', '.input-quantity', function() {
+    var max = parseInt($(this).attr('max'));
+    var val = parseInt($(this).val());
+    
+    if (!isNaN(val) && val > max) {
+        $(this).val(max);
+        
+        // Opcional: Puedes disparar el evento 'change' aquí si tienes fórmulas que recalculen subtotales
+        $(this).trigger('change'); 
+    }
 });
 
 

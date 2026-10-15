@@ -188,6 +188,7 @@ class InvoiceController extends Controller
         'client_id' => 'required',
         'invoice_date' => 'required',
         'due_date' => 'required',
+        'fecha_entrega_posible' => 'required',
         'product_id' => 'nullable|array',       
         /*'product_id' => ['required','array', function ($attribute, $value, $fail) use ($request): void {
             $item = Product::selectRaw('GROUP_CONCAT(products.id) AS productos_observacion')
@@ -371,13 +372,13 @@ class InvoiceController extends Controller
         $invoiceItem->invoice_id = $invoice->id;
         $invoiceItem->item_id = $product->item->id;
         $invoiceItem->description = $request->product_description[$i];
-        $invoiceItem->quantity = 1; //$request->quantity[$i];
+        $invoiceItem->quantity = $request->quantity[$i]; //1
         $invoiceItem->unit_cost = $request->unit_cost[$i];
         // $invoiceItem->discount = $request->discount[$i];
         //$invoiceItem->tax_method = $request->tax_method[$i];
         //$invoiceItem->tax_id = $request->tax_id[$i];
         $invoiceItem->tax_amount = $request->product_tax[$i];
-        $invoiceItem->sub_total = $request->unit_cost[$i];
+		$invoiceItem->sub_total = $request->sub_total[$i]; //round(((float)$request->quantity[$i] * (float)$request->unit_cost[$i]), 2);
         $invoiceItem->idCar = $request->autos[$i] ?? null;
         $invoiceItem->product_id = $product->id;
         $invoiceItem->company_id = $company_id;
@@ -525,6 +526,7 @@ class InvoiceController extends Controller
 				$unit_cost = $request->unit_new_cost[$key];
 				$tax_amount = $request->product_new_tax[$key];
 				$sub_total = $request->sub_new_total[$key];
+				$quantity = $request->quantity_new[$key];
 				$marca_modelo = null;
 				
 				if ($car_id != $car_id_actual){
@@ -569,10 +571,10 @@ class InvoiceController extends Controller
 				$invoiceItem->invoice_id = $invoice->id;
 				$invoiceItem->item_id = $item_id; //$product->item->id;
 				$invoiceItem->description = $description;
-				$invoiceItem->quantity = 1;
+				$invoiceItem->quantity = $quantity; //1;
 				$invoiceItem->unit_cost = $unit_cost;
 				$invoiceItem->tax_amount = $tax_amount;
-				$invoiceItem->sub_total = $unit_cost;
+				$invoiceItem->sub_total = $sub_total;//round(((float)$quantity * (float)$unit_cost), 2);
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = null;
 				$invoiceItem->product_id = $product->id;
@@ -989,7 +991,7 @@ class InvoiceController extends Controller
 				$invoiceItem->quantity = $request->quantity[$key];
 				$invoiceItem->unit_cost = $request->unit_cost[$key];
 				$invoiceItem->tax_amount = $request->product_tax[$key];
-				$invoiceItem->sub_total = $request->unit_cost[$key];
+				$invoiceItem->sub_total = $request->sub_total[$key];
 				$invoiceItem->save();
 				
 
@@ -1005,7 +1007,7 @@ class InvoiceController extends Controller
 				//$invoiceItem->tax_method = $request->tax_method[$i];
 				//$invoiceItem->tax_id = $request->tax_id[$i];
 				$invoiceItem->tax_amount = $request->product_tax[$key];
-				$invoiceItem->sub_total = $request->unit_cost[$key];
+				$invoiceItem->sub_total = $request->sub_total[$key];
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = $request->autos[$key] ?? null;
 				$invoiceItem->product_id = $id_producto;//$product->id;
@@ -1065,6 +1067,7 @@ class InvoiceController extends Controller
 				$unit_cost = $request->unit_new_cost[$key];
 				$tax_amount = $request->product_new_tax[$key];
 				$sub_total = $request->sub_new_total[$key];
+				$quantity = $request->quantity_new[$key];
 				$marca_modelo = null;
 				
 				if ($car_id != $car_id_actual){
@@ -1108,10 +1111,11 @@ class InvoiceController extends Controller
 				$invoiceItem->invoice_id = $invoice->id;
 				$invoiceItem->item_id = $item_id; //$product->item->id;
 				$invoiceItem->description = $description;
-				$invoiceItem->quantity = 1;
+				$invoiceItem->quantity = $quantity;//1;
+				$invoiceItem->sub_total = $sub_total;
 				$invoiceItem->unit_cost = $unit_cost;
 				$invoiceItem->tax_amount = $tax_amount;
-				$invoiceItem->sub_total = $unit_cost;
+				//$invoiceItem->sub_total = $unit_cost;
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = null;
 				$invoiceItem->product_id = $product->id;
