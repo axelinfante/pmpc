@@ -430,7 +430,7 @@ class ReportController extends Controller
                 DB::raw("SUM(CASE WHEN (t.dr_cr = 'cr' or t.dr_cr = 'cc') AND accounts.account_currency = 'ARS' THEN COALESCE(t.amount_peso, t.base_amount) ELSE 0 END) - SUM(CASE WHEN (t.dr_cr = 'dr' or t.dr_cr = 'cc') AND accounts.account_currency = 'ARS' THEN COALESCE(t.amount_peso, t.base_amount) ELSE 0 END) AS saldoARS"),
                 // Cálculo del saldo final en USD
                 //DB::raw("SUM(CASE WHEN t.dr_cr = 'cr' AND accounts.account_currency = 'USD' THEN t.amount_usd ELSE 0 END) - SUM(CASE WHEN t.dr_cr = 'dr' AND accounts.account_currency = 'USD' THEN t.amount_usd ELSE 0 END) AS saldoUSD")
-                DB::raw("SUM(CASE WHEN (t.dr_cr = 'cr' or t.dr_cr = 'cc') AND accounts.account_currency = 'USD' THEN COALESCE(t.amount_usd, t.base_amount) ELSE 0 END) - SUM(CASE WHEN (t.dr_cr = 'dr' or t.dr_cr = 'cc_expense') AND accounts.account_currency = 'ARS' THEN COALESCE(t.amount_usd, t.base_amount) ELSE 0 END) AS saldoUSD"),
+                DB::raw("SUM(CASE WHEN (t.dr_cr = 'cr' or t.dr_cr = 'cc') AND accounts.account_currency = 'USD' THEN COALESCE(t.amount_usd, t.base_amount) ELSE 0 END) - SUM(CASE WHEN (t.dr_cr = 'dr' or t.dr_cr = 'cc_expense') AND accounts.account_currency = 'USD' THEN COALESCE(t.amount_usd, t.base_amount) ELSE 0 END) AS saldoUSD"),
 
                 )
             ->whereBetween("t.trans_date", [$date1, $date2])
@@ -470,7 +470,7 @@ class ReportController extends Controller
         $data['current_day_income_expense_by_account'] = $query->map(function ($item) {
             return (array) $item;
         })->toArray();
-    
+
         return view('backend.accounting.reports.report_by_day_new', $data);
     }
     

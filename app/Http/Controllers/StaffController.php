@@ -284,9 +284,14 @@ class StaffController extends Controller
      */
     public function destroy($id)
     {
-        $user = User::where("id",$id)
-                ->where("company_id",company_id());
-        $user->delete();
+        //$user = User::where("id",$id)
+         //       ->where("company_id",company_id());
+        //$user->delete();
+		
+			$user = User::where("id", $id)->firstOrFail(); 
+			$user->status = $user->status == 1 ? 0 : 1; 
+			$user->save();
+		
         return redirect('staffs')->with('success',_lang('Removed Sucessfully'));
     }
 	
