@@ -313,9 +313,16 @@ Venta menos a 30000'  ? 'selected' : '' }}
 									<select class="form-control" data-value="id" data-display="item_name" 
 								data-table="items" data-where="100" data-option = '' name="product" id="product">
 							<option value="">{{ _lang('Select Product') }}</option>
-						</select>
+							</select>
 									
 								</div>
+								<div class="form-group select-product-container">
+        <label class="control-label">{{ _lang('Producto en vehiculo (Listado Secundario)') }}</label>
+        <select class="form-control" data-value="id" data-display="item_name" 
+                data-table="items" data-where="100" data-option = '' name="product1" id="product1">
+            <option value="">{{ _lang('Select Product') }}</option>
+        </select>
+    </div>
 							</div>
 							</div>
 						</div>
@@ -497,7 +504,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 												
 												<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="{{ $item->description }}"></td>
 
-												<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" value="{{ $item->quantity }}" max="1"></td>
+												<td class="text-center quantity">{{ $item->quantity ?? 1 }} <input type="hidden" value="{{ $item->quantity ?? 1 }}" name="quantity[]" min="1" class="form-control input-quantity text-center" max="150"></td>
 
 												{{-- @if($item->item->item_type == 'product')
 												
@@ -676,7 +683,10 @@ Venta menos a 30000'  ? 'selected' : '' }}
 
     let car = $('#car_id');
     let product = $('#product');
+	let product1 = $('#product1');
 
+	var importadoIds = ['11156', '11628'];
+	
 	if($('#company_id').val() != '') {
                         // console.log(data.company);
                 $('#service').data('company', $('#company_id').val());
@@ -686,12 +696,15 @@ Venta menos a 30000'  ? 'selected' : '' }}
            
 	}
 
-    if(car.val()){
+   /*if(car.val()){
         //$('#productLink_').prop('href',"{{route('products.create')}}?idCar="+car.val());
         $('#product').prop('data-idCar',car.val());
+		$('#product1').prop('data-idCar', carId);
+		var isImportado = importadoIds.includes(carId);
 
 
         product.data('option','products.nro_interno = '+ car.val());
+		
 
         var display2 = "";
         if( typeof  product.data('display2') !== "undefined" ){
@@ -739,19 +752,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
         $('#product').prop('data-idCar',car.val());
 
 
-        /*product.select2({
-            ajax: {
-                url: _url + '/ajax/get_table_data?table=' + product.data('table') + '&value=' + product.data('value') +
-                '&display=' + product.data('display') + display2 + display3 + '&where=' +product.data('where')+
-                '&option= products.nro_interno = ' + $(this).val(),
-                processResults: function (data) {
-					$('.select-product-container').find('#productLink').css('pointer-events', 'auto').removeClass('disabled');
-                    return {
-                        results: data
-                    };
-                }
-            }
-        });*/
+     
 		
 		product.select2({
 				placeholder: 'Buscar ...',
@@ -776,6 +777,155 @@ Venta menos a 30000'  ? 'selected' : '' }}
 
 
     })
+	*/
+	
+	
+    if (car.val() != '') {
+    var carId = car.val();
+	var isImportado = importadoIds.includes(carId);
+
+    $('#product').prop('data-idCar', carId);
+    $('#product1').prop('data-idCar', carId);
+
+    product.data('option', 'products.car_id = ' + carId);
+    product1.data('option', 'products.car_id = ' + carId);
+
+    var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
+    var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
+
+    var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
+    var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
+
+    var menuParam = isImportado ? 'importado' : 'primario';
+
+    product.select2({
+        placeholder: 'Buscar ...',
+        allowClear: true,
+        ajax: {
+            url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+                 '&value=' + product.data('value') +
+                 '&display=' + product.data('display') + display2 + display3 + 
+                 '&where=' + product.data('where') +
+                 '&car_id=' + carId +
+                 '&menu=' + menuParam +
+                 '&option=products.car_id = ' + carId,
+            delay: 250,
+            dataType: 'json',
+            processResults: function (data) {
+                return { results: data };
+            }
+        }
+    });
+
+    if (isImportado) {
+        product1.prop('disabled', true);
+        product1.val(null).trigger('change');
+    } else {
+        product1.prop('disabled', false);
+        product1.select2({
+            placeholder: 'Buscar ...',
+            allowClear: true,
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
+                     '&value=' + product1.data('value') +
+                     '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
+                     '&where=' + product1.data('where') +
+                     '&car_id=' + carId +
+                     '&menu=secundario' +
+                     '&option=products.car_id = ' + carId,
+                delay: 250,
+                dataType: 'json',
+                processResults: function (data) {
+                    return { results: data };
+                }
+            }
+        });
+    }
+    
+    $('#productLink').removeClass('d-none');
+    setTimeout(function() {
+        $('#car_id').trigger('change');
+    }, 2000); // Se ejecuta después de 2 segundos
+    
+} else {
+    $('#productLink').addClass('d-none');
+}
+
+
+car.change(function() {
+    var carId = $(this).val();
+	var isImportado = importadoIds.includes(carId);
+    if (carId != '') {
+        $('#productLink').removeClass('d-none');
+
+        $('#product').prop('data-idCar', carId);
+        $('#product1').prop('data-idCar', carId);
+
+        product.prop('data-option', 'products.car_id = ' + carId);
+        product1.prop('data-option', 'products.car_id = ' + carId);
+
+        var display2 = (typeof product.data('display2') !== "undefined") ? "&display2=" + product.data('display2') : "";
+        var display3 = (typeof product.data('display3') !== "undefined") ? "&display3=" + product.data('display3') : "";
+
+        var p1_display2 = (typeof product1.data('display2') !== "undefined") ? "&display2=" + product1.data('display2') : "";
+        var p1_display3 = (typeof product1.data('display3') !== "undefined") ? "&display3=" + product1.data('display3') : "";
+
+        //limpiarItems(carId);
+
+        var menuParam = isImportado ? 'importado' : 'primario';
+
+        product.select2({
+            placeholder: 'Buscar...',
+            allowClear: true,
+            ajax: {
+                url: _url + '/ajax/get_table_data?table=' + product.data('table') + 
+                     '&value=' + product.data('value') +
+                     '&display=' + product.data('display') + display2 + display3 + 
+                     '&where=' + product.data('where') +
+                     '&car_id=' + carId +
+                     '&menu=' + menuParam + 
+                     '&option= products.car_id = ' + carId,
+                delay: 250,
+                dataType: 'json',
+                processResults: function (data) {
+                    return { results: data };
+                }
+            }
+        });
+
+        if (isImportado) {
+            product1.prop('disabled', true);
+            product1.val(null).trigger('change');
+        } else {
+            product1.prop('disabled', false);
+            product1.select2({
+                placeholder: 'Buscar...',
+                allowClear: true,
+                ajax: {
+                    url: _url + '/ajax/get_table_data?table=' + product1.data('table') + 
+                         '&value=' + product1.data('value') +
+                         '&display=' + product1.data('display') + p1_display2 + p1_display3 + 
+                         '&where=' + product1.data('where') +
+                         '&car_id=' + carId +
+                         '&menu=secundario' + 
+                         '&option= products.car_id = ' + carId,
+                    delay: 250,
+                    dataType: 'json',
+                    processResults: function (data) {
+                        return { results: data };
+                    }
+                }
+            });
+        }
+
+    } else {
+        $('#productLink').addClass('d-none');
+        product.prop('disabled', false).val(null).trigger('change');
+        product1.prop('disabled', false).val(null).trigger('change');
+    }
+});
+	
+	
 	
   $('#seleccionar-todos').on('click', function() {
     $('.fila-seleccionada').prop('checked', $(this).prop('checked'));
@@ -854,29 +1004,7 @@ Venta menos a 30000'  ? 'selected' : '' }}
 	    update_summary();
 	});
 	
-	/*$("#productLink_").click(function(e){
-  e.preventDefault();
-	$('#itemCreateModal').modal({show:true});
-	return false;
-  });
-  
-  $('#miFormulario').submit(function(e) {
-        e.preventDefault();
-        //var url = $(this).attr("action");
-        //let formData = new FormData(this);
-		let select_display = $('#item_name_m').val();
-		
-		var newOption = new Option(select_display, select_value, true, true);
-		$('#item_id').append(newOption).trigger('change');
-		$('#itemCreateModal').modal('hide');
-    });
-
-  $('#itemCreateModal').on('hidden.bs.modal', function () {
-    // Limpiar la validación al cerrar el modal
-    $('#miFormulario').parsley().reset();
-    // Limpiar los campos del formulario
-    $('#item_name_m').val('');
-  });*/
+	
 
 
 </script>

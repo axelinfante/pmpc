@@ -42,134 +42,7 @@ var current_row;
 		});
 	});
 
-	/*$(document).on('change', '#product,#service', function() {
-	    var product_id = $(this).val();
-		if( product_id == '' ){
-			return;
-		}
-		
-
-		//console.log(product_id);
-		
-	    //if product has already in order table
-	    if ($("#order-table > tbody > #product-" + product_id).length > 0) {
-			var line = $("#order-table > tbody > #product-" + product_id);
-			var quantity = parseFloat($(line).find(".input-quantity").val());
-
-			//validacion de producto solamente se acepta 1
-			if (quantity==1) return "";
-			
-			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
-			$("#product").val("").trigger('change');;
-			
-			return;		
-	    }
-
-        let showCar = true;
-        // service es productos en stock
-        if ($(this).prop('id') == 'service'){
-            showCar = false
-        }
-        //productos en stock
-        let service = $(this);
-
-	    //Ajax request for getting product details
-	    $.ajax({
-	        method: "GET",
-	        url: _url + '/products/get_product/' + product_id,
-	        beforeSend: function() {
-	            $("#preloader").fadeIn(100);
-	        },
-	        success: function(data) {
-	            $("#preloader").fadeOut(100);
-	            var json = JSON.parse(data);
-	            var item = json['item'];
-	            var product = json['product'];
-	            //var tax = json['tax'];
-
-				//console.log(product);
-                if (service.prop('id') == 'service'){
-                    $('#service').data('company', product['company_id']);
-                }
-	            if (item['item_type'] == 'product') {
-	                var product_price = parseFloat(product['product_price']);
-
-	                // If Stock not available
-	                var available_quantity = json['available_quantity'];
-	                if( available_quantity < 1 ){
-	                		alert("Sorry, Out of Stock !");
-	                		$("#product").val("");
-	                		return;
-	                }
-
-	            } else if (item['item_type'] == 'service') {
-	                var product_price = parseFloat(product['cost']);
-	            }
-	            
-
-				let company = ''
-                if(product['company_id'] == 1) {
-                    company = 'PM-'
-                }
-
-                if(product['company_id'] == 2) {
-                    company = 'PC-'
-                }
-
-	            //Tax Value calculation
-	            var unit_cost = product_price;
-	            var sub_total = product_price;
-
-				
-				var tax_selector = $("#tax-selector").html();
-
-				let interno = product['nro_interno'];
-
-				let marca = 'Sin marca';
-                let modelo = 'Sin marca';
-                if(product.marca_modelo) {
-                    marca = product.marca_modelo.marca.marca;
-                    product.marca_modelo.modelo.modelo;
-                }
-
-
-				// <td class="text-right discount"><input type="text" name="discount[]" class="form-control input-discount text-right" value="0.00"></td>
-				// 							<td class="text-right tax"><select class="form-control selectpicker input-tax" name="tax[${product['id']}][]" title="${$lang_select_tax}" multiple="true">${tax_selector}</select></td>
-
-				
-				//${ showCar ?  $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}
-	            var product_row = `<tr id="product-${product['id']}">
-											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
-											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
-											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
-											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
-											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
-											<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="${product['id']}" onChange="monto_en_usd(this,${product['id']})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}"></td>
-											
-											<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly></td>
-											<td class="text-right usd"><input disabled id="usd_monto-${product['id']}" type="text" class="form-control input-usd text-right" ></td>
-											<td>
-											${company} ${interno}
-											<input type="hidden" name="autos[]" value="${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}">
-</td>
-											<input type="hidden" name="product_id[]" value="${product['id']}">
-											<input type="hidden" name="product_items_id[]" value="${product['item_id']}">											
-											<input type="hidden" name="invoiceitem_id[]" value="0">
-											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
-									</tr>`;
-									
-	            $("#order-table > tbody").append(product_row);
-	            update_summary();
-
-	            $("#product").val("").trigger('change');
-	            $("#service").val("").trigger('change');
-				$('.selectpicker').selectpicker('render');
-
-	        }
-	    });
-
-	});*/
-
+	
 
 	$(document).on('change','#service', function() {
 	    var product_id = $(this).val();
@@ -299,24 +172,51 @@ var current_row;
 
 	});
 	
-	$(document).on('change', '#product', function() {
+
+$(document).on('input', '.input-quantity', function() {
+    var max = parseInt($(this).attr('max'));
+    var val = parseInt($(this).val());
+    
+    if (!isNaN(val) && val > max) {
+        $(this).val(max);
+        
+        // Opcional: Puedes disparar el evento 'change' aquí si tienes fórmulas que recalculen subtotales
+        $(this).trigger('change'); 
+    }
+});
+	
+	$(document).on('change', '#product, #product1', function() {
+	//$(document).on('change', '#product', function() {
 	    var product_id = $(this).val();
 		if( product_id == '' ){
 			return;
 		}
-			let InternoVehiculo = $('#car_id option:selected').val();
-	    //if product has already in order table
-	    if ($("#order-table > tbody > #product-" + InternoVehiculo+product_id).length > 0) {
-			if (typeof $.toast !== 'undefined') {$.toast({ position: 'top-right', text: 'Producto ya se encuentra agregado', icon: 'error' });}
-		/*	var line = $("#order-table > tbody > #product-" + product_id);
-			var quantity = parseFloat($(line).find(".input-quantity").val());
-			if (quantity==1) return "";
-			$(line).find(".input-quantity").val(quantity + 1).trigger('change');
-			$("#product").val("").trigger('change');*/
+			
+    var $this = $(this);
+    var product_id = $this.val();
+    
+    if (product_id == '') {
+        return;
+    }
+    let InternoVehiculo = $('#car_id option:selected').val();
+	
+	var isImportado = importadoIds.includes(InternoVehiculo);
+
+	if (!isImportado) {
+		if ($("#order-table > tbody > #product-" + InternoVehiculo + product_id).length > 0) {
+			if (typeof $.toast !== 'undefined') {
+				$.toast({ 
+					position: 'top-right', 
+					text: 'Producto ya se encuentra agregado', 
+					icon: 'error' 
+				});
+			}
+			// Limpiamos el selector que causó el duplicado para que el usuario pueda volver a buscar
+			$this.val("").trigger('change.select2');
 			return;		
-	    }
-		
-					
+		}
+	}
+	  
 					let textoVehiculo = $('#car_id option:selected').text();
 					let textoPieza    = $(this).find('option:selected').text();
 					
@@ -327,23 +227,12 @@ var current_row;
 						item_id: product_id
 					};
 
-				/*	let partes = textoVehiculo.split('-').map(p => p.trim());
-
-					let prefijo        = partes[0] || '';
-					let numeroSinCeros = parseInt(partes[1], 10) || 0; 
-					let internos_new   = `${prefijo}-${numeroSinCeros}`; 
-
-					let vehiculo = partes.slice(2).join(' - '); 
-
-					let product = {
-						id: product_id,
-						item_name: textoPieza,
-						marca_modelo: vehiculo,
-						item_id: product_id
-					};*/
 					
 					   var unit_cost = 1;
 					   var sub_total = 1;
+					   
+					   let maxCantidad = isImportado ? 100 : 1;
+						let esBloqueado = isImportado ? '':'readonly style="background-color: #eee; cursor: not-allowed;"';
 
 					let product_row = `
 						<tr id="product-${product.id}">
@@ -358,8 +247,7 @@ var current_row;
 								<input type="text" name="product_new_description[]" class="form-control input-description" value="">
 							</td>
 							<td class="text-center quantity">
-								1 
-								<input type="hidden" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="1">
+							<input type="text" value="1" name="quantity_new[]" min="1" class="form-control input-quantity text-center" max="${maxCantidad}" ${esBloqueado}>
 							</td>
 							<td class="text-right unit-cost">
 								<input type="text" name="unit_new_cost[]" data-id="${product.id}" onChange="monto_en_usd(this, ${product.id})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}">
@@ -380,136 +268,6 @@ var current_row;
 
 					$("#order-table > tbody").append(product_row);
 					update_summary();
-										
-										
-		/*								    if (item['item_type'] == 'product') {
-	                var product_price = parseFloat(product['product_price']);
-
-	                // If Stock not available
-	                var available_quantity = json['available_quantity'];
-	                if( available_quantity < 1 ){
-	                		alert("Sorry, Out of Stock !");
-	                		$("#product").val("");
-	                		return;
-	                }
-
-	            } else if (item['item_type'] == 'service') {*/
-			
-			/*
-			   var product_row = `<tr id="product-${product['id']}">
-											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
-											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
-											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
-											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
-											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
-											<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="${product['id']}" onChange="monto_en_usd(this,${product['id']})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}"></td>
-											
-											<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly></td>
-											<td class="text-right usd"><input disabled id="usd_monto-${product['id']}" type="text" class="form-control input-usd text-right" ></td>
-											<td>
-											${company} ${interno}
-											<input type="hidden" name="autos[]" value="${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}">
-</td>
-											<input type="hidden" name="product_id[]" value="${product['id']}">
-											<input type="hidden" name="product_items_id[]" value="${product['item_id']}">											
-											<input type="hidden" name="invoiceitem_id[]" value="0">
-											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
-									</tr>`;
-									
-	            $("#order-table > tbody").append(product_row);
-	            update_summary();
-				*/
-			
-      	    //Ajax request for getting product details
-	   /* $.ajax({
-	        method: "GET",
-	        url: _url + '/products/get_product/' + product_id,
-	        beforeSend: function() {
-	            $("#preloader").fadeIn(100);
-	        },
-	        success: function(data) {
-	            $("#preloader").fadeOut(100);
-	            var json = JSON.parse(data);
-	            var item = json['item'];
-	            var product = json['product'];
-	            //var tax = json['tax'];
-
-				//console.log(product);
-                if (service.prop('id') == 'service'){
-                    $('#service').data('company', product['company_id']);
-                }
-	            if (item['item_type'] == 'product') {
-	                var product_price = parseFloat(product['product_price']);
-
-	                // If Stock not available
-	                var available_quantity = json['available_quantity'];
-	                if( available_quantity < 1 ){
-	                		alert("Sorry, Out of Stock !");
-	                		$("#product").val("");
-	                		return;
-	                }
-
-	            } else if (item['item_type'] == 'service') {
-	                var product_price = parseFloat(product['cost']);
-	            }
-	            
-
-				let company = ''
-                if(product['company_id'] == 1) {
-                    company = 'PM-'
-                }
-
-                if(product['company_id'] == 2) {
-                    company = 'PC-'
-                }
-
-	            //Tax Value calculation
-	            var unit_cost = product_price;
-	            var sub_total = product_price;
-
-				
-				var tax_selector = $("#tax-selector").html();
-
-				let interno = product['nro_interno'];
-
-				let marca = 'Sin marca';
-                let modelo = 'Sin marca';
-                if(product.marca_modelo) {
-                    marca = product.marca_modelo.marca.marca;
-                    product.marca_modelo.modelo.modelo;
-                }
-
-
-	            var product_row = `<tr id="product-${product['id']}">
-											<td><button type="button" class="btn btn-danger btn-xs remove-product-directo"><i class='fa fa-trash'></i></button></td>
-											<td><b>${product['id']} / ${product['nro_oblea'] != null ? product['nro_oblea'] : ''}</b></td>
-											<td><b>${item['item_name']} ${marca} ${modelo}</b></td>
-											<td class="description"><input type="text" name="product_description[]" class="form-control input-description" value="${product['description'] != null ? product['description'] : ''}"></td>
-											<td class="text-center quantity">1 <input type="hidden" value="1" name="quantity[]" min="1" class="form-control input-quantity text-center" max="${available_quantity}"></td>
-											<td class="text-right unit-cost"><input type="text" name="unit_cost[]" data-id="${product['id']}" onChange="monto_en_usd(this,${product['id']})" class="form-control input-unit-cost text-right" value="${unit_cost.toFixed(2)}"></td>
-											
-											<td class="text-right sub-total"><input type="text" name="sub_total[]" class="form-control input-sub-total text-right" value="${sub_total.toFixed(2)}" readonly></td>
-											<td class="text-right usd"><input disabled id="usd_monto-${product['id']}" type="text" class="form-control input-usd text-right" ></td>
-											<td>
-											${company} ${interno}
-											<input type="hidden" name="autos[]" value="${ showCar ? $('#product').prop('data-idCar') ? $('#product').prop('data-idCar') : '' : ''}">
-</td>
-											<input type="hidden" name="product_id[]" value="${product['id']}">
-											<input type="hidden" name="product_items_id[]" value="${product['item_id']}">											
-											<input type="hidden" name="invoiceitem_id[]" value="0">
-											<input type="hidden" name="product_tax[]" class="input-product-tax" value="0">
-									</tr>`;
-									
-	            $("#order-table > tbody").append(product_row);
-	            update_summary();
-
-	            $("#product").val("").trigger('change');
-	            $("#service").val("").trigger('change');
-				$('.selectpicker').selectpicker('render');
-
-	        }*/
-	    //});
-
 	});
 
 	$('#tasa_usd').change(function() {
@@ -528,8 +286,9 @@ var current_row;
 		var line_unit_cost = parseFloat($(line).find('.input-unit-cost').val());
 		var line_discount = 0;//parseFloat($(line).find('.input-discount').val());
 		var line_total = (line_qnty * line_unit_cost) - line_discount;
-		
 		$(line).find('.input-sub-total').val(line_total);
+		
+		//console.log(line_qnty);
 		
 		//Update TAX
 		var product_tax = 0;
@@ -591,28 +350,6 @@ var current_row;
 			});
 	})
 	
-	//fin //Click remove product
-	/*$(document).on('click', '.remove-product', function() {
-		let row = $(this).parent().parent();
-		$('#modalProduct').modal('show');
-		let idProd = $(this).parent().parent().attr('id').split('-')[1];
-		$('#product_eliminar').click(function() {
-			let estado = $('#estado_prod').val();
-		*/
-/*			$.ajax({
-				url: _url+ '/products/cambiar-estado/' +idProd +'/'+estado
-			})*/
-
-	/*		alert();
-
-			row.remove();
-	    	update_summary();
-
-			$('#modalProduct').modal('hide');
-		})
-	    
-	});
-*/
 
 	//Select Tax
 	$(document).on('change', 'select.input-tax', function(event) {
