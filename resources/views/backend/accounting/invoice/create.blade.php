@@ -172,14 +172,14 @@
 				</div>
 			</div>
 
-				<div class="col-md {{ $ve }}">
+				<div class="col-md">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Posible Fecha de entrega a cliente') }}</label>
 					<input type="date" class="form-control" name="fecha_entrega_posible" required>
 				</div>
 			</div>
 
-			<div class="col-md {{ $ve }}">
+			<div class="col-md ">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Fecha de entrega') }}</label>
 					<input type="date" class="form-control" name="fecha_entrega">
