@@ -378,7 +378,7 @@ class InvoiceController extends Controller
         //$invoiceItem->tax_method = $request->tax_method[$i];
         //$invoiceItem->tax_id = $request->tax_id[$i];
         $invoiceItem->tax_amount = $request->product_tax[$i];
-		$invoiceItem->sub_total = $request->sub_total[$i]; //round(((float)$request->quantity[$i] * (float)$request->unit_cost[$i]), 2);
+		$invoiceItem->sub_total = round(((float)$request->quantity[$i] * (float)$request->unit_cost[$i]), 2);
         $invoiceItem->idCar = $request->autos[$i] ?? null;
         $invoiceItem->product_id = $product->id;
         $invoiceItem->company_id = $company_id;
@@ -574,7 +574,7 @@ class InvoiceController extends Controller
 				$invoiceItem->quantity = $quantity; //1;
 				$invoiceItem->unit_cost = $unit_cost;
 				$invoiceItem->tax_amount = $tax_amount;
-				$invoiceItem->sub_total = $sub_total;//round(((float)$quantity * (float)$unit_cost), 2);
+				$invoiceItem->sub_total = round(((float)$quantity * (float)$unit_cost), 2);
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = null;
 				$invoiceItem->product_id = $product->id;
@@ -991,7 +991,7 @@ class InvoiceController extends Controller
 				$invoiceItem->quantity = $request->quantity[$key];
 				$invoiceItem->unit_cost = $request->unit_cost[$key];
 				$invoiceItem->tax_amount = $request->product_tax[$key];
-				$invoiceItem->sub_total = $request->sub_total[$key];
+				$invoiceItem->sub_total = round(((float)$request->quantity[$key] * (float)$request->unit_cost[$key]), 2); //$request->sub_total[$key];
 				$invoiceItem->save();
 				
 
@@ -1007,7 +1007,7 @@ class InvoiceController extends Controller
 				//$invoiceItem->tax_method = $request->tax_method[$i];
 				//$invoiceItem->tax_id = $request->tax_id[$i];
 				$invoiceItem->tax_amount = $request->product_tax[$key];
-				$invoiceItem->sub_total = $request->sub_total[$key];
+				$invoiceItem->sub_total = round(((float)$request->quantity[$key] * (float)$request->unit_cost[$key]), 2);// $request->sub_total[$key];
 				$invoiceItem->company_id = $company_id;
 				$invoiceItem->idCar = $request->autos[$key] ?? null;
 				$invoiceItem->product_id = $id_producto;//$product->id;
