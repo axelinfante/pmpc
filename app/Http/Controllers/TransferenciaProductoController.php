@@ -12,6 +12,7 @@ use Illuminate\Database\QueryException;
 use App\Product;
 use Yajra\DataTables\Facades\DataTables;
 use PDF;
+use Carbon\Carbon;
 
 /*use App\Models\Inventario;
 
@@ -509,8 +510,42 @@ class TransferenciaProductoController extends Controller
         if ($request->ajax()) {
 			
 				$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-
+				
+				$fechaLimite = Carbon::now()->subDays(20);
 				$products = Product::query()
+					->select([
+						'products.id',
+						'products.nro_interno',
+						'products.item_id',
+						'products.marca_modelo',
+						'products.nro_oblea',
+						'products.idDeposito',
+						'products.ubicacion',
+						'products.fecha_ultimogiro',
+						'cars.tipo_vehiculo',
+						'cars.dominio',
+						'cars.motor_nro'
+					])
+					->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+					->whereNull('products.car_id')
+					->whereIn('products.company_id', $company_id)
+					->where(function ($query) use ($fechaLimite) {
+						$query->where('products.stock', '>=', 1) // Trae los que tienen stock disponible
+							->orWhereNull('products.fecha_desarme_a_stock') // O los que no han ingresado formalmente a stock
+							// NUEVA CONDICIÓN: Productos con stock igual a 0 y con antigüedad menor a 20 días
+							->orWhere(function ($subQuery) use ($fechaLimite) {
+								$subQuery->where('products.stock', '=', 0)
+										 ->where('products.created_at', '>=', $fechaLimite); 
+										 // Nota: Ajusta 'products.created_at' por la columna de fecha que uses (ej. 'fecha_ultimogiro')
+							});
+					})
+					->when($request->almacen_id, function ($query, $almacenId) {
+						return $query->where('products.idDeposito', $almacenId);
+					});
+
+				$products->orderBy('products.nro_interno', 'asc');
+
+			/*	$products = Product::query()
 					->select([
 						'products.id',
 						'products.nro_interno',
@@ -534,53 +569,19 @@ class TransferenciaProductoController extends Controller
 					->when($request->almacen_id, function ($query, $almacenId) {
 							return $query->where('products.idDeposito', $almacenId);
 					});
-					/*->when($request->almacen_id, function ($query, $almacenId) {
-						   return $query->where('products.idDeposito', $almacenId);
-					}, function ($query) {
-						   return $query->where(function ($subQuery) {
-							$subQuery->whereNull('products.idDeposito')
-									 ->orWhere('products.idDeposito', '=', '');
-						});
-					});*/
+					// ->when($request->almacen_id, function ($query, $almacenId) {
+						   // return $query->where('products.idDeposito', $almacenId);
+					// }, function ($query) {
+						   // return $query->where(function ($subQuery) {
+							// $subQuery->whereNull('products.idDeposito')
+									 // ->orWhere('products.idDeposito', '=', '');
+						// });
+					// });
 					
 
 				$products->orderBy('products.nro_interno', 'asc');
-
+*/
 			
-			/* $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-						$products = Product::query()
-						->select([
-							'products.id',
-							'products.nro_interno',
-							'products.item_id', 
-							'products.marca_modelo',
-							'products.nro_oblea',
-							'products.idDeposito',
-							'products.ubicacion',
-							'products.fecha_ultimogiro',
-							'cars.tipo_vehiculo', 
-							'cars.dominio', 
-							'cars.motor_nro'
-						])
-						->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-						->whereNull('products.car_id') 
-						->where('products.stock', '>=', 1)
-						->whereIn('products.company_id', $company_id)
-						->where(function ($query) {
-							// Agregamos 'pendiente' y 'en transito' a la lista negra
-							$query->whereNotIn('products.estado', [
-									'desarme', 
-									'desarme-stock', 
-									'pendiente', 
-									'en transito'
-								])
-								->orWhereNull('products.estado');
-						})
-						->when($request->almacen_id, function ($query, $almacenId) {
-							return $query->where('products.idDeposito', $almacenId);
-						});
-
-					$products->orderBy('products.nro_interno', 'asc');*/
 					
 
             return DataTables::of($products)
