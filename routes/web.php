@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Jobs\ActualizarCheckPointsVehiculos;
 
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -1540,3 +1541,29 @@ Route::resource("puestos", "PuestosController");
 		   Route::resource('transfers', \TransferenciaProductoController::class);
 		   Route::post('transfers/detalle', 'TransferenciaProductoController@table_detalle')->name('transfers.table_detalle');
 		   Route::get('/traslados-masivos/{id}/pdf', 'TransferenciaProductoController@descargarGuiaMasiva')->name('traslados.pdf');
+
+		   Route::resource('empresa-sincronizar-factura', EmpresaSincronizarFacturaController::class)
+			->names('empresa_sincronizar_factura');
+			
+		   Route::patch('empresa-sincronizar-factura/{id}/restore', [App\Http\Controllers\EmpresaSincronizarFacturaController::class, 'restore'])
+			->name('empresa_sincronizar_factura.restore');
+
+		   Route::delete('empresa-sincronizar-factura/{id}/force-delete', [App\Http\Controllers\EmpresaSincronizarFacturaController::class, 'forceDelete'])
+				->name('empresa_sincronizar_factura.force_delete');
+				
+				
+		  Route::resource('datos-sincronizar-factura', DatosSincronizarFacturaController::class)
+			->names('datos_sincronizar_factura');
+			
+		   Route::patch('datos-sincronizar-factura/{id}/restore', [App\Http\Controllers\DatosSincronizarFacturaController::class, 'restore'])
+			->name('datos_sincronizar_factura.restore');
+
+		   Route::delete('datos-sincronizar-factura/{id}/force-delete', [App\Http\Controllers\datosSincronizarFacturaController::class, 'forceDelete'])
+				->name('datos_sincronizar_factura.force_delete');	
+				
+			Route::get('datos-sincronizar-factura/{datos_sincronizar_factura}/generar', [App\Http\Controllers\DatosSincronizarFacturaController::class, 'generar'])
+		->name('datos_sincronizar_factura.generar');
+
+		Route::get('datos-sincronizar-factura/{datos_sincronizar_factura}/consultar', [App\Http\Controllers\DatosSincronizarFacturaController::class, 'consultar'])
+			->name('datos_sincronizar_factura.consultar');
+	
