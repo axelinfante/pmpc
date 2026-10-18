@@ -17,4 +17,6 @@ class Company extends Model
     {
         return $this->belongsTo('App\Package',"package_id")->withDefault();
     }
+	
+	
 }

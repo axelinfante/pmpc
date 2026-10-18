@@ -407,6 +407,42 @@ if ($isSuperAdmin) {
         </ul>
     </li>
 @endif
+
+
+{{-- FACTURACION --}}
+	{{-- @if (array_intersect(['tramitadores.index', 'staffs.index', 'staffs.create', 'roles.index'], $permissions)) --}}
+    <li>
+        <a href="javascript: void(0);">
+            <i class="ti-settings"></i>
+            <span>{{ _lang('FACTURACION') }}</span>
+            <span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span>
+        </a>
+
+        <ul class="nav-second-level" aria-expanded="false">
+
+            {{-- Tramitadores --}}
+				{{--  @if (in_array('tramitadores.index', $permissions))  --}}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('empresa_sincronizar_factura.index') }}">
+                        <i class="ti-receipt"></i>
+                        <span>{{ _lang('Configuración Sincronización') }}</span>
+                    </a>
+                </li>
+				{{-- @endif --}}
+				
+				{{--  @if (in_array('tramitadores.index', $permissions))  --}}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{  route('datos_sincronizar_factura.index') }}">
+                        <i class="ti-receipt"></i>
+                        <span>{{ _lang('Datos Sincronización factura') }}</span>
+                    </a>
+                </li>
+				{{-- @endif --}}
+        </ul>
+    </li>
+	{{-- @endif --}}
+
+
 {{-- CONTABILIDAD --}}
 @if (array_intersect([
     'accounts.index', 'accounts.create',

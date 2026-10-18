@@ -93,6 +93,11 @@ class Invoice extends Model implements AuditableInvoice
 			->where('dr_cr', 'cr');
 	}
 	
+	public function empresaConfig()
+	{
+		return $this->belongsTo(EmpresaSincronizarFactura::class, 'company_id', 'company_id');
+	}
+	
 	public static function boot() {
     parent::boot();
 
