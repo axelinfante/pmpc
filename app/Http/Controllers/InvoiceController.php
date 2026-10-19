@@ -277,6 +277,7 @@ class InvoiceController extends Controller
         $vendedor = auth()->id();
     }
     $invoice->user_id = $vendedor;
+	
 
     if (empty($facturarOptions)) {
         $invoice->acciones = null;
@@ -314,6 +315,7 @@ class InvoiceController extends Controller
     $invoice->fecha_entrega = $request->input('fecha_entrega', null);
 	$invoice->fecha_entrega_posible = $request->input('fecha_entrega_posible', null);
    
+
     if (in_array('retirar', $facturarOptions)) {
         $invoice->retiro = true;
     } else {
@@ -324,12 +326,12 @@ class InvoiceController extends Controller
     $invoice->entregado_a = $request->input('entregado_a', null);
     $invoice->entregado_por = $request->input('entregado_por', null);
     $invoice->ubicacion = $request->input('ubicacion', null);
-
-    if (in_array('facturar', $facturarOptions)) {
+	$invoice->facturar = $request->input('facturar', null);
+    /*if (in_array('facturar', $facturarOptions)) {
         $invoice->facturar = true;
     } else {
         $invoice->facturar = false;
-    }
+    }*/
     //        $invoice->facturar = $request->input('facturar', null);
 
     $invoice->save();

@@ -52,14 +52,14 @@
 				<input type="text" class="form-control datepicker" name="due_date" value="{{ old('due_date') }}" required>
 			  </div>
 			</div>
-			{{-- <div class="col-md py-4">
+			 <div class="col-md py-4">
 				<div class="form-check">
 
-					<input type="checkbox" id="facturar" name="facturar" class="form-check-input" value="1">
+					<input type="checkbox" id="facturar" name="facturar" class="form-check-input" checked value="1">
 					<label class="form-check-label" for="facturar">Facturar</label>
 
 				</div>
-			</div> --}}
+			</div> 
 
 			<div class="col-md-4">
 				<div class="form-group">

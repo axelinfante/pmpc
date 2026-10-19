@@ -6,7 +6,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">{{ _lang('Sincronización de Facturas') }}</h3>
+                    <h3 class="card-title">{{ _lang('Sincronización de Cotizaciones') }}</h3>
                     <!--<a href="{{ route('datos_sincronizar_factura.create') }}" class="btn btn-primary btn-sm">
                         <i class="fa fa-plus"></i> {{ _lang('Nueva Sincronización') }}
                     </a>-->
@@ -46,7 +46,7 @@
                         <table id="tabla_sincronizaciones" class="table table-bordered table-striped w-100">
                             <thead>
                                 <tr>
-                                    <th>{{ _lang('Invoice ID') }}</th>
+                                    <th>{{ _lang('Cotizaciones') }}</th>
                                     <th>{{ _lang('Comprobante Afip') }}</th>
                                     <th>{{ _lang('Estado') }}</th>
                                     <th>{{ _lang('Mensaje Sincronización') }}</th>

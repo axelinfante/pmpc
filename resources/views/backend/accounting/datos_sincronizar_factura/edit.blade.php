@@ -26,7 +26,7 @@
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label class="form-label font-weight-bold">ID Factura Original</label>
+                                <label class="form-label font-weight-bold">Cotizacion</label>
                                 <input type="text" class="form-control bg-light" value="{{ $sincronizacion->invoice_id }}" readonly>
                             </div>
                         </div>
@@ -82,9 +82,11 @@
 
                     <div class="form-group row mt-5">
                         <div class="col-md-10 offset-md-2">
-                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+							@can('editar-sincronizacion-facturacion')       
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm" disabled>
                                 <i class="fa fa-save"></i> Guardar Cambios Realizados
                             </button>
+							@endcan 
                             <a href="{{ route('datos_sincronizar_factura.index') }}" class="btn btn-outline-secondary px-4 ms-2">
                                 Cancelar y Salir
                             </a>

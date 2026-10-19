@@ -38,9 +38,11 @@
                         </div>
 
                         <div class="form-group text-right">
+						@can('editar-configuracion-facturacion')
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa fa-sync-alt"></i> {{ _lang('Actualizar Configuración') }}
                             </button>
+						@endcan	
                         </div>
                     </form>
                 </div>
