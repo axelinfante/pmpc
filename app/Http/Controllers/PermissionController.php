@@ -49,6 +49,8 @@ class PermissionController extends Controller
 			'App\Http\Controllers\Install\InstallController',
 			'App\Http\Controllers\Install\UpdateController',
 			'App\Http\Controllers\TransferenciaProductoController',
+			'App\Http\Controllers\EmpresaSincronizarFacturaController',
+			'App\Http\Controllers\DatosSincronizarFacturaController',
 		);
 
 		//Get Subscribed Package Details
@@ -187,7 +189,8 @@ class PermissionController extends Controller
 		,['grupo' => 'Tablero de Mando Vendedor', 'activo'=>'Si', 'items' => ['bton-nueva_cotizacion','bton-clientes','bton-orden_desarme','bton-vehiculos']]
 		,['grupo' => 'Procesos interno', 'activo'=>'Si', 'items' => ['pi_consulta_venta']],
 		['grupo' => 'Traslado de productos', 'activo' => 'Si', 'items' => ['crear-trasladomercancia', 'editar-trasladomercancia', 'eliminar-trasladomercancia', 'ver-trasladomercancia']],
-		]);
+		['grupo' => 'Configuracion facturación', 'activo' => 'Si', 'items' => ['crear-configuracion-facturacion', 'editar-configuracion-facturacion', 'eliminar-configuracion-facturacion', 'ver-configuracion-facturacion']],
+		['grupo' => 'Datos Sincronización facturación', 'activo' => 'Si', 'items' => ['crear-sincronizacion-facturacion', 'editar-sincronizacion-facturacion']],]);
 
 		$permisos=$this->collection;
 

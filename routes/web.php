@@ -1558,7 +1558,7 @@ Route::resource("puestos", "PuestosController");
 		   Route::patch('datos-sincronizar-factura/{id}/restore', [App\Http\Controllers\DatosSincronizarFacturaController::class, 'restore'])
 			->name('datos_sincronizar_factura.restore');
 
-		   Route::delete('datos-sincronizar-factura/{id}/force-delete', [App\Http\Controllers\datosSincronizarFacturaController::class, 'forceDelete'])
+		   Route::delete('datos-sincronizar-factura/{id}/force-delete', [App\Http\Controllers\DatosSincronizarFacturaController::class, 'forceDelete'])
 				->name('datos_sincronizar_factura.force_delete');	
 				
 			Route::get('datos-sincronizar-factura/{datos_sincronizar_factura}/generar', [App\Http\Controllers\DatosSincronizarFacturaController::class, 'generar'])

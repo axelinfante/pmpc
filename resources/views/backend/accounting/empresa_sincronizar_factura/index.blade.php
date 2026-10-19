@@ -6,9 +6,11 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title">{{ _lang('Configuración Sincronización') }}</h3>
+					@can('crear-configuracion-facturacion') 
                     <a href="{{ route('empresa_sincronizar_factura.create') }}" class="btn btn-primary btn-sm">
                         <i class="fa fa-plus"></i> {{ _lang('Nueva Configuración') }}
                     </a>
+					 @endcan 	
                 </div>
                 
                 <div class="card-body">

@@ -410,7 +410,7 @@ if ($isSuperAdmin) {
 
 
 {{-- FACTURACION --}}
-	{{-- @if (array_intersect(['tramitadores.index', 'staffs.index', 'staffs.create', 'roles.index'], $permissions)) --}}
+	 @if (array_intersect(['crear-configuracion-facturacion', 'editar-configuracion-facturacion', 'eliminar-configuracion-facturacion', 'ver-configuracion-facturacion','crear-sincronizacion-facturacion', 'editar-sincronizacion-facturacion'], $permissions)) 
     <li>
         <a href="javascript: void(0);">
             <i class="ti-settings"></i>
@@ -420,27 +420,27 @@ if ($isSuperAdmin) {
 
         <ul class="nav-second-level" aria-expanded="false">
 
-            {{-- Tramitadores --}}
-				{{--  @if (in_array('tramitadores.index', $permissions))  --}}
+            {{-- Configuración --}}
+				@if (array_intersect(['crear-configuracion-facturacion', 'editar-configuracion-facturacion', 'eliminar-configuracion-facturacion', 'ver-configuracion-facturacion'], $permissions))  
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('empresa_sincronizar_factura.index') }}">
                         <i class="ti-receipt"></i>
                         <span>{{ _lang('Configuración Sincronización') }}</span>
                     </a>
                 </li>
-				{{-- @endif --}}
+				@endif 
 				
-				{{--  @if (in_array('tramitadores.index', $permissions))  --}}
+				@if (array_intersect(['crear-sincronizacion-facturacion', 'editar-sincronizacion-facturacion'], $permissions))  
                 <li class="nav-item">
                     <a class="nav-link" href="{{  route('datos_sincronizar_factura.index') }}">
                         <i class="ti-receipt"></i>
                         <span>{{ _lang('Datos Sincronización factura') }}</span>
                     </a>
                 </li>
-				{{-- @endif --}}
+				 @endif 
         </ul>
     </li>
-	{{-- @endif --}}
+	 @endif 
 
 
 {{-- CONTABILIDAD --}}
