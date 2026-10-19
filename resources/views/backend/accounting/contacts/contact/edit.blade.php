@@ -159,7 +159,7 @@
 							<div class="col-md-4">
 								<div class="form-group">
 									<label class="control-label">{{ _lang('Nombre Envío') }}</label>
-									<input type="text" class="form-control" name="nombre_env" value="{{ $contact->nombre_env ?? '' }}" required>
+									<input type="text" class="form-control" name="nombre_env" value="{{ $contact->nombre_env ?? '' }}" >
 								</div>
 							</div>
 
@@ -173,14 +173,14 @@
 							<div class="col-md-4">
 								<div class="form-group">
 									<label class="control-label">{{ _lang('DNI Envío') }}</label>
-									<input type="text" class="form-control" name="dni_env" value="{{ $contact->dni_env ?? '' }}" required>
+									<input type="text" class="form-control" name="dni_env" value="{{ $contact->dni_env ?? '' }}" >
 								</div>
 							</div>
 
 							<div class="col-md-6">
 								<div class="form-group">
 									<label class="control-label">{{ _lang('Calle Envío') }}</label>
-									<input type="text" class="form-control" name="calle_env" value="{{ $contact->calle_env ?? '' }}" required>
+									<input type="text" class="form-control" name="calle_env" value="{{ $contact->calle_env ?? '' }}" >
 								</div>
 							</div>
 

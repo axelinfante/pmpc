@@ -258,6 +258,7 @@ class DatosSincronizarFacturaController extends Controller
 						->where('t1.id', $invoiceId)
 						->select([
 							't4.item_name',
+							't3.nro_interno',
 							't3.nro_motor',
 							't3.nro_oblea',
 							't2.*' 
