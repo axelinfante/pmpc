@@ -149,6 +149,7 @@
 					{ id: 8, name: "motor_vacio"},
 				];
 			let ids = inputArray.map( (item) => item.id);	
+			let esInactivo = $('select[name=filtrado_activo]').val();
     var table
         $(function() {
             $.ajaxSetup({
@@ -223,7 +224,20 @@
                 serverSide:true,
 				//scrollX: true,
 				//responsive: true, // Enable responsiveness
-                ajax: "{{ url('products') }}",
+                //ajax: "{{ url('products') }}",
+				ajax: {
+						url : "{{ url('products') }}",
+						method: "GET",
+							data: function (d) {
+								  var valorFiltro = $('select[name=filtrado_activo]').val();
+					              esInactivo = (valorFiltro === 'inactivos');
+									//d._token =   "{{ csrf_token() }}";	
+								if($('select[name=filtrado_activo]').val() != ''){
+									//d.filtrado_activo = $('select[name=filtrado_activo]').val();
+									d.filtrado_activo = valorFiltro;
+								}
+						}
+					},
                 width: "auto",
                 columns: [
                     { data: 'id', name: 'id'},
@@ -239,7 +253,7 @@
                     { data: 'deposito', name: 'deposito' },
                     {
                     data: 'ubicacion',
-                    name: 'ubicacion',
+                    name: 'ubicacion'/*,
                     render: function(data, type, row) {
 					  if (type === 'export' || type === 'filter' || type === 'sort') {
 							return data !== null && data !== undefined ? data : '';
@@ -254,8 +268,8 @@
                                 </div>
                             </div>
                         `;
-                    }
-                },
+                    }*/
+					},
                     { data: 'description', name: 'description' },
                     { data: 'mercado_libre', name: 'mercado_libre' },
                     { data: 'reparaciones', name: 'reparaciones' },
@@ -276,13 +290,16 @@
                         }
                     },
                     { data: 'action', name: 'action',  searchable: false, orderable: false},
-                     {
+                    {
                         data: null,
                         name: 'select',
                         orderable: false,
                         searchable: false,
                         className: 'text-center',
                         render: function(data, type, row) {
+							  if (esInactivo) {
+								return ''; // O puedes usar: return `<input type="checkbox" disabled class="...">`;
+								}	
                             return `<input type="checkbox" class="row-checkbox" data-id="${row.id}">`;
                         }
                     },
@@ -326,7 +343,19 @@
                         $('.bulk-field-toggle').prop('checked', false);
                         toggleBulkFieldSection();
                         $('#modalUpdateFechaUltimoGiro').modal('show');
-                    }
+                    },
+					 init: function(dt, node, config) {
+						var self = this;
+								dt.on('draw', function() {
+							if (esInactivo) {
+								self.disable(); // Deshabilita el botón visualmente (añade clase disabled)
+								// O si prefieres ocultarlo por completo: $(node).hide();
+							} else {
+								self.enable();  // Lo vuelve a activar
+								// O si lo habías ocultado: $(node).show();
+							}
+						});
+					 }
                 },
                 {
                         extend: 'excel',
@@ -393,7 +422,19 @@
                 console.error("Error al cargar cotización:", request.responseText);
             }
         });
-    }
+    } ,
+					 init: function(dt, node, config) {
+						var self = this;
+								dt.on('draw', function() {
+							if (esInactivo) {
+								self.disable(); // Deshabilita el botón visualmente (añade clase disabled)
+								// O si prefieres ocultarlo por completo: $(node).hide();
+							} else {
+								self.enable();  // Lo vuelve a activar
+								// O si lo habías ocultado: $(node).show();
+							}
+						});
+					 }
 },		
                 {
                     extend: 'pdfHtml5',
@@ -430,14 +471,25 @@
 						page: 'all'
 					}
 				}, action: newexportaction,
-                }
+                },
+				{
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
+                      '<option value="activos">Activos</option>' +
+                      '<option value="inactivos">Vendidos</option>' +
+                      '</select>',
+                className: 'botones-custom',
+                action: function ( e, dt, node, config ) {
+						}
+					}
+				
              ],
 
             });
 
 
             $('#table-data-product thead tr').clone().prependTo('#table-data-product thead');
-
+				
                 $('#table-data-product thead tr:eq(0) th').each(function(i) {
                 var title = $(this).text();
                 //$(this).html('<input type="text" placeholder="Search" />');
@@ -587,8 +639,8 @@
 					
 					
 				}else{
-					if (i == 16) {
-                        $(this).html('<input type="checkbox" id="select-all">');
+					if (i == 17) {
+									$(this).html('<input type="checkbox" id="select-all">');
                     }else{
 						$(this).html('');
 					}
@@ -1123,8 +1175,17 @@ $("#modal_principal .ajax-screen-submit input:required, #modal_principal .ajax-s
             }
         }, 50);
     });*/
+	
+	$('#filtrado_activo').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
+		
 
 });
+
+
 
   
     </script>

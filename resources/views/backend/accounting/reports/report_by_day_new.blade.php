@@ -214,6 +214,26 @@
 							title: 'Reporte Diario de Caja',
 							footer: true
 						},
+						{
+                    extend: 'print',
+                    title: 'Imprimir',
+					text: '<i class="fa fa-print"></i> Imprimir',
+					footer: true,
+                    customize: function(win) {
+                        $(win.document.body)
+                            .css('font-size', '10pt')
+                            .prepend(
+                                '<div class="text-center">' +
+                                $(".report-header").html() +
+                                '</div>'
+                            );
+
+                        $(win.document.body).find('table')
+                            .addClass('compact')
+                            .css('font-size', 'inherit');
+
+                    }
+                },
 						]
 				});
 	/*
