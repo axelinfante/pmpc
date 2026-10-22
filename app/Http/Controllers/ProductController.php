@@ -54,6 +54,16 @@ class ProductController extends Controller
 		$lugar_entregas = Lugar_entregas::all();
          if (request()->ajax()) {
            
+		   
+		    $isExport = isset($request->exportar);
+			$esInactivo = $request->get('filtrado_activo') === 'inactivos';
+			$evaluarMostrar = function ($row) use ($isExport,$esInactivo) {
+				 if ($esInactivo || $isExport) {
+					return false;
+				}
+					return true;
+			};
+		   
 		   $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 		   $products = Product::select([
 				'products.*',
@@ -68,9 +78,20 @@ class ProductController extends Controller
 			->leftJoin('marca_modelos', 'marca_modelos.id', '=', 'cars.idMarca_modelo')
 			->leftJoin('marcas', 'marcas.id', '=', 'marca_modelos.idMarca')
 			->leftJoin('modelos', 'modelos.id', '=', 'marca_modelos.idModelo')
-			->whereNull('products.car_id') 
-			->where('products.stock', '>=', 1)
-			->where(function ($query) {
+			->whereNull('products.car_id'); 
+			if ($request->has('filtrado_activo')) {
+				switch ($request->get('filtrado_activo')) {
+					case 'activos':
+						$products->where('products.stock', '>=', 1);
+						break;
+						
+					case 'inactivos':
+						$products->where('products.stock', '<=', 0);
+						break;
+				}
+			}
+			//$products->where('products.stock', '>=', 1)
+			$products->where(function ($query) {
 				$query->whereNotNull('products.fecha_desarme_a_stock')
 				->whereNull('products.deleted_at');
 				//$query->whereNotNull('products.fecha_ingreso_a_stock');
@@ -93,36 +114,7 @@ class ProductController extends Controller
 		} else {
 			$products->orderBy('products.id', 'desc');
 		}
-		   
-            // Iniciamos la consulta base
-           /*  $products = Product::select('products.*', 'cars.idMarca_modelo','cars.tipo_vehiculo', 'cars.dominio','cars.motor_nro')
-                ->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-                ->whereNull('car_id')
-                ->where('stock', '>=', 1)
-                ->where(function ($query) {
-                    $query->whereNotIn('products.estado', ['desarme', 'desarme-stock'])
-                          ->orWhereNull('products.estado');
-                })
-				//->whereNotIn('estado', ['desarme','desarme-stock'])
-                ->whereIn('products.company_id', $company_id)
-				
-				->with([
-				'category', 
-				'devoluciones', // <-- Tu nueva relación añadida al modelo Product
-				'item' => function ($query) {
-					$query->where("item_type", "product");
-					}
-				]);
-				
-             
-            //$products->orderBy('products.nro_interno', 'asc');
-            if ($request->columns['3']['search']['value'] != "") {
-                $products->orderBy('products.nro_interno', 'asc');
-            } else {
-                $products->orderBy('products.id', 'desc');
-            } */
-			
-
+		
             return DataTables::eloquent($products)
                 ->filterColumn('id', function ($query, $keyword) {
                     $query->where('products.id', 'like', "%{$keyword}%");
@@ -263,26 +255,7 @@ class ProductController extends Controller
     }
 })
 
-				/*->filterColumn('marca', function ($query, $keyword) {
-						if ($keyword === 'todos') {
-							$query->where(function ($q) {
-								$q->where('marcas.marca', '=')
-								  ->orWhereNull('marcas.marca');
-							});
-						} elseif (!empty($keyword)) {
-							$query->where('marcas.marca', 'like', "%{$keyword}%");
-						}
-					})
-					->filterColumn('modelo', function ($query, $keyword) {
-						if ($keyword === 'todos') {
-							$query->where(function ($q) {
-								$q->where('modelos.modelo', '=')
-								  ->orWhereNull('modelos.modelo');
-							});
-						} elseif (!empty($keyword)) {
-							$query->where('modelos.modelo', 'like', "%{$keyword}%");
-						}
-					})*/
+				
                 ->filterColumn('motor_nro', function ($query, $keyword) {
                     //$query->where('products.motor', 'like', "%{$keyword}");
                     if ($keyword == "todos") {
@@ -344,19 +317,6 @@ class ProductController extends Controller
                 ->addColumn('productItem', function ($data) {
                     return $data->item->item_name ?? null;
                 })
-               /*  ->addColumn('marca', function ($data) {
-                    return ($data->marcaModelo->marca->marca ?? '');
-                })
-                ->addColumn('modelo', function ($data) {
-                    return ($data->marcaModelo->modelo->modelo ?? '');
-                }) */
-					/*->addColumn('marca', function ($row) {
-						return $row->nombre_marca ?? '';
-					})
-					->addColumn('modelo', function ($row) {
-						return $row->nombre_modelo ?? '';
-					})*/
-
                     ->addColumn('marca', function ($row) {
                         if (!empty($row->nro_interno)) {
                             return $row->nombre_marca ?? '';
@@ -428,55 +388,84 @@ class ProductController extends Controller
 				->addColumn('motor_nro', function ($data) {
                     return $data->motor_nro ?? '';
                 })
+				->editColumn('ubicacion', function ($data) use ($evaluarMostrar) {
+					
+					 if ($evaluarMostrar($data)) {
+						 return '<div class="input-group">
+            <input type="text" class="form-control form-control-sm edit-ubicacion" value="' . e($data->ubicacion ?? '') . '" id="input-ubicacion-' . $data->id . '">
+            <div class="input-group-append">
+                <button class="btn btn-sm btn-warning save-ubicacion" data-id="' . $data->id . '">
+                    <i class="ti-check"></i>
+                </button>
+            </div>
+        </div>';
+					 }						
+						
+					return $data->ubicacion ?? '';
+                })
 				->editColumn('deposito', function ($data) use ($request,$lugar_entregas) {
                     /*if (!isset($request->exportar)){
                         return view('backend.accounting.product.include.product-deposito', ['data' => $data,'lugar_entregas'=> $lugar_entregas]);
                     }*/
 					return $data->deposito->nombre ?? '';
                 })
-                ->editColumn('mercado_libre', function ($data) use ($request) {
+                ->editColumn('mercado_libre', function ($data) use ($evaluarMostrar) {
 					
-					if (!isset($request->exportar)){
+					 if ($evaluarMostrar($data)) {
+							return view('backend.accounting.product.include.product-mercadolibre', ['data' => $data]);
+						}
+					return ($data->mercado_libre==1) ? 'Si' : 'No';
+					
+					
+					/*if (!isset($request->exportar)){
                         return view('backend.accounting.product.include.product-mercadolibre', ['data' => $data]);
                     }
 					 
-                    return ($data->mercado_libre==1) ? 'Si' : 'No';
-                })->addColumn('action', function ($data) {
-
-                    //$result =  "<form id='form-delete-" . $data->id . "' action='" . action('ProductController@destroy', $data->id) . "' method='post'>";
-					$result = "<form id='form-delete-" . $data->id . "' action='" . action('ProductController@destroy', $data->id) . "' method='post' class='form-delete-inline'>";
-					$result .= csrf_field();
-					$result .= "<input name='_method' type='hidden' value='DELETE'>";
-					$result .= "<input type='hidden' name='observacion' class='input-observacion'>";
-                    
-					$result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
-
-                    $result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
-
-                    $result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
-
-                    $result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
-					
-					$result .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $data->id . "'><i class='ti-eraser'></i></button>";
+                    return ($data->mercado_libre==1) ? 'Si' : 'No';*/
+                })->addColumn('action', function ($data) use ($evaluarMostrar) {
+					   $result = '';
+					if ($evaluarMostrar($data)) {
+						$result .= "<form id='form-delete-" . $data->id . "' action='" . action('ProductController@destroy', $data->id) . "' method='post' class='form-delete-inline'>";
+						$result .= csrf_field();
+						$result .= "<input name='_method' type='hidden' value='DELETE'>";
+						$result .= "<input type='hidden' name='observacion' class='input-observacion'>";
 						
+						$result .= "<a href='" . action('ProductController@edit', $data->id) . "' class='btn btn-warning btn-xs " . ((!empty($data->car_id)) ? 'ajax-modal' : '') . "'><i class='ti-pencil'></i></a>";
 
-/*                    $result .= "<input name='_method' type='hidden' value='DELETE'><button class='btn btn-danger btn-xs btn-remove-product' type='submit'><i
-                    class='ti-eraser'></i></button>";*/
+						$result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
 
-					$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
-					data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
-                    return $result;
+						$result .= "<a href='" . action('ProductController@printQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";
+
+						$result .= "<a href='" . action('ProductController@printsinQR', $data->id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-barcode' aria-hidden='true'></i></a>";
+						
+						$result .= "<button type='button' class='btn btn-danger btn-xs btn-remove-product-item' data-id='" . $data->id . "'><i class='ti-eraser'></i></button>";
+
+						$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
+						data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
+						return $result;
+					}
+
+						$result .= "<a href='" . action('ProductController@show', $data->id) . "' class='btn btn-primary btn-xs ajax-modal'><i class='ti-eye'></i></a>";
+
+						$result .= '<a href="' .  route('auditoriaHistorial', $data->id) . '" 
+						data-title="' . _lang('Historial de Productos') . '" data-fullscreen="true" class="btn btn-warning btn-xs ajax-modal"><i class="ti-list"></i></a>&nbsp;';
+						return $result;
                 })
-				->editColumn('nro_oblea', function ($data) use ($request) {
-                    if (!isset($request->exportar)){
+				->editColumn('nro_oblea', function ($data) use ($evaluarMostrar) {
+					 if ($evaluarMostrar($data)) {
+							return view('backend.accounting.product.include.product-oblea', ['data' => $data]);
+						}
+					return $data->nro_oblea;
+					
+                    /*if (!isset($request->exportar)){
                         return view('backend.accounting.product.include.product-oblea', ['data' => $data]);
                     }
-                     return $data->nro_oblea;
+                     return $data->nro_oblea;*/
                 })
 					->setRowClass(function ($product) {
 						return $product->estado === 'Defectuoso Comercializable' ? 'table-danger' : '';
 				})
-				->rawColumns(['mercado_libre','action','deposito','reparaciones'])
+				->rawColumns(['mercado_libre','action','deposito','reparaciones','ubicacion'])
 				->tojson();
         } 
 
