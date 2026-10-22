@@ -17,41 +17,55 @@
             <div class="row">
                 {{ csrf_field() }}
 
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="control-label">Compañia</label>
-                        <select class="form-control select2" name="company" required>
-                            <option value="">{{ _lang('Select One') }}</option>
-                            {{ create_option('companies', 'id', 'business_name', isset($company) ? $company : old('company'), ['business_name=' => 'Paternal', 'or business_name=' => 'Pentacar']) }}
-                        </select>
+						<select class="form-control select2" name="company[]" multiple required>
+							@foreach(\App\Company::whereIn('business_name', ['Paternal', 'Pentacar'])->get() as $m)
+								@php
+									$selectedValues = \Illuminate\Support\Arr::wrap(old('company', isset($company) ? $company : []));
+								@endphp
+								<option value="{{ $m->id }}" {{ in_array($m->id, $selectedValues) ? 'selected' : '' }}>
+									{{ $m->business_name }}
+								</option>
+							@endforeach
+						</select>
+                        <!--<select class="form-control select2" name="company[]" multiple required>
+							{{ create_option('companies', 'id', 'business_name', isset($company) ? $company : old('company'), ['business_name=' => 'Paternal', 'or business_name=' => 'Pentacar']) }}
+						</select>-->
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label>Ubicación</label>
-                    <select class="form-control select2 select-filter" name="idUbicacion">
+                    <select class="form-control  select-filter" name="idUbicacion">
                         <option value="">{{ _lang('Ubicación') }}</option>
                         {{ create_option('lugar_entregas', 'id', 'nombre', isset($idUbicacion) ? $idUbicacion : old('idUbicacion')) }}
                     </select>
                 </div>
-                <div class="col-md-2">
-					<div class="form-group">
-						<label class="control-label">{{ _lang('Account Currency') }}</label>
-						<select class="form-control select2" name="account_currency" id="account_currency" required>
-							<option value="">{{ _lang('Select One') }}</option>
-					
-							<option value="ARS" {{ $account_currency == "ARS" ? 'selected' : '' }}>
-								Argentine peso - ARS ($)
-							</option>
-							<option value="USD" {{ $account_currency == "USD" ? 'selected' : '' }}>
-								United States dollar - USD ($)
-							</option>
-						</select>
-					</div>
+                <div class="col-md-3">
+						<div class="form-group">
+							<label class="control-label">{{ _lang('Account Currency') }}</label>
+							<!-- Se agrega el atributo 'multiple' y los corchetes '[]' al name -->
+							<select class="form-control select2" name="account_currency[]" id="account_currency" multiple required>
+								@php
+									// Consolidamos el valor previo (del formulario fallido o de la base de datos) como un array seguro
+									$selectedCurrencies = \Illuminate\Support\Arr::wrap(old('account_currency', isset($account_currency) ? $account_currency : []));
+								@endphp
+
+								<!-- Removido el "Select One" ya que en un multiselect no tiene sentido lógico -->
+								<option value="ARS" {{ in_array('ARS', $selectedCurrencies) ? 'selected' : '' }}>
+									Argentine peso - ARS ($)
+								</option>
+								<option value="USD" {{ in_array('USD', $selectedCurrencies) ? 'selected' : '' }}>
+									United States dollar - USD ($)
+								</option>
+							</select>
+						</div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="control-label">Cuenta</label>
-                        <select class="form-control select2" name="account">
+                        <select class="form-control " name="account">
                             <option value="">{{ _lang('Select One') }}</option>
                             {{ create_option('accounts', 'id', 'account_title', isset($account) ? $account : old('account')) }}
                         </select>
@@ -88,117 +102,87 @@
 
     <div class="row my-3">
         <div class="col-md">
-            
-
 			<div class="report-header">
-				<h4>{{ _lang('Account Statement') ." (". $account_currency.")" }}</h4>
+				<h4>{{ _lang('Account Statement') }} ({{ implode(', ', \Illuminate\Support\Arr::wrap($account_currency)) }})</h4>
 				<h5>{{ isset($date1) ? date($date_format, strtotime($date1)).' '._lang('to').' '.date($date_format, strtotime($date2)) : '-------------  '._lang('to').'  -------------' }}</h5>
 			 </div>
+<table id="reporteDiarioTable" class="table table-bordered table-striped display width-100">
+    <thead>
+        <tr>
+            <th>Compañía</th>
+            <th>Fecha</th>
+            <th>Cuenta</th>
+            <th>Método Pago</th>
+            <th>Moneda</th>
+            <th>Crédito ARS</th>
+            <th>Débito ARS</th>
+            <th>Saldo ARS</th>
+            <th>Crédito USD</th>
+            <th>Débito USD</th>
+            <th>Saldo USD</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if(isset($current_day_income_expense_by_account) && count($current_day_income_expense_by_account) > 0)
+            @php
+                // Inicializamos los acumuladores generales
+                $totCreditoARS = 0;
+                $totDebitoARS  = 0;
+                $totSaldoARS   = 0;
+                
+                $totCreditoUSD = 0;
+                $totDebitoUSD  = 0;
+                $totSaldoUSD   = 0;
+            @endphp
 
-            <table class="table table-bordered report-table">
-                <thead>
+            @foreach($current_day_income_expense_by_account as $row)
+                @php
+                    // Sumamos los valores a sus respectivos acumuladores
+                    $totCreditoARS += (float) $row['creditoARS'];
+                    $totDebitoARS  += (float) $row['debitoARS'];
+                    $totSaldoARS   += (float) $row['saldoARS'];
+                    
+                    $totCreditoUSD += (float) $row['creditoUSD'];
+                    $totDebitoUSD  += (float) $row['debitoUSD'];
+                    $totSaldoUSD   += (float) $row['saldoUSD'];
+                @endphp
+                <tr>
+                    <td>{{ $row['business_name'] }}</td> 
+                    <td>{{ $row['trans_date'] }}</td>
+                    <td>{{ $row['account_title'] }}</td>
+                    <td>{{ $row['payment_method'] }}</td>
+                    <td>
+                        <span class="badge {{ $row['account_currency'] === 'USD' ? 'badge-success' : 'badge-primary' }}">
+                            {{ $row['account_currency'] }}
+                        </span>
+                    </td>
+                    <td class="text-right">{{ number_format($row['creditoARS'], 2) }}</td>
+                    <td class="text-right">{{ number_format($row['debitoARS'], 2) }}</td>
+                    <td class="text-right">{{ number_format($row['saldoARS'], 2) }}</td>
+                    <td class="text-right">{{ number_format($row['creditoUSD'], 2) }}</td>
+                    <td class="text-right">{{ number_format($row['debitoUSD'], 2) }}</td>
+                    <td class="text-right">{{ number_format($row['saldoUSD'], 2) }}</td>
+                </tr>
+            @endforeach
+        @endif 
+    </tbody>
+    
+    <!-- ESTRUCTURA TFOOT REQUERIDA POR DATATABLES PARA LA EXPORTACIÓN DE TOTALES -->
+    @if(isset($current_day_income_expense_by_account) && count($current_day_income_expense_by_account) > 0)
+    <tfoot>
+        <tr style="font-weight: bold; background-color: #d1ecf1; color: #0c5460;">
+            <td colspan="5" class="text-right">{{ _lang('Total General') }}:</td>
+            <td class="text-right">{{ number_format($totCreditoARS, 2) }}</td>
+            <td class="text-right">{{ number_format($totDebitoARS, 2) }}</td>
+            <td class="text-right {{ $totSaldoARS >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($totSaldoARS, 2) }}</td>
+            <td class="text-right">{{ number_format($totCreditoUSD, 2) }}</td>
+            <td class="text-right">{{ number_format($totDebitoUSD, 2) }}</td>
+            <td class="text-right {{ $totSaldoUSD >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($totSaldoUSD, 2) }}</td>
+        </tr>
+    </tfoot>
+    @endif
+</table>
 
-                    <th>Cuenta</th>
-                    <th>Metodo de pago</th>
-                    <th>Fecha</th>
-                    <th class="text-right">Ingresos</th>
-                    <th class="text-right">Gastos</th>
-                    <th class="text-right">Total </th>
-                </thead>
-                <tbody>
-
-                    @if (isset($current_day_income_expense_by_account))
-                        @php
-                            // $currency = currency($acc->account_currency);
-                            $ingreso = 0;
-                            $egreso = 0;
-                            $granTotal = 0;
-                        @endphp
-                        {{-- {{ dd($current_day_income_expense_by_account) }} --}}
-                        @foreach ($current_day_income_expense_by_account as $report)
-						{{--  @if ($report['saldoARS'] == 0 && $report['saldoUSD'] == 0)
-                                @php continue; @endphp
-						@endif --}}
-                            <tr>
-                                <td>{{ $report['account_title'] }}</td>
-
-                                <td>{{ $report['payment_method'] }}</td>
-                                <td>{{ $report['trans_date'] }}</td>
-                                <td class="text-right">
-                                    @if ($report['account_currency'] == 'ARS')
-                                        {{ $report['creditoARS'] != 0 ? decimalPlace($report['creditoARS'], $currency) : '' }}
-                                    @else
-                                        @if ($report['account_currency'] == 'USD')
-                                            {{ $report['creditoUSD'] != 0 ? decimalPlace($report['creditoUSD'], 'USD') : '' }}
-                                        @endif
-                                    @endif
-                                </td>
-                                <td class="text-right">
-                                    @if ($report['account_currency'] == 'ARS')
-                                        {{ $report['debitoARS'] != 0 ? decimalPlace($report['debitoARS'], $currency) : '' }}
-                                    @else
-                                        @if ($report['account_currency'] == 'USD')
-                                            {{ $report['debitoUSD'] != 0 ? decimalPlace($report['debitoUSD'], 'USD') : '' }}
-                                        @endif
-                                    @endif
-                                </td>
-                                <td class="text-right">
-                                    @if ($report['account_currency'] == 'ARS')
-                                        {{ $report['saldoARS'] != 0 ? decimalPlace($report['saldoARS'], $currency) : '' }}
-                                    @else
-                                        @if ($report['account_currency'] == 'USD')
-                                            {{ $report['saldoUSD'] != 0 ? decimalPlace($report['saldoUSD'], 'USD') : '' }}
-                                        @endif
-                                    @endif
-                                </td>
-                            </tr>
-
-                            @php
-
-                                if ($report['account_currency'] == 'ARS') {
-                                    $ingreso += (float) $report['creditoARS'];
-                                    $egreso += (float) $report['debitoARS'];
-                                    $granTotal += (float) $report['saldoARS'];
-                                } elseif ($report['account_currency'] == 'USD') {
-                                    $ingreso += (float) $report['creditoUSD'];
-                                    $egreso += (float) $report['debitoUSD'];
-                                    $granTotal += (float) $report['saldoUSD'];
-                                }
-
-                            @endphp
-                        @endforeach
-                        {{-- @php
-                            $a_dividirIngreso = (float) $a_dividir->totalIngreso / 2;
-                            $a_dividirEgreso = (float) $a_dividir->totalEgreso / 2;
-                        @endphp
-                        <tr>
-                            <td><b> {{ _lang('Total dividido') }} </b></td>
-                            <td class="text-right">
-                                <b>Todos</b>
-                            </td>
-
-                            <td class="text-right"><b>{{ decimalPlace($a_dividirIngreso, $currency) }}</b></td>
-                            <td class="text-right"><b>{{ decimalPlace($a_dividirEgreso, $currency) }}</b></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>{{ _lang('Total') }}</td>
-                            <td class="text-right"><b>{{ decimalPlace($ingreso + $a_dividirIngreso, $currency) }}</b></td>
-                            <td class="text-right"><b>{{ decimalPlace($egreso + $a_dividirEgreso, $currency) }}</b></td>
-                        </tr> --}}
-                    @endif
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td>{{ _lang('Total') }}</td>
-                        <td class="text-right"><b>{{ decimalPlace($ingreso, $currency) }}</b></td>
-                        <td class="text-right"><b>{{ decimalPlace($egreso, $currency) }}</b></td>
-                        <td class="text-right"><b>{{ decimalPlace($granTotal, $currency) }}</b></td>
-                    </tr>
-
-
-                </tbody>
-            </table>
         </div>
 
     </div>
@@ -206,6 +190,33 @@
 
 @section('js-script')
     <script>
+	
+	$('.select2').select2({
+                multiple: true,
+                closeOnSelect: false//,
+                //placeholder: "Select a " + title
+              });
+			  
+			  var table = $('#reporteDiarioTable').appTable({
+					title:"Estado de Cuenta",
+					serverSide:false,
+					visibleButtonsFilter:false,
+					visibleButtons: {
+					reset: true,
+					excel: false,
+					print: false
+					},
+					customButtons: [
+						{
+							extend: 'excelHtml5',
+							text: '<i class="fas fa-file-excel"></i> Excel',
+							className: 'btn btn-sm',
+							title: 'Reporte Diario de Caja',
+							footer: true
+						},
+						]
+				});
+	/*
         report_table = $(".report-table-2").DataTable({
             responsive: true,
             "bAutoWidth": false,
@@ -265,6 +276,6 @@
             ],
         });
 
-        report_table.buttons().container().appendTo('#DataTables_Table_1_wrapper .col-md-6:eq(0)');
+        report_table.buttons().container().appendTo('#DataTables_Table_1_wrapper .col-md-6:eq(0)');*/
     </script>
 @endsection
