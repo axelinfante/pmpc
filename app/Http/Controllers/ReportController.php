@@ -374,12 +374,14 @@ class ReportController extends Controller
         $data = [];
     
         // Determinar la compañía
-        if ($request->company) {
+       /* if ($request->company) {
             $data['company'] = $request->company;
         } else {
             $data['company'] = company_id();
-        }
-        $company = $data['company'];
+        }*/
+        
+		$company = $request->input('company', []);
+		$data['company']= $company;
     
         $idUbicacion = $request->idUbicacion;
         $account_currency = $request->account_currency;
@@ -436,9 +438,13 @@ class ReportController extends Controller
             ->whereBetween("t.trans_date", [$date1, $date2])
            // ->where('t.type', '<>', 'cc')
             ->whereNotIn('t.account_id', [27,28])
-            ->when(($company!=""), function ($query) use ($company) {
-                return $query->where('t.company_id', $company);
+            
+			->when(($company!=""), function ($query) use ($company) {
+				 return $query->whereIn('t.company_id', \Illuminate\Support\Arr::wrap($company));
+                //return $query->where('t.company_id', $company);
             })
+			
+			
             ->when(($idUbicacion!=""), function ($query) use ($idUbicacion) {
                 return $query->where('accounts.idUbicacion', $idUbicacion);
             })
@@ -446,7 +452,8 @@ class ReportController extends Controller
                 return $query->where('accounts.id', $account);
             })
             ->when(($account_currency!=""), function ($query) use ($account_currency) {
-                return $query->where('accounts.account_currency', $account_currency);
+					return $query->whereIn('accounts.account_currency', ["ARS", "USD"]);
+                //return $query->where('accounts.account_currency', $account_currency);
             })
             ->groupBy(
                 't.company_id',
@@ -458,6 +465,7 @@ class ReportController extends Controller
                 'accounts.account_currency',
                 't.trans_date'
             )
+            ->orderBy('t.company_id', 'asc')
             ->orderBy('t.trans_date', 'desc')
             ->get();
     
