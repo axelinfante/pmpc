@@ -10,14 +10,26 @@
 
                 <div class="card-body">
 									
-				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-					<span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
-					<span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">A despachar</span>
-					<span class="text-muted small">&rarr;</span>
-					<span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Despachado</span>
-					<span class="text-muted small">&rarr;</span>
-					<span class="badge rounded-pill bg-danger text-white px-2.5 py-1 fw-bold">Devolución</span>
+				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap"> 
+						<span class="text-muted small text-uppercase fw-bold me-1">Estados:</span> 
+						
+						<!-- Pendiente (Amarillo) -->
+						<span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Pendiente</span> 
+						<span class="text-muted small">&rarr;</span> 
+						
+						<!-- Listo para entrega (Azul) -->
+						<span class="badge rounded-pill bg-primary text-white px-2.5 py-1 fw-bold">Listo para entrega</span> 
+						<span class="text-muted small">&rarr;</span> 
+						
+						<!-- Despachado (Verde) -->
+						<span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Despachado</span> 
+						<span class="text-muted small">&rarr;</span> 
+						
+						<!-- Devuelto (Rojo) -->
+						<span class="badge rounded-pill bg-danger text-white px-2.5 py-1 fw-bold">Devuelto</span> 
 				</div>
+
+
 
                     @php $currency = currency() @endphp
                     <table id="orden-despacho-table" class="table table-bordered">
@@ -140,6 +152,7 @@
                     data: function(d) {
                         d._token = $('meta[name="csrf-token"]').attr('content');
                         d.id = "{{ $id ?? null }}";
+						d.filtrado_activo = $('select[name="filtrado_activo"]').val() || "";
                     }
                 },
                 dom: 'Bfrltip',
@@ -319,11 +332,39 @@
 					  $('#modal_orden_id_max').val(selectedIds);
 					  $('#modalConfirmarEntregaMax').modal('show');
 					}
-				}
+				}, {
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
+                      '<option value="pendiente" selected >Pendiente</option>' +
+                      '<option value="listo para entrega">Listo para entrega</option>' +
+                      '<option value="despachado">Despachado</option>' +
+                      '<option value="devuelto">Devuelto</option>' +
+                      '</select>',
+                className: 'botones-custom',
+                action: function ( e, dt, node, config ) {
+						}
+					}
                 ],
 
                 createdRow: function(row, data) {
-                    var estado = data.estatus;
+					
+					const estadoNormalizado = (data.estatus || '').toLowerCase().trim();
+
+						if (estadoNormalizado === 'devueltos' || estadoNormalizado === 'devuelto') {
+							// Rojo pastel (Equivalente a bg-danger)
+							$(row).css('background-color', '#f8d7da'); 
+						} else if (estadoNormalizado === 'despachado') {
+							// Verde pastel (Equivalente a bg-success)
+							$(row).css('background-color', '#d1e7dd'); 
+						} else if (estadoNormalizado === 'listo para entrega' || estadoNormalizado === 'listo') {
+							// Azul pastel (Equivalente a bg-primary)
+							$(row).css('background-color', '#cfe2ff'); 
+						} else if (!estadoNormalizado || estadoNormalizado === 'pendiente') {
+							// Amarillo pastel (Equivalente a bg-warning)
+							$(row).css('background-color', '#fff3cd'); 
+						}
+					
+                  /*  var estado = data.estatus;
                     if (estado === 'devueltos') {
                         $(row).css('background-color', '#FF0000');
                     } else if (estado === 'despachado') {
@@ -331,7 +372,7 @@
                     } else if (!estado || estado === 'pendiente') {
                         $(row).css('background-color', '#FFFACD');
                         //$(row).css('background-color', '#F08080');
-                    }
+                    }*/
                 },
                 responsive: false,
                 bStateSave: true,
@@ -522,7 +563,12 @@
 
             });
 
-
+$('#filtrado_activo').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
+			
 $('#orden-despacho-table').on('processing.dt', function (e, settings, processing) {
     if (processing) {
        	inicioLoading();
