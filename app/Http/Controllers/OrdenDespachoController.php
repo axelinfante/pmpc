@@ -32,24 +32,15 @@ public function show()
 }
     public function get_table_data(Request $request)
     {
-		 $company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();	
-		 
-		 
-	 /*	 $ordenes = OrdenDespacho::select('*')->whereIn('company_id', $company_id)
-		 //->where('invoice_id', '6850')
-		 //->whereIn('company_id', $company_id)
-		 ->orderBy('created_at', 'desc')
-		 ->selectSub(fn ($query) => $query
-        ->selectRaw("GROUP_CONCAT(CONCAT('(',products.id, ') ', items.item_name))")
-        ->from('ordenes_desarme')
-        ->join('products', 'products.id', '=', 'ordenes_desarme.product_id')
-		->join('items', 'items.id', '=', 'products.item_id')
-		->whereColumn('ordenes_desarme.id_venta', 'ordenes_despacho.invoice_id')
-		//->where('ordenes_desarme.id_venta', 'ordenes_despacho.invoice_id')
-		->whereRaw("(ordenes_desarme.`estado` != 'completado' OR ordenes_desarme.`estado` is NULL)")
-		->limit(1), 'items_pendientes');*/
-		
-		$ordenes = OrdenDespacho::select('ordenes_despacho.*') 
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();  
+		$estado_actual = trim($request->get('filtrado_activo'));  
+		if (is_null($estado_actual) || $estado_actual === 'null' || $estado_actual === '') {
+			$estado_actual = '';
+		}
+	
+
+$ordenes = OrdenDespacho::select('ordenes_despacho.*') 
+	->where('estatus', '=', $estado_actual)     
     ->whereIn('company_id', $company_id)
     ->orderBy('created_at', 'desc')
     ->selectSub(function ($query) {
