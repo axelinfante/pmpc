@@ -2072,12 +2072,16 @@ if ($request->ajax()) {
 				//return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO') && ((float) ($row->stock ?? 0) > 0);
 			};
 			
-			$car = Cars::where('id', $request->nro_interno)->first();
-			$deshabilitarBoton = false;
-			if ($car && $car->idEstado == 1) {
+		$car = Cars::where('id', $request->nro_interno)->first();
+		$deshabilitarBoton = false;
+	
+		//if ($car && (is_null($car->idEstado) || $car->idEstado == 1)) {
+		if ($car && $car->idEstado == 1) {	
 				$deshabilitarBoton = true;
-			}
-			$nombreEstado = ($car && $car->estado->estado) ? $car->estado->estado : '';
+		}
+//		$nombreEstado = ($car && $car->estado->estado) ? $car->estado->estado : '';
+		$nombreEstado = $car?->estado?->estado ?? 'Sin Estado';
+
 			
 				
 		$query = Item::select([
