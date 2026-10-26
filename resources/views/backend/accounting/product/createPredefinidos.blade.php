@@ -12,7 +12,7 @@
 		    <div class="row">
 			<div class="alert alert-danger print-error-msg col-md-12" style="display:none">
 					<ul></ul>
-				</div>
+			</div>
 			<div class="col-md-12">
 			 <div class="form-group">
                                     <label class="control-label">{{ _lang('Nº interno') }}</label>
@@ -22,6 +22,7 @@
                                                         <option value="{{ $interno_row->id }}">{{ nroInternoAlias($interno_row->company_id,$interno_row->tipo_vehiculo,$interno_row->id) }}</option>
                                         @endforeach
                                     </select>
+				<span id="badge_estado_vehiculo" class="badge d-none" style="font-size: 90%; padding: 5px 10px;"></span>
               </div>
 			  </div>
 			    <div class="col-md-12">
@@ -170,6 +171,32 @@ $(document).ready(function() {
                 // console.log(error);
             }
         }),
+		initComplete: function() {
+		var api = this.api();
+    
+		api.on('xhr', function(e, settings, json, xhr) {
+        if (json && json.estado) {
+			$('#submit').prop('disabled', json.estado.disabled);      
+			var $alerta = $('.print-error-msg');
+            var $listaErrores = $alerta.find('ul');
+			$listaErrores.empty();
+		    var $badge = $('#badge_estado_vehiculo');
+            $badge.removeClass('badge-danger badge-success badge-warning d-none');
+            if (json.estado.disabled) {
+                $listaErrores.append('<li>El vehículo seleccionado no está apto para desarme. Estado: <b>' + json.estado.name + '</b> (no permitido).</li>');
+                $alerta.fadeIn();
+				$badge.addClass('badge-danger')
+                      .text('Vehículo estado para desarme NO Apto: ' + json.estado.name)
+                      .hide().fadeIn(); // Efecto visual al aparecer
+            } else {
+                $alerta.fadeOut();
+				   $badge.addClass('badge-success')
+                          .text('Vehículo Estado: ' + json.estado.name)
+                          .hide().fadeIn();
+            }
+        }
+    });
+},
 		visibleButtons: {
         reset: true,
         excel: true,
@@ -199,36 +226,6 @@ $(document).ready(function() {
 						}
 						//console.log("IDs listos para procesar:", qr_seleccionados);
 						impresion_multiple(qr_seleccionados);
-					/*var formData = new FormData();
-					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
-                    formData.append('idsSeleccionados', qr_seleccionados);
-					$.ajax({
-					url: "{{ route('print-qr-mult') }}",						
-					type: "POST",
-					data: formData,
-					processData: false, 
-					contentType: false, 
-					beforeSend: function() {
-                    if (typeof inicioLoading === 'function') inicioLoading();
-					},
-					success: function(response) {
-                    if (typeof response === 'string' || response.html) {
-                        var htmlContenido = response.html ? response.html : response;
-						$('#main_modal .modal-body').html(htmlContenido);
-                        $('#main_modal').modal('show'); 
-                    } 
-                },
-                error: function(xhr) {
-                    console.error("Error al procesar la impresión múltiple:", xhr);
-                    alert('Ocurrió un error al intentar procesar los códigos QR.');
-                },
-                complete: function() {
-                    if (typeof closeLoading === 'function') closeLoading();
-                }
-
-				});*/
-				
-				
 			  }
 			}	
 		],
@@ -293,7 +290,7 @@ $(document).ready(function() {
 					_table.draw();
 			});	
 			
-			nro_interno.trigger('change');
+			//nro_interno.trigger('change');
 			$('.dataTables_filter input').unbind();
 
 
@@ -433,11 +430,11 @@ $(document).ready(function() {
                 })
 			}
 			
-				$('#filtrado').on('change', function(e) {
+			/*	$('#filtrado').on('change', function(e) {
 					e.preventDefault();
 					_table.draw();
            			return false; //for old browsers 
-			});
+			});*/
 			
         }
 				
@@ -585,7 +582,7 @@ $(document).ready(function() {
                     } 
                 },
                 error: function(xhr) {
-                    console.error("Error al procesar la impresión múltiple:", xhr);
+                    //console.error("Error al procesar la impresión múltiple:", xhr);
                     alert('Ocurrió un error al intentar procesar los códigos QR.');
                 },
                 complete: function() {
