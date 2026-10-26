@@ -2603,6 +2603,7 @@ if (isset($car)) {
     } else {
 
         $idsArray = is_array($ids) ? $ids : explode(",", $ids);
+		$idsArray = array_unique($idsArray); // Elimina IDs duplicados del array
         $items = Item::whereIn('id', $idsArray)->get();
 		
 		$depositodesarme = ($car->company_id==1 && $estado=='desarme-stock') ? '17' : ($request->input('idDeposito') ?? null);
