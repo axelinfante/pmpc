@@ -171,7 +171,7 @@ $(document).ready(function() {
                 // console.log(error);
             }
         }),
-		initComplete: function() {
+		/*initComplete: function() {
 		var api = this.api();
     
 		api.on('xhr', function(e, settings, json, xhr) {
@@ -196,7 +196,7 @@ $(document).ready(function() {
             }
         }
     });
-},
+},*/
 		visibleButtons: {
         reset: true,
         excel: true,
@@ -273,6 +273,34 @@ $(document).ready(function() {
         ],
     });	
 		
+		_table.on('xhr.dt', function(e, settings, json, xhr) {
+		 var $badge = $('#badge_estado_vehiculo');
+		 $badge.addClass('d-none');	
+		 
+		   if($('select[name=nro_interno]').val() != ''){
+					if (json && json.estado) {
+						//$('#submit').prop('disabled', json.estado.disabled);      
+						var $alerta = $('.print-error-msg');
+						var $listaErrores = $alerta.find('ul');
+						$listaErrores.empty();
+						
+						$badge.removeClass('badge-danger badge-success badge-warning d-none');
+						
+						if (json.estado.disabled) {
+							$listaErrores.append('<li>El vehículo seleccionado no está apto para desarme. Estado: <b>' + json.estado.name + '</b> (no permitido).</li>');
+							$alerta.fadeIn();
+							$badge.addClass('badge-danger')
+								  .text('Vehículo estado para desarme NO Apto: ' + json.estado.name)
+								  .hide().fadeIn();
+						} else {
+							$alerta.fadeOut();
+							$badge.addClass('badge-success')
+								  .text('Vehículo Estado: ' + json.estado.name)
+								  .hide().fadeIn();
+						}
+					}
+		  }		
+    });
 
 			$('#seleccionar-todos').on('click', function() {
 				$('.fila-seleccionada').prop('checked', $(this).prop('checked'));
