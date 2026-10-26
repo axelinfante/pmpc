@@ -2071,56 +2071,16 @@ if ($request->ajax()) {
             
 				//return !$isExport && (strtoupper((string) $row->estado) !== 'ANULADO') && ((float) ($row->stock ?? 0) > 0);
 			};
-
-			/* $query = Item::select(
-					'products.id as product_id', 
-					'items.id as item_id',       
-					'products.stock', 
-					'products.nro_oblea',
-					DB::raw("CONCAT(items.item_name, CASE WHEN items.allCar = 0 OR items.allCar IS NULL THEN ' (*)' ELSE '' END) as item_name"),
-					'items.allCar',
-					'items.activo',
-					'products.estado',
-					'invoices.invoice_number',
-					'users.name as vendedor',
-					'lugar_entregas.nombre as deposito',
-					DB::raw("GROUP_CONCAT(
-    DISTINCT CASE 
-        WHEN invoices.invoice_number IS NOT NULL OR users.name IS NOT NULL 
-        THEN CONCAT(COALESCE(invoices.invoice_number, ''), '||', COALESCE(users.name, '')) 
-        ELSE NULL 
-    END 
-    SEPARATOR ';;'
-) as facturas_vendedores")
-					//DB::raw("GROUP_CONCAT(DISTINCT invoices.invoice_number SEPARATOR ', ') as datos_facturas"),
-					//DB::raw("GROUP_CONCAT(DISTINCT products.id SEPARATOR ', ') as productos_asociados")
-				)
-				->leftJoin('products', function($join) use ($request) {
-					$join->on('products.item_id', '=', 'items.id')
-						 ->where('products.nro_interno', $request->nro_interno); 
-				})
-				->leftJoin('invoice_items', 'invoice_items.product_id', '=', 'products.id')
-				->leftJoin('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
-				->leftJoin('users', 'invoices.user_id', '=', 'users.id')
-				->leftJoin('lugar_entregas', 'products.idDeposito', '=', 'lugar_entregas.id')
-				->where(function($query) {
-					$query->where('items.item_type', 'product')
-						  ->where('items.activo', 'Si');
-					$query->where(function($subQuery) {
-						$subQuery->where('items.allCar', 1)
-							->orWhere(function($q) {
-								$q->where(function($allCarQuery) {
-									$allCarQuery->where('items.allCar', 0)
-												->orWhereNull('items.allCar');
-								})
-								->where('products.stock', '>', 0);
-							});
-					});
-				})
-				->groupBy('items.id', 'products.id')
-				->orderBy('item_name', 'asc'); */
+			
+			$car = Cars::where('id', $request->nro_interno)->first();
+			$deshabilitarBoton = false;
+			if ($car && $car->idEstado == 1) {
+				$deshabilitarBoton = true;
+			}
+			$nombreEstado = ($car && $car->estado->estado) ? $car->estado->estado : '';
+			
 				
-				$query = Item::select([
+		$query = Item::select([
         'products.id as product_id', 
         'items.id as item_id',       
         'products.stock', 
@@ -2337,6 +2297,12 @@ if ($request->ajax()) {
             $query->orderBy('items.item_name', $order);
         })
         ->rawColumns(['selection', 'action', 'nro_oblea', 'estado', 'deposito','vendedor'])
+		->with([
+            'estado' => [
+                'name'     => $nombreEstado,     // <-- Agregamos el nombre aquí
+                'disabled' => $deshabilitarBoton
+            ]
+        ])
         ->make(true);
 		}		
 	}
@@ -2637,6 +2603,7 @@ if (isset($car)) {
     } else {
 
         $idsArray = is_array($ids) ? $ids : explode(",", $ids);
+		$idsArray = array_unique($idsArray); // Elimina IDs duplicados del array
         $items = Item::whereIn('id', $idsArray)->get();
 		
 		$depositodesarme = ($car->company_id==1 && $estado=='desarme-stock') ? '17' : ($request->input('idDeposito') ?? null);
