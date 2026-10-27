@@ -38,6 +38,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Support\Facades\Cache;
 use ZipArchive;
 use File;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ProductController extends Controller
 {
@@ -2484,7 +2485,226 @@ if ($request->ajax()) {
 		}		
     }*/
 	
-	  public function table_detalle_post(Request $request)
+	
+	 public function table_detalle_post(Request $request)
+    {
+		$lockKey = 'create_product_lote_lock_' . auth()->user()->id . '_' . $request->input('nro_interno', 0);
+		$lock = Cache::lock($lockKey, 15);
+
+try {
+    
+    $lock->get(function () use ($request) {
+
+        $validator = Validator::make($request->all(), [
+            'nro_interno' => [
+                'required',
+                'exists:cars,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $car = \DB::table('cars')->where('id', $value)->first();
+                    if ($car && $car->idEstado == 1 && $request->input('estado') == 'desarme-stock') {
+                        $fail('El vehículo seleccionado no está apto (compactado) (estado no permitido).');
+                    }
+                },
+            ],
+            'idDeposito' => 'required',
+            'estado' => 'required',
+            'ubicacion' => 'nullable',
+            'description' => 'nullable',
+            'idsSeleccionados' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new \ValidationException($validator);
+        }
+
+        DB::beginTransaction();
+        try {
+            $ids = $request->idsSeleccionados;
+            
+            $idsArray = is_array($ids) ? $ids : explode(",", $ids);
+            $idsArray = array_unique(array_filter($idsArray)); 
+            
+            $nro_interno = $request->input('nro_interno', 0);
+            $car = Cars::find($nro_interno);
+            $productosCreadosIds = [];
+
+            if (isset($car)) {
+                
+                // =========================================================================
+                // CRÍTICO: DOBLE VERIFICACIÓN (DOUBLE-CHECKING) ANTI-DUPLICADOS
+                // Si la caché falla o el cliente envía ráfagas concurrentes, esto lo frena en seco.
+                // =========================================================================
+                $yaExisten = DB::table('products')
+                    ->where('nro_interno', $nro_interno)
+                    ->whereIn('item_id', $idsArray)
+                    ->exists();
+
+                if ($yaExisten) {
+                    throw new \Exception('Los productos para este lote ya se encuentran registrados en el sistema.');
+                }
+                // =========================================================================
+
+                $estado = $request->input('estado', 'despacho');
+                $marca_modelo = $car->idMarca_modelo;
+                $operario = Puesto::where('predeterminada', '1')->where('company_id', ($car->company_id ?? company_id()))->first();
+                $nro_motor = $car->motor_nro ?? '';
+
+                if ($estado == 'despacho') {
+                    $marca_modelo_valor = !empty($car->idMarca_modelo) ? $car->idMarca_modelo : 'NULL';
+                    $now = now();
+                    $idsString = implode(',', $idsArray); // Convertimos el array limpio a string para el SQL
+
+                    $sql = "INSERT INTO products (item_id, nro_interno, stock, description, product_price, tax_method, estado, company_id, idDeposito, ubicacion, carga_rapida, user_id, mercado_libre, created_at, marca_modelo, nro_motor, fecha_desarme_a_stock)
+                            SELECT items.id, {$nro_interno}, 1, '" . $request->input('description', '') . "', 0, 'exclusive', '" . $estado . "', " . $car->company_id . ", " . $request->input('idDeposito', 'NULL') . ", '" . $request->input('ubicacion', '') . "', " . $request->input('carga_rapida', 0) . ", " . auth()->user()->id . ", 0, '{$now}', {$marca_modelo_valor} AS marcamodelo,
+                            CASE WHEN items.id = 1612 THEN '{$nro_motor}' ELSE '' END,
+                            '{$now}' FROM items
+                            WHERE id IN($idsString)";
+
+                    DB::statement($sql);
+
+                    // --- AUDITORÍA ---
+                    $productosCreados = Product::where('user_id', auth()->id())
+                        ->where('created_at', $now)
+                        ->whereIn('item_id', $idsArray)
+                        ->get();
+
+                    if ($productosCreados->isNotEmpty()) {
+                        $auditModel = $productosCreados->first();
+                        $auditModel->auditEvent = 'created';
+                        $auditModel->isCustomEvent = true;
+                        $auditModel->auditCustomOld = [];
+                        $auditModel->auditCustomNew = [
+                            'bulk_insert'     => true,
+                            'total_inserted'  => $productosCreados->count(),
+                            'inserted_ids'    => $productosCreados->pluck('id')->toArray(),
+                            'item_ids_source' => $idsArray,
+                            'description'     => $request->input('description', ''),
+                            'idDeposito'      => $request->input('idDeposito'),
+                            'nro_interno'     => $nro_interno,
+                        ];
+                        Event::dispatch(AuditCustom::class, [$auditModel]);
+                    }
+
+                    $productosCreadosIds = DB::table('products')
+                        ->where('nro_interno', $nro_interno)
+                        ->where('created_at', $now)
+                        ->whereIn('item_id', $idsArray)
+                        ->pluck('id')
+                        ->toArray();
+
+                } else {
+                    $items = Item::whereIn('id', $idsArray)->get();
+                    $depositodesarme = ($car->company_id == 1 && $estado == 'desarme-stock') ? '17' : ($request->input('idDeposito') ?? null);
+
+                    foreach ($items as $item) {
+                        $product = new Product();
+                        $product->item_id = $item->id;
+                        $product->car_id = null;
+                        $product->marca_modelo = $marca_modelo;
+                        $product->product_price = 0;
+                        $product->nro_interno = $nro_interno;
+                        $product->tax_method = 'exclusive';
+                        $product->description = $request->input('description', '');
+                        $product->stock = 1;
+                        $product->estado = $request->input('estado') ?? "desarme-stock";
+                        $product->company_id = $car->company_id ?? company_id();
+                        $product->mercado_libre = 0;
+                        $product->idDeposito = $depositodesarme;
+                        $product->nro_motor = $item->id == "1612" ? $nro_motor : '';
+                        $product->ubicacion = $request->input('ubicacion') ?? '';
+                        $product->user_id = auth()->user()->id;
+                        $product->save();
+
+                        $productosCreadosIds[] = $product->id;
+                         
+                        $orden_desarme = new Orden_desarme();
+                        $orden_desarme->idCar = $product->idCar ?? $product->nro_interno;
+                        $orden_desarme->prioridad = "normal";
+                        $orden_desarme->interno = ($product->idCar ?? $product->nro_interno);
+                        $orden_desarme->marca_modelo = $product->marca_modelo;
+                        $orden_desarme->pieza = $item->id;
+                        $orden_desarme->product_id = $product->id;
+                        $orden_desarme->procesar = 1;
+                        $orden_desarme->idCadete_operario = $operario->user_id ?? 0;
+                        $orden_desarme->save();
+                    }
+                }   
+                
+                // Proceso de emisión de traslados
+                if ($car->company_id == 1 && $estado == 'desarme-stock'){
+                    $data = [
+                        'reference'   => 0,
+                        'fecha_traslado' => now(),
+                        'detalles' => "Inicio desde Precarga Masiva nro interno $nro_interno",
+                        'almacen_origen_id' => 17,
+                        'almacen_destino_id' => $request->input('idDeposito', 'NULL'),
+                        'user_id' => auth()->user()->id ?? 1,
+                        'status' => 'en transito'
+                    ];
+                     
+                      $transfer = new Transfer($data);
+                    $transfer->save();
+                    
+                    $itemsData = [];
+                    $timestamp = now();
+                    
+                    foreach ($productosCreadosIds as $id) {
+                        $itemsData[] = [
+                            'transfers_id' => $transfer->id,
+                            'product_id'  => $id,
+                            'created_at'  => $timestamp,
+                            'updated_at'  => $timestamp
+                        ];
+                    }
+                  
+                    TransfersProduct::insert($itemsData); 
+                    
+                    Product::whereIn('id', $productosCreadosIds)->update(['estado' => 'en transito']);
+                }
+
+                DB::commit();
+                
+						$stringIdsCreados = implode(',', $productosCreadosIds);
+						throw new HttpResponseException(response()->json([
+							'result' => 'success', 
+							'message' => _lang('Updated successfully'),
+							'ids_creados' => $stringIdsCreados 
+						]));
+					}
+
+					} catch (HttpResponseException $e) {
+						throw $e;
+					} catch (\Throwable $e) {
+						DB::rollBack();
+						throw new \Exception($e->getMessage());
+					}
+				});
+
+			} catch (LockTimeoutException $e) {
+				if ($request->ajax()) {
+					return response()->json(['result' => 'error', 'message' => ['El proceso ya fue solicitado, por favor espere unos segundos...']]);
+				}
+				return redirect()->back()->withErrors(['error' => 'El proceso ya fue solicitado, por favor espere unos segundos...']);
+
+			} catch (\ValidationException $e) {
+				if ($request->ajax()) {
+					return response()->json(['result' => 'error', 'message' => $e->validator->errors()->all()]);
+				}
+				return redirect()->route('item.create')->withErrors($e->validator)->withInput();
+
+			} catch (HttpResponseException $e) {
+				return $e->getResponse();
+
+			} catch (\Throwable $e) {
+				if ($request->ajax()) {
+					return response()->json(['result' => 'error', 'message' => [$e->getMessage()]]);
+				}
+				return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+			}
+	}
+	
+	
+	  public function table_detalle_post_old(Request $request)
     {
 		$lockKey = 'create_product_lote_lock_' . auth()->user()->id;
 		$lock = Cache::lock($lockKey, 5);
