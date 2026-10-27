@@ -19,20 +19,15 @@
                 <div class="card-body">
 				
 				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-    <span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
-    
-    <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Parcial</span>
-    <span class="text-muted small">&rarr;</span>
-    
-    <span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Completado</span>
-    <span class="text-muted small">&rarr;</span>
-    
-    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: white;">Cancelado</span>
-    <span class="text-muted small">&rarr;</span>
-    
-    <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Sin Estado</span>
-</div>
-				
+					<span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
+					
+					<span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Pendiente / Sin Estado</span>
+					<span class="text-muted small">&rarr;</span>
+					
+					<span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Completado</span>
+					<span class="text-muted small">&rarr;</span>
+					<span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: white;">Cancelado</span>
+				</div>
                     @php $currency = currency() @endphp
                     <table id="orden-desarme-table" class="table table-bordered">
                         <thead>
@@ -302,6 +297,7 @@
                     data: function(d) {
                         d._token = $('meta[name="csrf-token"]').attr('content');
                         d.id = "{{ $id ?? null }}";
+						d.filtrado_activo = $('select[name="filtrado_activo"]').val() || "";
                     }
                 },
                 //dom: 'Bfrtip',
@@ -316,25 +312,25 @@
                        	//$('.selectestado').val('').trigger('change');
                       }
                     },
-				{
+				/*{
                         extend: 'pdf',
                         text: 'Exportar a PDF',
 						orientation: 'landscape', // Cambia a horizontal
 						pageSize: 'A4', // Combina bien con tamaño A4 o Carta
 						exportOptions: exportFormatter,
-                        /*exportOptions: {
-                            columns: ':visible:not(.not-export)',
-                            format: {
-                                body: function(data, row, column, node) {
-                                    // Si hay un select, obtiene el texto seleccionado
-                                    if ($(node).find('select').length) {
-                                        return $(node).find('select option:selected').text();
-                                    }
-                                    return $(node).text().trim();
-                                }
-                            }
-                        }*/
-                    },
+                        // exportOptions: {
+                            // columns: ':visible:not(.not-export)',
+                            // format: {
+                                // body: function(data, row, column, node) {
+                                    Si hay un select, obtiene el texto seleccionado
+                                    // if ($(node).find('select').length) {
+                                        // return $(node).find('select option:selected').text();
+                                    // }
+                                    // return $(node).text().trim();
+                                // }
+                            // }
+                        // }
+                    },*/
                     {
                         extend: 'excel',
                         text: 'Exportar a Excel',
@@ -449,7 +445,42 @@
 									$(node).trigger('click'); 
 							}
 						}
-				}
+				}, 
+				{
+                text: '<i class="fas fa-check-square"></i> Multiples Qr',
+                className: 'btn-success', 
+                attr: {
+                    id: 'btn_obtener_datos'
+                },
+                action: function (e, dt, node, config) {
+						
+							var qr_seleccionados = [];
+                            $('.row-checkbox:checked').each(function() {
+                                qr_seleccionados.push($(this).data('product_id'));
+                            });
+
+						if (qr_seleccionados.length === 0) {
+							alert('Debe seleccionar al menos un valor');
+							return; 
+						}
+						
+						
+						
+						
+						//console.log("IDs listos para procesar:", qr_seleccionados);
+						impresion_multiple(qr_seleccionados);
+			  }
+			},{
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
+                      '<option value="pendiente" selected >Pendiente</option>' +
+                      '<option value="completado">Completado</option>' +
+                      '<option value="anulada">Cancelado</option>' +
+                      '</select>',
+                className: 'botones-custom',
+                action: function ( e, dt, node, config ) {
+						}
+					}
                 ],
                 columns: (function() {
                     var columns = [{
@@ -459,8 +490,9 @@
                         searchable: false,
                         className: 'text-center not-export',
                         render: function(data) {
-                            return "<input type='checkbox' class='row-checkbox' data-id='" +
-                                data.id + "'>";
+                            
+								return "<input type='checkbox' class='row-checkbox' data-id='" +
+                                data.id + "' data-product_id ='" + data.product_id + "'>";
                         }
                     }, {
                         data: "action",
@@ -541,7 +573,7 @@
                         $(row).css('background-color', '#FFFACD');
                     } else if (estado === 'completado') {
                         $(row).css('background-color', '#98FB98');
-                    } else if (estado === 'cancelado') {
+                    } else if (estado === 'anulada') {
                         $(row).css({
                             'background-color': '#D2B48C',
                             'color': 'white'
@@ -671,6 +703,12 @@
 
 
             //table.search('').columns().search('').draw();
+			
+			$('#filtrado_activo').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
 
             $(document).on('click', '#select-all', function() {
                 var isChecked = $(this).is(':checked');
@@ -983,6 +1021,45 @@ $( document ).ready(function() {
         
     });
 });	
+
+function impresion_multiple(ids){
+			if (ids.length==0)
+								{
+									alert('Debe seleccionar un valor');
+								 return;
+								}
+
+				var formData = new FormData();
+					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                    formData.append('idsSeleccionados', ids);
+					$.ajax({
+					url: "{{ route('print-qr-mult') }}",						
+					type: "POST",
+					data: formData,
+					processData: false, 
+					contentType: false, 
+					beforeSend: function() {
+                    if (typeof inicioLoading === 'function') inicioLoading();
+					},
+					success: function(response) {
+                    if (typeof response === 'string' || response.html) {
+                        var htmlContenido = response.html ? response.html : response;
+						$('#main_modal .modal-body').html(htmlContenido);
+                        $('#main_modal').modal('show'); 
+                    } 
+                },
+                error: function(xhr) {
+                    //console.error("Error al procesar la impresión múltiple:", xhr);
+                    alert('Ocurrió un error al intentar procesar los códigos QR.');
+                },
+                complete: function() {
+                    if (typeof closeLoading === 'function') closeLoading();
+                }
+
+				});								
+								
+			//alert(ids)
+		}
 
         });
     </script>
