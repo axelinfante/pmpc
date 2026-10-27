@@ -19,20 +19,15 @@
                 <div class="card-body">
 				
 				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-    <span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
-    
-    <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Parcial</span>
-    <span class="text-muted small">&rarr;</span>
-    
-    <span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Completado</span>
-    <span class="text-muted small">&rarr;</span>
-    
-    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: white;">Cancelado</span>
-    <span class="text-muted small">&rarr;</span>
-    
-    <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Sin Estado</span>
-</div>
-				
+					<span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
+					
+					<span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Pendiente / Sin Estado</span>
+					<span class="text-muted small">&rarr;</span>
+					
+					<span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Completado</span>
+					<span class="text-muted small">&rarr;</span>
+					<span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: white;">Cancelado</span>
+				</div>
                     @php $currency = currency() @endphp
                     <table id="orden-desarme-table" class="table table-bordered">
                         <thead>
@@ -302,6 +297,7 @@
                     data: function(d) {
                         d._token = $('meta[name="csrf-token"]').attr('content');
                         d.id = "{{ $id ?? null }}";
+						d.filtrado_activo = $('select[name="filtrado_activo"]').val() || "";
                     }
                 },
                 //dom: 'Bfrtip',
@@ -449,7 +445,17 @@
 									$(node).trigger('click'); 
 							}
 						}
-				}
+				} , {
+                   text: 'Filtrar por: ' +
+                      '<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
+                      '<option value="pendiente" selected >Pendiente</option>' +
+                      '<option value="completado">Completado</option>' +
+                      '<option value="anulada">Cancelado</option>' +
+                      '</select>',
+                className: 'botones-custom',
+                action: function ( e, dt, node, config ) {
+						}
+					}
                 ],
                 columns: (function() {
                     var columns = [{
@@ -541,7 +547,7 @@
                         $(row).css('background-color', '#FFFACD');
                     } else if (estado === 'completado') {
                         $(row).css('background-color', '#98FB98');
-                    } else if (estado === 'cancelado') {
+                    } else if (estado === 'anulada') {
                         $(row).css({
                             'background-color': '#D2B48C',
                             'color': 'white'
@@ -671,6 +677,12 @@
 
 
             //table.search('').columns().search('').draw();
+			
+			$('#filtrado_activo').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
 
             $(document).on('click', '#select-all', function() {
                 var isChecked = $(this).is(':checked');

@@ -792,6 +792,15 @@ public function get_table_data(Request $request)
         $isHistorial = $request->input('isHistorial'); // Parámetro 'isHistorial'
 		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 
+		$estado_actual = trim($request->get('filtrado_activo'));  
+				if (is_null($estado_actual) || $estado_actual === 'null' || $estado_actual === '') {
+					$estado_actual = '';
+				}
+				
+		$isExport = isset($request->exportar);
+		$evaluarMostrar = function ($row) use ($isExport) {
+         return !$isExport && !in_array(strtoupper((string) $row->estado), ['COMPLETADO', 'ANULADA']);
+		};		
 
         $opciones = Puesto::with('asignado')->with('company')
 		->whereIn('company_id', $company_id)
@@ -839,10 +848,14 @@ public function get_table_data(Request $request)
 
 		$estEnv = $request->estado;
 		if (!$estEnv && !$isHistorial) {
-			$ordenes->where(function ($q) {
+			$ordenes->where(function ($q) use ($estado_actual) {
 				//$q->where('estado', '!=', 'completado')
-				$q->whereNotIn('estado', ['completado', 'anulada'])
-				  ->orWhereNull('estado'); 
+				if ($estado_actual=="pendiente"){
+					$q->whereNotIn('estado', ['completado', 'anulada'])
+					->orWhereNull('estado'); 
+				}else{
+					$q->where('estado', '=', $estado_actual) ;  
+				} 
 			});
 		}
 
@@ -978,25 +991,29 @@ public function get_table_data(Request $request)
             ->addColumn('cliente', function ($orden) {
                 return $orden->venta->client->contact_name ?? '';
             })
-            ->addColumn('action', function ($orden) use ($ocultar) {
-				 $url = route('orden-desarme-one.generar-pdf', $orden->id);
+            ->addColumn('action', function ($orden) use ($ocultar,$evaluarMostrar) {
+				$url = route('orden-desarme-one.generar-pdf', $orden->id);
 
-                $ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarame '.$orden->id.' " data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
-                      <i class="ti-printer"></i>
-                    </a>';
+					$ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarame '.$orden->id.' " data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
+						  <i class="ti-printer"></i>
+						</a>';
+						
+			 if ($evaluarMostrar($orden)) { 
+					 
 					
-                return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
+									return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
 
-                    . '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" 
-data-title="' . _lang('Update Vehicle') . '" data-reload="false" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
+										. '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" 
+					data-title="' . _lang('Update Vehicle') . '" data-reload="false" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
 
-                    . csrf_field()
-                    . '<input name="_method" type="hidden" value="DELETE">'
-                    . '<button 
-class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
-                    . '</form>'.$ordenDesarmeBtn;
-					
-					
+										. csrf_field()
+										. '<input name="_method" type="hidden" value="DELETE">'
+										. '<button 
+					class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
+										. '</form>'.$ordenDesarmeBtn;
+			 }	
+			
+				return $ordenDesarmeBtn;			
 					
             })
 			->editColumn('puesto', function ($orden) use ($opciones, $gerenciales_autorizado) {
