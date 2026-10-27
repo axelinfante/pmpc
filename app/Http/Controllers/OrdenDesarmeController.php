@@ -53,9 +53,9 @@ class OrdenDesarmeController extends Controller
         if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete') {
             return redirect(route('list_operarios'));
         }
-        if (strtolower(auth()->user()->role->name) == 'vendedor') {
+        //if (strtolower(auth()->user()->role->name) == 'vendedor') {
             return view('backend.accounting.desarme.listVendedor', compact('puestos'));
-        }
+        //}
 		//$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 		//$company = \App\Company::where('business_name', 'Pentacar')->orwhere('business_name', 'Paternal')->get();
 		$company_id=count($company_id) > 1 ? array(1,2):$company_id;
@@ -1323,11 +1323,21 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
 	if ($request->ajax()) {	
 		$estEnv = $request->input('estado');       // Parámetro 'estado'
         $isHistorial = $request->input('isHistorial'); // Parámetro 'isHistorial'
-
+		
+	$estado_actual = trim($request->get('filtrado_activo'));  
+				if (is_null($estado_actual) || $estado_actual === 'null' || $estado_actual === '') {
+					$estado_actual = '';
+				}
+				
+		$isExport = isset($request->exportar);
+		$evaluarMostrar = function ($row) use ($isExport) {
+         return !$isExport && !in_array(strtoupper((string) $row->estado), ['COMPLETADO', 'ANULADA']);
+		};				
+	
         $ordenes = Orden_desarme::select('ordenes_desarme.*')
             ->with('venta')
             ->with('marcaModelo')
-            //->with('aseguradoras')
+            ->with('producto')
             ->with('cotizacion')
             ->whereHas('car', function ($str) use ($isHistorial) {
 
@@ -1355,15 +1365,26 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
 
         $ordenes->orderBy('created_at', 'desc');
 
-        $estEnv = $request->estado;
-
-        if (!$estEnv) {
-            if (!$isHistorial)
-                $ordenes->where(function ($query) {
-                    $query->where('estado', '!=', 'completado')
-                        ->orWhere('estado', null);
-                });
-        }
+        // $estEnv = $request->estado;
+        // if (!$estEnv) {
+            // if (!$isHistorial)
+                // $ordenes->where(function ($query) {
+                    // $query->where('estado', '!=', 'completado')
+                        // ->orWhere('estado', null);
+                // });
+        // }
+		
+		$estEnv = $request->estado;
+		if (!$estEnv && !$isHistorial) {
+			$ordenes->where(function ($q) use ($estado_actual) {
+				if ($estado_actual=="pendiente"){
+					$q->whereNotIn('estado', ['completado', 'anulada'])
+					->orWhereNull('estado'); 
+				}else{
+					$q->where('estado', '=', $estado_actual) ;  
+				} 
+			});
+		}
 
         return DataTables::eloquent($ordenes)
             /*->filter(function ($query) use ($request) {
@@ -1406,10 +1427,16 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                         });
                     });
                 })
-		 ->filterColumn('pieza', function ($query, $keyword) {
-                    $query->whereHas('item', function ($subQuery) use ($keyword) {
+					->filterColumn('pieza', function ($query, $keyword) {
+                   /* $query->whereHas('item', function ($subQuery) use ($keyword) {
                         $subQuery->where('item_name', 'like', "%{$keyword}%");
-                    });
+                    });*/
+					$query->orwhereHas('producto', function ($str) use ($keyword) {
+                         $str->where('products.id', 'like', "%{$keyword}%");
+						$str->orwhereHas('item', function ($str) use ($keyword) {
+							$str->where('items.item_name', 'like', "%{$keyword}%");
+						});
+					});
                 })
 			->filterColumn('vendedor', function ($query, $keyword) {
                     $query->whereHas('cotizacion.vendedor', function ($subQuery) use ($keyword) {
@@ -1454,7 +1481,8 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                     ($orden->producto->marcaModelo->modelo->modelo ?? '');
             })
             ->editColumn('pieza', function ($orden) {
-                return $orden->item->item_name ?? null;
+				return  "(".($orden->producto->id ?? ''). ") " .$orden->item->item_name ?? null;
+                //return $orden->item->item_name ?? null;
             })
             ->editColumn('detalle_pieza', function ($orden) {
                 return $orden->detalle_pieza;
@@ -1470,9 +1498,24 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
             })
 			 ->addColumn('invoice_number', function ($orden) {
 
-                $in = 'VEN-';
+                // $in = 'VEN-';
+                // if (!isset($orden->venta)) {
+                    // return '';
+                // }
+                // if ($orden->venta->company_id == 1) {
+                    // $in .= 'PM-';
+                // } elseif ($orden->venta->company_id == 2) {
+                    // $in .= 'PC-';
+                // }
+                // $text = $in . $orden->venta->invoice_number ?? null;
+                // $ruta = action('InvoiceController@show', $orden->venta->id);
+                // $a = "<a href='$ruta'>$text </a>";
+                // return $a;
+				
+				
+				  $in = 'VEN-';
                 if (!isset($orden->venta)) {
-                    return '';
+                    return "Precarga Masiva";
                 }
                 if ($orden->venta->company_id == 1) {
                     $in .= 'PM-';
@@ -1483,21 +1526,73 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                 $ruta = action('InvoiceController@show', $orden->venta->id);
                 $a = "<a href='$ruta'>$text </a>";
                 return $a;
+				
+	
+
+
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
             })
 			->addColumn('interno', function ($orden) {
                 return nroInternoAlias($orden->car->company_id, $orden->car->tipo_vehiculo, $orden->car->id);  //$orden->car->id."--".$orden->interno;
             })
-			->addColumn('action', function ($orden) use ($ocultar) {
-                return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
+			->addColumn('action', function ($orden) use ($ocultar,$evaluarMostrar) {
+         
+		 // return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
 
-                    . '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" 
-data-title="' . _lang('Update Vehicle') . '" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
+                    // . '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" 
+// data-title="' . _lang('Update Vehicle') . '" class="btn btn-warning btn-xs ajax-modal"><i class="ti-pencil"></i></a>&nbsp;'
 
-                    . csrf_field()
-                    . '<input name="_method" type="hidden" value="DELETE">'
-                    . '<button 
-class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
-                    . '</form>';
+                    // . csrf_field()
+                    // . '<input name="_method" type="hidden" value="DELETE">'
+                    // . '<button 
+// class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
+                    // . '</form>';
+
+				$url = route('orden-desarme-one.generar-pdf', $orden->id);
+
+			$ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarme ' . $orden->id . '" data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
+				<i class="ti-printer"></i>
+			</a>';
+
+			$qr = '<a href="' . action('ProductController@printQR', $orden->product_id) . '" class="btn btn-success btn-xs ajax-modal" title="Imprimir QR">
+				<i class="fa fa-qrcode" aria-hidden="true"></i>
+			</a>';
+
+			if ($evaluarMostrar($orden)) { 
+				return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
+					. csrf_field()
+					. '<input name="_method" type="hidden" value="DELETE">'
+					
+					. '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" data-title="' . _lang('Update Vehicle') . '" data-reload="false" class="btn btn-warning btn-xs ajax-modal" title="Editar">'
+					. '<i class="ti-pencil"></i>'
+					. '</a>&nbsp;'
+					
+					. '<button class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit" title="Eliminar">'
+					. '<i class="ti-eraser"></i>'
+					. '</button>&nbsp;'
+					
+					. $ordenDesarmeBtn . '&nbsp;'
+					. $qr
+					. '</form>';
+			}	
+
+
+			return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';					
+					
             })
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;

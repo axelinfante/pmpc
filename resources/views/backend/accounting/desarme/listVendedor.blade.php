@@ -17,11 +17,21 @@
                 <span class="d-none panel-title">{{ _lang('Orden de desarme') }}</span>
 
                 <div class="card-body">
+				<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+					<span class="text-muted small text-uppercase fw-bold me-1">Estados:</span>
+					
+					<span class="badge rounded-pill bg-warning text-dark px-2.5 py-1 fw-bold">Pendiente / Sin Estado</span>
+					<span class="text-muted small">&rarr;</span>
+					
+					<span class="badge rounded-pill bg-success text-white px-2.5 py-1 fw-bold">Completado</span>
+					<span class="text-muted small">&rarr;</span>
+					<span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #D2B48C; color: white;">Cancelado</span>
+				</div>
                     @php $currency = currency() @endphp
                     <table id="orden-desarme-table" class="table table-bordered">
                         <thead>
                             <tr>
-                                <th style="width: 100px;min-width: 100px" class="text-center">{{ _lang('Action') }}</th>
+                                <th  class="text-center notexport"><input type="checkbox" id="select-all" class="ml-1"></th>
                                 {{-- <th style="width: 150px;min-width: 150px" class="text-center">{{ _lang('Procesar') }}</th> --}}
                                 {{-- <th style="width: 100px;min-width: 100px" >{{ _lang('Id') }}</th> --}}
                                 {{-- <th style="width: 100px;min-width: 100px" >{{ _lang('Pedido pasado') }}</th> --}}
@@ -114,6 +124,7 @@
 						data: function (d) {
 							  d._token = $('meta[name="csrf-token"]').attr('content');
 							  d.id = "{{$id ?? null}}";  // ID dinámico que puedes enviar
+							  d.filtrado_activo = $('select[name="filtrado_activo"]').val() || "";  
 						}
 					},
 					visibleButtons: {
@@ -127,6 +138,64 @@
 					 data: @json($puestos) // Array simple
 					}
 					,'daterangepicker',,,'daterangepicker','input'],
+					columnDefs: [
+    {
+        "targets": 0, 
+        "searchable": false,
+        "orderable": false,
+        "className": 'text-center' ,
+        "render": function (data, type, row, meta) {
+            
+            if (data && data.trim() !== '') {
+                var rowId = row.id || row[0] || meta.row;
+					return '<div class="d-flex align-items-center justify-content-center">' +
+                           '<input type="checkbox" class="row-checkbox mr-2" value="' + rowId + '" data-product_id ="' + row.product_id + '">' +
+                           '<div>' + data + '</div>' +
+                       '</div>';								
+            }
+            return ''; 
+        }
+    }
+],
+					
+					customButtons: [
+					{
+                text: '<i class="fas fa-check-square"></i> Multiples Qr',
+                className: 'btn-success', 
+                attr: {
+                    id: 'btn_obtener_datos'
+                },
+                action: function (e, dt, node, config) {
+						
+							var qr_seleccionados = [];
+                            $('.row-checkbox:checked').each(function() {
+                                qr_seleccionados.push($(this).data('product_id'));
+                            });
+
+						if (qr_seleccionados.length === 0) {
+							alert('Debe seleccionar al menos un valor');
+							return; 
+						}
+						
+						
+						
+						
+						//console.log("IDs listos para procesar:", qr_seleccionados);
+						impresion_multiple(qr_seleccionados);
+			  }
+			},
+					{
+							text: 'Filtrar por: ' +
+							'<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
+							'<option value="pendiente" selected >Pendiente</option>' +
+							'<option value="completado">Completado</option>' +
+							'<option value="anulada">Cancelado</option>' +
+							'</select>',
+					className: 'botones-custom',
+					action: function ( e, dt, node, config ) {
+						}
+					}
+					],
 				   columns: [
 				    { data: 'action', name: 'action', orderable: false},
 					{ data : "puesto", name : "puesto" },
@@ -148,325 +217,80 @@
 					{ data: "falta", name: "falta" },
 					{ data: "obs_desarme_busqueda", name: "obs_desarme_busqueda" },
 					{ data: "fecha_desarmado_anulado", name: "fecha_desarmado_anulado" }
-                    
-					/*{ data : "f_ingreso_puesto", name : "f_ingreso_puesto" },
-                    { data : "interno", name : "interno" },
-                    { data : "cotizacion", name : "cotizacion" },
-                    { data : "venta", name : "venta" },
-                    { data : "fecha_venta", name : "fecha_venta" },
-                    { data : "lugar_venta", name : "lugar_venta" },
-                    { data : "marca_modelo", name : "marca_modelo" },
-                    { data : "pieza", name : "pieza" },
-					{ data : "vendedor", name : "vendedor" },
-                    { data : "ubicacion", name : "ubicacion" },
-                    { data : "estado", name : "estado" }*/
 					],
+					createdRow: function(row, data) {
+                    var estado = data.estado;
+                    if (estado === 'parcial') {
+                        $(row).css('background-color', '#FFFACD');
+                    } else if (estado === 'completado') {
+                        $(row).css('background-color', '#98FB98');
+                    } else if (estado === 'anulada') {
+                        $(row).css({
+                            'background-color': '#D2B48C',
+                            'color': 'white'
+                        });
+                    } else if (!estado || estado === '') {
+                       $(row).css('background-color', '#FFFACD');
+                      // $(row).css('background-color', '#F08080');
+                    }
+                }
 				});
+				
+				$('#filtrado_activo').on('change', function(e) {
+					e.preventDefault();
+					table.draw();
+           			return false; //for old browsers 
+			});
 				
 				$('#filtrado').on('change', function(e) {
 					e.preventDefault();
 					table.draw();
            			return false; //for old browsers 
 			});
-        });
+			
+			$('#select-all').on('click', function() {
+				$('.row-checkbox').prop('checked', $(this).prop('checked'));
+			});
+			
+			function impresion_multiple(ids){
+			if (ids.length==0)
+								{
+									alert('Debe seleccionar un valor');
+								 return;
+								}
 
-
-/*
-        $(function() {
-            $('#orden-desarme-table thead tr')
-                .clone(true)
-                .addClass('filters')
-                .appendTo('#orden-desarme-table thead');
-            var table = $('#orden-desarme-table').DataTable({
-                scrollX: true,
-                processing: true,
-                serverSide: true,
-                searching: true,
-                orderCellsTop: true,
-                fixedHeader: true,
-
-                ajax: ({
-                    url: '{{ url('orden-desarme/get_table_data') }}',
-                    method: "POST",
-                    data: function(d) {
-                        d._token = $('meta[name="csrf-token"]').attr('content');
-                        d.id = "{{ $id ?? null }}";
-                    }
-                }),
-
-
-                "columns": [{
-                        data: "action",
-                        name: "action"
-                    },
-                    // { data : "procesar", name : "procesar" },
-                    // { data : "id", name : "id" },
-                    // { data : "pedido_pasado", name : "pedido_pasado" },
-                    {
-                        data: "prioridad",
-                        name: "prioridad"
-                    },
-                    {
-                        data: "fecha_venta",
-                        name: "fecha_venta"
-                    },
-                    {
-                        data: "venta",
-                        name: "venta"
-                    },
-
-                    {
-                        data: "interno",
-                        name: "interno"
-                    },
-                    {
-                        data: "cotizacion",
-                        name: "cotizacion"
-                    },
-
-
-                    {
-                        data: "lugar_venta",
-                        name: "lugar_venta"
-                    },
-                    {
-                        data: "marca_modelo",
-                        name: "marca_modelo"
-                    },
-                    {
-                        data: "pieza",
-                        name: "pieza"
-                    },
-                    {
-                        data: "detalle_pieza",
-                        name: "detalle_pieza"
-                    },
-                    {
-                        data: "detalle_anulado",
-                        name: "detalle_anulado"
-                    },
-                    {
-                        data: "cliente",
-                        name: "cliente"
-                    },
-                    {
-                        data: "vendedor",
-                        name: "vendedor"
-                    },
-                    {
-                        data: "ubicacion",
-                        name: "ubicacion"
-                    },
-                    {
-                        data: "estado",
-                        name: "estado"
-                    },
-                    // { data : "autorizo", name : "autorizo" },
-                    {
-                        data: "fecha_estimada_pieza_disponible",
-                        name: "fecha_estimada_pieza_disponible"
-                    },
-                    {
-                        data: "existe",
-                        name: "existe"
-                    },
-                    {
-                        data: "falta",
-                        name: "falta"
-                    },
-                    // { data : "informo_ausencia", name : "informo_ausencia" },
-                    {
-                        data: "obs_desarme_busqueda",
-                        name: "obs_desarme_busqueda"
-                    },
-                    {
-                        data: "fecha_desarmado_anulado",
-                        name: "fecha_desarmado_anulado"
-                    },
-                    // { data : "cargando_camioneta", name : "cargando_camioneta" },
-                    // { data : "entregado", name : "entregado" },
-                    // { data : "fecha_embalado", name : "fecha_embalado" },
-                    // { data : "fecha_avisado_vendedor", name : "fecha_avisado_vendedor" },
-                ],
-                responsive: false,
-                "bStateSave": true,
-                "bAutoWidth": false,
-                "ordering": false,
-                "language": {
-                    "decimal": "",
-                    "emptyTable": "{{ _lang('No Data Found') }}",
-                    "info": "{{ _lang('Showing') }} _START_ {{ _lang('to') }} _END_ {{ _lang('of') }} _TOTAL_ {{ _lang('Entries') }}",
-                    "infoEmpty": "{{ _lang('Showing 0 To 0 Of 0 Entries') }}",
-                    "infoFiltered": "(filtered from _MAX_ total entries)",
-                    "infoPostFix": "",
-                    "thousands": ",",
-                    "lengthMenu": "{{ _lang('Show') }} _MENU_ {{ _lang('Entries') }}",
-                    "loadingRecords": "{{ _lang('Loading...') }}",
-                    "processing": "{{ _lang('Processing...') }}",
-                    "search": "{{ _lang('Search') }}",
-                    "zeroRecords": "{{ _lang('No matching records found') }}",
-                    "paginate": {
-                        "first": "{{ _lang('First') }}",
-                        "last": "{{ _lang('Last') }}",
-                        "next": "{{ _lang('Next') }}",
-                        "previous": "{{ _lang('Previous') }}"
-                    }
+				var formData = new FormData();
+					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                    formData.append('idsSeleccionados', ids);
+					$.ajax({
+					url: "{{ route('print-qr-mult') }}",						
+					type: "POST",
+					data: formData,
+					processData: false, 
+					contentType: false, 
+					beforeSend: function() {
+                    if (typeof inicioLoading === 'function') inicioLoading();
+					},
+					success: function(response) {
+                    if (typeof response === 'string' || response.html) {
+                        var htmlContenido = response.html ? response.html : response;
+						$('#main_modal .modal-body').html(htmlContenido);
+                        $('#main_modal').modal('show'); 
+                    } 
                 },
+                error: function(xhr) {
+                    alert('Ocurrió un error al intentar procesar los códigos QR.');
+                },
+                complete: function() {
+                    if (typeof closeLoading === 'function') closeLoading();
+                }
 
-                initComplete: function() {
-                    var api = this.api();
-
-                    // For each column
-                    api
-                        .columns()
-                        .eq(0)
-                        .each(function(colIdx) {
-
-                            if (colIdx !== 0 ) {
-                                // Set the header cell to contain the input element
-                                var cell = $('.filters th').eq(
-                                    $(api.column(colIdx).header()).index()
-                                );
-
-                                var title = $(cell).text();
+				});								
 								
-								if (colIdx == 1) {
-
-                                     $.ajax({
-										url : "{{route('puestos.index')}}",
-										type: 'GET',
-										dataType: 'json',
-										success: function (response) {
-											let selectString = `<select name="puesto_filter" style="width:100%" class="puesto_filter">`;
-											 selectString += '<option value=""> </option>';
-											var ids = [];
-											$.each(response.data, function(index, item) {
-                                             if($.inArray(item.puesto, ids) === -1) { // No esta duplicado 
-                                                selectString += `<option value="${item.puesto}" >${item.puesto}</option>`;
-                                                ids.push(item.puesto);
-												}
-											});
-											selectString += '</select>';
-											$(cell).html(selectString);	
-											
-											 $('.puesto_filter').on('change', function() {
-                                var puestoFilterValue = $(this).val();
-                                // Usa una función de filtrado personalizada para manejar el select
-                                $.fn.dataTable.ext.search.push(
-                                    function(settings, data, dataIndex) {
-										var puestoSelectValue =data[1];
-                                        //var puestoSelectValue = $(table.cell(dataIndex, 1).node()).find('select').val(); // Obtiene el valor del select en la fila
-                                        if (puestoFilterValue === "" || puestoSelectValue === puestoFilterValue) {
-                                            return true;
-                                        }
-                                        return false;
-                                    }
-                                );
-                                table.draw(); // Redibuja la tabla para aplicar el filtro
-                                $.fn.dataTable.ext.search.pop(); // Remueve la función de filtrado para no interferir con otros filtros
-                            });
-											
-												},error: function (e) {
-											//newData.status = 'inactive'
-											//row.data(newData);
-											}
-									});
-
-                              //  const opciones = ['1C', '1P', '2C', '2P', '3', '4C', '4P','GENERAL'];
-
-                                // let selectString = `<select name="puesto_filter" style="width:100%" class="puesto_filter">`;
-                                // selectString += '<option value=""> </option>';
-
-                                // opciones.forEach(opcion => {
-                                   
-                                    // selectString += `<option value="${opcion}" >${opcion}</option>`;
-                                // });
-
-                                // selectString += '</select>';
-
-
-                                // $(cell).html(selectString);
-
-                                // $('.puesto_filter').on('change', function() {
-                                // var puestoFilterValue = $(this).val();
-
-                                Usa una función de filtrado personalizada para manejar el select
-                                // $.fn.dataTable.ext.search.push(
-                                    // function(settings, data, dataIndex) {
-                                        // var puestoSelectValue =data[1];
-                                       var puestoSelectValue = $(table.cell(dataIndex, 2).node()).find('select').val(); // Obtiene el valor del select en la fila
-                                        // if (puestoFilterValue === "" || puestoSelectValue === puestoFilterValue) {
-                                            // return true;
-                                        // }
-                                        // return false;
-                                    // }
-                                // );
-                                // table.draw(); // Redibuja la tabla para aplicar el filtro
-                                // $.fn.dataTable.ext.search.pop(); // Remueve la función de filtrado para no interferir con otros filtros
-                            // });
-                               //              
-                            }else{							
-                                //console.log($(api.column(colIdx).header()).index());
-                                $(cell).html('<input style="width:100%" type="text" placeholder="' +
-                                    title + '" />');
-
-                                // On every keypress in this input
-                                $(
-                                        'input',
-                                        $('.filters th').eq($(api.column(colIdx).header()).index())
-                                    )
-                                    .off('keyup change')
-                                    .on('change', function(e) {
-                                        // Get the search value
-                                        $(this).attr('title', $(this).val());
-                                        var regexr =
-                                        '({search})'; //$(this).parents('th').find('select').val();
-
-                                        var cursorPosition = this.selectionStart;
-                                        // Search the column for that value
-                                        api
-                                            .column(colIdx)
-                                            .search(
-                                                this.value != '' ?
-                                                regexr.replace('{search}', '(((' + this.value +
-                                                    ')))') :
-                                                '',
-                                                this.value != '',
-                                                this.value == ''
-                                            )
-                                            .draw();
-                                    })
-                                    .on('keyup', function(e) {
-                                        e.stopPropagation();
-
-                                        $(this).trigger('change');
-                                        $(this)
-                                            .focus()[0]
-                                            .setSelectionRange(cursorPosition, cursorPosition);
-                                    });
-                            }
-							
-							
-							
-							
-							
-							
-							}else{
-                                var cell = $('.filters th').eq(
-                                    $(api.column(colIdx).header()).index()
-                                );
-
-
-                                $(cell).html('');
-                            }
-                        });
-                },
-            });
-
-
-
-
-            table.search('').columns().search('').draw();
-        });*/
+			//alert(ids)
+		}
+		
+		
+        });
     </script>
 @endsection

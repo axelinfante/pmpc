@@ -499,23 +499,8 @@
                         name: "action",
                         className: 'not-export',
                     }];
-
-                    /*if (adminDesarme) {
-                        columns.push({
-                            data: "puesto",
-                            name: "puesto",
-                            class: 'text-center'
-                        });
-                        columns.push({
-                            data: "f_ingreso_puesto",
-                            name: "f_ingreso_puesto"
-                        });
-                    }*/
-
                     columns.push({
-                        //data: "fecha_desarmado_anulado",
-                        //name: "fecha_desarmado_anulado"
-						data: "f_ingreso_puesto",
+                 		data: "f_ingreso_puesto",
                         name: "f_ingreso_puesto"
                     },{
                         data: "puesto",
