@@ -312,7 +312,7 @@
                        	//$('.selectestado').val('').trigger('change');
                       }
                     },
-				/*{
+					{
                         extend: 'pdf',
                         text: 'Exportar a PDF',
 						orientation: 'landscape', // Cambia a horizontal
@@ -322,7 +322,7 @@
                             // columns: ':visible:not(.not-export)',
                             // format: {
                                 // body: function(data, row, column, node) {
-                                    Si hay un select, obtiene el texto seleccionado
+                                    //Si hay un select, obtiene el texto seleccionado
                                     // if ($(node).find('select').length) {
                                         // return $(node).find('select option:selected').text();
                                     // }
@@ -330,7 +330,7 @@
                                 // }
                             // }
                         // }
-                    },*/
+                    },
                     {
                         extend: 'excel',
                         text: 'Exportar a Excel',
