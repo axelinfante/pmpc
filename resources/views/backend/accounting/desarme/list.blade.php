@@ -312,25 +312,25 @@
                        	//$('.selectestado').val('').trigger('change');
                       }
                     },
-				{
+				/*{
                         extend: 'pdf',
                         text: 'Exportar a PDF',
 						orientation: 'landscape', // Cambia a horizontal
 						pageSize: 'A4', // Combina bien con tamaño A4 o Carta
 						exportOptions: exportFormatter,
-                        /*exportOptions: {
-                            columns: ':visible:not(.not-export)',
-                            format: {
-                                body: function(data, row, column, node) {
-                                    // Si hay un select, obtiene el texto seleccionado
-                                    if ($(node).find('select').length) {
-                                        return $(node).find('select option:selected').text();
-                                    }
-                                    return $(node).text().trim();
-                                }
-                            }
-                        }*/
-                    },
+                        // exportOptions: {
+                            // columns: ':visible:not(.not-export)',
+                            // format: {
+                                // body: function(data, row, column, node) {
+                                    Si hay un select, obtiene el texto seleccionado
+                                    // if ($(node).find('select').length) {
+                                        // return $(node).find('select option:selected').text();
+                                    // }
+                                    // return $(node).text().trim();
+                                // }
+                            // }
+                        // }
+                    },*/
                     {
                         extend: 'excel',
                         text: 'Exportar a Excel',
@@ -445,7 +445,32 @@
 									$(node).trigger('click'); 
 							}
 						}
-				} , {
+				}, 
+				{
+                text: '<i class="fas fa-check-square"></i> Multiples Qr',
+                className: 'btn-success', 
+                attr: {
+                    id: 'btn_obtener_datos'
+                },
+                action: function (e, dt, node, config) {
+						
+							var qr_seleccionados = [];
+                            $('.row-checkbox:checked').each(function() {
+                                qr_seleccionados.push($(this).data('product_id'));
+                            });
+
+						if (qr_seleccionados.length === 0) {
+							alert('Debe seleccionar al menos un valor');
+							return; 
+						}
+						
+						
+						
+						
+						//console.log("IDs listos para procesar:", qr_seleccionados);
+						impresion_multiple(qr_seleccionados);
+			  }
+			},{
                    text: 'Filtrar por: ' +
                       '<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
                       '<option value="pendiente" selected >Pendiente</option>' +
@@ -465,8 +490,9 @@
                         searchable: false,
                         className: 'text-center not-export',
                         render: function(data) {
-                            return "<input type='checkbox' class='row-checkbox' data-id='" +
-                                data.id + "'>";
+                            
+								return "<input type='checkbox' class='row-checkbox' data-id='" +
+                                data.id + "' data-product_id ='" + data.product_id + "'>";
                         }
                     }, {
                         data: "action",
@@ -995,6 +1021,45 @@ $( document ).ready(function() {
         
     });
 });	
+
+function impresion_multiple(ids){
+			if (ids.length==0)
+								{
+									alert('Debe seleccionar un valor');
+								 return;
+								}
+
+				var formData = new FormData();
+					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                    formData.append('idsSeleccionados', ids);
+					$.ajax({
+					url: "{{ route('print-qr-mult') }}",						
+					type: "POST",
+					data: formData,
+					processData: false, 
+					contentType: false, 
+					beforeSend: function() {
+                    if (typeof inicioLoading === 'function') inicioLoading();
+					},
+					success: function(response) {
+                    if (typeof response === 'string' || response.html) {
+                        var htmlContenido = response.html ? response.html : response;
+						$('#main_modal .modal-body').html(htmlContenido);
+                        $('#main_modal').modal('show'); 
+                    } 
+                },
+                error: function(xhr) {
+                    //console.error("Error al procesar la impresión múltiple:", xhr);
+                    alert('Ocurrió un error al intentar procesar los códigos QR.');
+                },
+                complete: function() {
+                    if (typeof closeLoading === 'function') closeLoading();
+                }
+
+				});								
+								
+			//alert(ids)
+		}
 
         });
     </script>
