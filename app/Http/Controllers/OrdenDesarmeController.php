@@ -992,11 +992,12 @@ public function get_table_data(Request $request)
                 return $orden->venta->client->contact_name ?? '';
             })
             ->addColumn('action', function ($orden) use ($ocultar,$evaluarMostrar) {
-				$url = route('orden-desarme-one.generar-pdf', $orden->id);
+				/* $url = route('orden-desarme-one.generar-pdf', $orden->id);
 
 					$ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarame '.$orden->id.' " data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
 						  <i class="ti-printer"></i>
 						</a>';
+					$qr = "<a href='" . action('ProductController@printQR', $orden->product_id) . "' class='btn btn-success btn-xs ajax-modal'><i class='fa fa-qrcode' aria-hidden='true'></i></a>";						
 						
 			 if ($evaluarMostrar($orden)) { 
 					 
@@ -1010,10 +1011,41 @@ public function get_table_data(Request $request)
 										. '<input name="_method" type="hidden" value="DELETE">'
 										. '<button 
 					class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class="ti-eraser"></i></button>'
-										. '</form>'.$ordenDesarmeBtn;
+										. '</form>'.$ordenDesarmeBtn.$qr;
 			 }	
 			
-				return $ordenDesarmeBtn;			
+				return $ordenDesarmeBtn;		 */	
+				
+				$url = route('orden-desarme-one.generar-pdf', $orden->id);
+
+$ordenDesarmeBtn = '<a href="' . $url . '" target="_blank" data-title="Orden Desarme ' . $orden->id . '" data-fullscreen="true" id="ordenDesarmeBtn" class="btn btn-info ajax-modal btn-xs" title="Orden de Desarme">
+    <i class="ti-printer"></i>
+</a>';
+
+$qr = '<a href="' . action('ProductController@printQR', $orden->product_id) . '" class="btn btn-success btn-xs ajax-modal" title="Imprimir QR">
+    <i class="fa fa-qrcode" aria-hidden="true"></i>
+</a>';
+
+if ($evaluarMostrar($orden)) { 
+    return '<form action="' . action('OrdenDesarmeController@destroy', $orden['id']) . '" class="text-center" method="post">'
+        . csrf_field()
+        . '<input name="_method" type="hidden" value="DELETE">'
+        
+        . '<a href="' . action('OrdenDesarmeController@edit', $orden['id']) . '" data-title="' . _lang('Update Vehicle') . '" data-reload="false" class="btn btn-warning btn-xs ajax-modal" title="Editar">'
+        . '<i class="ti-pencil"></i>'
+        . '</a>&nbsp;'
+        
+        . '<button class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit" title="Eliminar">'
+        . '<i class="ti-eraser"></i>'
+        . '</button>&nbsp;'
+        
+        . $ordenDesarmeBtn . '&nbsp;'
+        . $qr
+        . '</form>';
+}	
+
+// Si no pasa la evaluación, se retorna el contenedor centrado solo con el botón de PDF
+return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
 					
             })
 			->editColumn('puesto', function ($orden) use ($opciones, $gerenciales_autorizado) {
