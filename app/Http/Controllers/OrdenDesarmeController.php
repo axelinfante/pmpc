@@ -53,9 +53,9 @@ class OrdenDesarmeController extends Controller
         if (strtolower(auth()->user()->role->name) == 'operario' || strtolower(auth()->user()->role->name) == 'cadete') {
             return redirect(route('list_operarios'));
         }
-        //if (strtolower(auth()->user()->role->name) == 'vendedor') {
+        if (strtolower(auth()->user()->role->name) == 'vendedor') {
             return view('backend.accounting.desarme.listVendedor', compact('puestos'));
-        //}
+        }
 		//$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 		//$company = \App\Company::where('business_name', 'Pentacar')->orwhere('business_name', 'Paternal')->get();
 		$company_id=count($company_id) > 1 ? array(1,2):$company_id;
