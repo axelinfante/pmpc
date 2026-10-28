@@ -67,22 +67,23 @@
 					<select class="form-control select2" multiple name="acciones[]" id="acciones" data-placeholder="{{ _lang('Seleccionar acciones') }}">
 						<option value=""></option> 
 						
-						<option value="Flete">{{ _lang('Flete') }}</option>
-						<option value="Despacho con guía">{{ _lang('Despacho con guía') }}</option>
+						<option value="Flete" {{ in_array('Flete', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Flete') }}</option>
+						<option value="Despacho con guía" {{ in_array('Despacho con guía', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Despacho con guía') }}</option>
 						
-						<option value="Retira en Penta">{{ _lang('Retira en Penta') }}</option>
-						<option value="Retira en Octubre">{{ _lang('Retira en Octubre') }}</option>
-						<option value="Retira en Tucson">{{ _lang('Retira en Tucson') }}</option>
-						<option value="Retira en Constituyentes">{{ _lang('Retira en Constituyentes') }}</option>
-						<option value="Retira Ventanita">{{ _lang('Retira Ventanita') }}</option>
+						<option value="Retira en Penta" {{ in_array('Retira en Penta', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Retira en Penta') }}</option>
+						<option value="Retira en Octubre" {{ in_array('Retira en Octubre', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Retira en Octubre') }}</option>
+						<option value="Retira en Tucson" {{ in_array('Retira en Tucson', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Retira en Tucson') }}</option>
+						<option value="Retira en Constituyentes" {{ in_array('Retira en Constituyentes', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Retira en Constituyentes') }}</option>
+						<option value="Retira Ventanita" {{ in_array('Retira Ventanita', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Retira Ventanita') }}</option>
 						
-						<option value="Enviar a Penta por Jumper">{{ _lang('Enviar a Penta por Jumper') }}</option>
-						<option value="Enviar a Rosario">{{ _lang('Enviar a Rosario') }}</option>
-						<option value="Mercado envío (c/Etiq) Jumper a correo">{{ _lang('Mercado envío (c/Etiq) Jumper a correo') }}</option>
-						<option value="ML vía cargo (Jumper)">{{ _lang('ML vía cargo (Jumper)') }}</option>
-						<option value="Moto flex. ML">{{ _lang('Moto flex. ML') }}</option>
-						<option value="Colecta ziping">{{ _lang('Colecta ziping') }}</option>
+						<option value="Enviar a Penta por Jumper" {{ in_array('Enviar a Penta por Jumper', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Enviar a Penta por Jumper') }}</option>
+						<option value="Enviar a Rosario" {{ in_array('Enviar a Rosario', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Enviar a Rosario') }}</option>
+						<option value="Mercado envío (c/Etiq) Jumper a correo" {{ in_array('Mercado envío (c/Etiq) Jumper a correo', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Mercado envío (c/Etiq) Jumper a correo') }}</option>
+						<option value="ML vía cargo (Jumper)" {{ in_array('ML vía cargo (Jumper)', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('ML vía cargo (Jumper)') }}</option>
+						<option value="Moto flex. ML" {{ in_array('Moto flex. ML', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Moto flex. ML') }}</option>
+						<option value="Colecta ziping" {{ in_array('Colecta ziping', old('acciones', [])) ? 'selected' : '' }}>{{ _lang('Colecta ziping') }}</option>
 					</select>
+
 				</div>
 			</div>
 
@@ -91,7 +92,7 @@
 				<label>{{ _lang('Vendedores') }}</label>
 				<select class="form-control select2 select-filter" name="vendedor">
 					<option value="">{{ _lang('Vendedores') }}</option>
-					{{ create_option('users','id',['name','email'],'',array('role_id=' => $rol), " company_id in (".implode(",", $companias_global).")") }}
+					{{ create_option('users', 'id', ['name', 'email'], old('vendedor'), array('role_id=' => $rol), " company_id in (".implode(",", $companias_global).")") }}
 				</select>
 			</div>
 			@endif
@@ -100,10 +101,10 @@
 			<div class="form-group">
 				<label for="comision">Tipo de venta</label>
 				<select class="form-control" required name="comision" id="comision">
-					<option selected value="">Seleccione</option>
+					<option value="" {{ old('comision') === null || old('comision') === '' ? 'selected' : '' }}>Seleccione</option>
 					
 					@foreach($comisiones as $nombre => $valores)
-						<option value="{{ $nombre }}">
+						<option value="{{ $nombre }}" {{ old('comision') == $nombre ? 'selected' : '' }}>
 							{{ $nombre }} ({{ $valores['percentage'] }}% 
 							@if($valores['fixed'] > 0) 
 								+ ${{ number_format($valores['fixed'], 2) }}
@@ -162,37 +163,35 @@
 			<div class="col-md-2 ">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Prioridad de desarme') }}</label>
-					<select class="form-control "  name="prioridad_desarmar" id="prioridad_desarmar">
-						
-						<option value="alta">{{ _lang('alta') }}</option>
-						<option selected value="normal">{{ _lang('normal') }}</option>
-						<option value="baja">{{ _lang('baja') }}</option>
+					<select class="form-control" name="prioridad_desarmar" id="prioridad_desarmar">
+						<option value="alta" {{ old('prioridad_desarmar') == 'alta' ? 'selected' : '' }}>{{ _lang('alta') }}</option>
+						<option value="normal" {{ old('prioridad_desarmar') == 'normal' || old('prioridad_desarmar') === null ? 'selected' : '' }}>{{ _lang('normal') }}</option>
+						<option value="baja" {{ old('prioridad_desarmar') == 'baja' ? 'selected' : '' }}>{{ _lang('baja') }}</option>
 					</select>
-					
 				</div>
 			</div>
 
 				<div class="col-md">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Posible Fecha de entrega a cliente') }}</label>
-					<input type="date" class="form-control" name="fecha_entrega_posible" required>
+					<input type="date" class="form-control" name="fecha_entrega_posible" value="{{ old('fecha_entrega_posible') }}" required>
 				</div>
 			</div>
 
 			<div class="col-md ">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Fecha de entrega') }}</label>
-					<input type="date" class="form-control" name="fecha_entrega">
+					<input type="date" class="form-control" name="fecha_entrega" value="{{ old('fecha_entrega') }}">
 				</div>
 			</div>
 
 			<div class="col-md-6 {{ $ve }}">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Retiro') }}</label>
-					<select class="form-control select2 auto-select"  name="retiro" id="retiro">
-						<option value="0">Seleccionar</option>
-						<option value="1">{{ _lang('Retirado') }}</option>
-						<option value="2">{{ _lang('Enviado') }}</option>
+					<select class="form-control select2" name="retiro" id="retiro">
+						<option value="0" {{ old('retiro') == '0' || old('retiro') === null ? 'selected' : '' }}>Seleccionar</option>
+					<option value="1" {{ old('retiro') == '1' ? 'selected' : '' }}>{{ _lang('Retirado') }}</option>
+					<option value="2" {{ old('retiro') == '2' ? 'selected' : '' }}>{{ _lang('Enviado') }}</option>
 					</select>
 				</div>
 			</div>
@@ -200,18 +199,17 @@
 			<div class="col-md-4 {{ $ve }}">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Entregado a') }}</label>
-					<input type="text" name="entregado_a" class="form-control">
+					<input type="text" name="entregado_a" value="{{ old('entregado_a') }}" class="form-control">
 				</div>
 			</div>
 
 			<div class="col-md-4 {{ $ve }}">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Entregado por') }}</label>
-					<select class="form-control select2 auto-select"  name="entregado_por"
-							id="entregado_por">
-						<option value="">{{ _lang('Seleccionar') }}</option>
+					<select class="form-control select2" name="entregado_por" id="entregado_por">
+						<option value="" {{ old('entregado_por') === null || old('entregado_por') === '' ? 'selected' : '' }}>{{ _lang('Seleccionar') }}</option>
 						@foreach($users as $u)
-							<option value="{{$u->id}}">{{ $u-> name}}</option>
+							<option value="{{ $u->id }}" {{ old('entregado_por') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
 						@endforeach
 					</select>
 				</div>
@@ -219,8 +217,7 @@
 			<div class="col-md-4 {{ $ve }}">
 				<div class="form-group">
 					<label class="control-label">{{ _lang('Ubicación') }}</label>
-					<input type="text" name="ubicacion" class="form-control">
-					
+					<input type="text" name="ubicacion" class="form-control" value="{{ old('ubicacion') }}">
 				</div>
 			</div>
 

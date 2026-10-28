@@ -110,13 +110,28 @@ class Invoice extends Model implements AuditableInvoice
 
         $realInvoiceNumber = $model->id + $offset;
 
-        // Actualizamos directamente en la base de datos para evitar bucles de eventos
         $model->newQuery()
             ->where($model->getKeyName(), $model->id)
             ->update(['invoice_number' => $realInvoiceNumber]);
 
         // Sincronizamos el modelo en memoria
         $model->setAttribute('invoice_number', $realInvoiceNumber);
+		
+        $data = [
+            'value'      => $realInvoiceNumber, // Se usa el número real calculado arriba
+            //'company_id' => $model->company_id, // Puedes descomentar esto si el modelo tiene company_id
+            'updated_at' => now(), 
+        ];
+
+        $existe_setting = \App\CompanySetting::where('name', 'invoice_starting')
+            //->where('company_id', $model->company_id)
+            ->exists();
+
+        if ($existe_setting) {
+            \App\CompanySetting::where('name', 'invoice_starting')
+                //->where('company_id', $model->company_id)
+                ->update($data);
+        }
     });
 }
 
