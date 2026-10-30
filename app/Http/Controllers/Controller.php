@@ -14,12 +14,13 @@ class Controller extends BaseController
 	
 	protected $comisiones = [
     'Camiones'            => ['percentage' => 4,   'fixed' => 0],
+    'Importación'         => ['percentage' => 4,   'fixed' => 0],
     'Motos enteras'       => ['percentage' => 4,   'fixed' => 0],
     'Mercado Libre'       => ['percentage' => 5,   'fixed' => 0],
-    'Ruedas'              => ['percentage' => 4,   'fixed' => 0],
+    'Ruedas'              => ['percentage' => 7,   'fixed' => 0],
     'Motores'             => ['percentage' => 2.5, 'fixed' => 0],
     'Reventa'        	  => ['percentage' => 3,   'fixed' => 0],
-    'Lote'                => ['percentage' => 3,   'fixed' => 0],
+    'Lote'                => ['percentage' => 4,   'fixed' => 0],
     'Venta normal' => ['percentage' => 7,   'fixed' => 0],
     'Venta menos a 30000' => ['percentage' => 7,   'fixed' => 1000],
 	];
