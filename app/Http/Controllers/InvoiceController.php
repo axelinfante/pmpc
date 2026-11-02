@@ -1274,6 +1274,30 @@ public function store(Request $request)
 						dd("No existe vehiculo");
 				}
 				
+				 $item = Item::find($item_id);
+            if (!$item) {
+                throw new \RuntimeException("Item inválido (id={$item_id})");
+            }
+				
+				// verificar si item ya fue facturado
+			
+			$product = Product::where('item_id', $item_id)
+							  ->where('nro_interno', $car_id_actual)
+							  ->lockForUpdate() // Opcional, pero recomendado si validas stock/concurrencia
+							  ->first();
+
+			if ($product) {
+				// Puedes lanzar una excepción, retornar un error o continuar
+	///			throw new \Exception("El producto {$item->item_name} y nro interno {$car_id_actual} ya se encuentra creado. verificar la factura emitida anteriormente");
+				
+                DB::rollBack();
+				
+				$msg="El producto {$item->item_name} y nro interno {$car_id_actual} ya se encuentra creado. verificar la factura emitida anteriormente";
+                return $request->ajax()
+                    ? response()->json(['result' => 'error', 'message' => [$msg]], 422)
+                    : redirect()->back()->withInput()->withErrors(['error' => $msg]);
+				}
+				
 				$product = new Product();
 				$product->item_id = $item_id;
 				$product->car_id =  null;
@@ -6500,7 +6524,20 @@ public function guardarComision($request, $invoice)
             if (!$item) {
                 throw new \RuntimeException("Item inválido (id={$itemId})");
             }
+					
 			
+			// verificar si item ya fue facturado
+			
+			$product = Product::where('item_id', $itemId)
+							  ->where('nro_interno', $carIdActual)
+							  ->lockForUpdate() // Opcional, pero recomendado si validas stock/concurrencia
+							  ->first();
+
+			if ($product) {
+				// Puedes lanzar una excepción, retornar un error o continuar
+				throw new \Exception("El producto {$item->item_name} y nro interno {$carIdActual} ya se encuentra creado. verificar la factura emitida anteriormente");
+			}
+			///
 
             $product = new Product();
             $product->item_id       = $itemId;
