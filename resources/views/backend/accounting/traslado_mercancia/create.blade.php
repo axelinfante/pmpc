@@ -85,12 +85,14 @@
                                 <th>ID de producto</th>
                                 <th>{{ _lang('Nro Interno') }}</th>
                                 <th>{{ _lang('Dominio') }}</th>
+                                <th>{{ _lang('Cotización') }}</th>
                                 <th>{{ _lang('Product') }}</th>
                                 <th>{{ _lang('Marca') }}</th>
                                 <th>{{ _lang('Modelo') }}</th>
                                 <th>{{ _lang('nº motor') }}</th>
                                 <th>{{ _lang('nº oblea') }}</th>
-                                <th style="width: 200px; min-width: 200px;">{{ _lang('Deposito') }}</th>
+                                <th>{{ _lang('Datos') }}</th>
+                                <th >{{ _lang('Deposito') }}</th>
                                 <th>{{ _lang('Fecha último giro') }}</th>
                             </tr>
                         </thead>
@@ -198,23 +200,26 @@ $(function() {
                 //console.error("Error en la consulta de la tabla:", error);
             }
         }),
-        visibleButtonsFilter: false,
+        visibleButtonsFilter: true,
         searchDelay: null, 
         visibleButtons: {
             reset: true,
             excel: true,
             print: false
         },
+		columnFilters: ['none',,,,,,,,,,'none','none','none'],
         columns: [
             { data: 'selection', name: 'selection', orderable: false },
             { data: 'id', name: 'id'},
             { data: 'interno', name: 'nro_interno' },
             { data: 'dominio', name: 'dominio' },
+            { data: 'cotizacion', name: 'cotizacion' },
             { data: 'productItem', name: 'productItem' },
             { data: 'marca', name: 'marca' },
             { data: 'modelo', name: 'modelo' },
             { data: 'motor_nro', name: 'motor_nro' },
             { data: 'nro_oblea', name: 'nro_oblea' },
+            { data: 'datos', name: 'datos' },
             { data: 'deposito', name: 'deposito' },
             { data: 'fecha_ultimogiro', name: 'fecha_ultimogiro' }
         ],

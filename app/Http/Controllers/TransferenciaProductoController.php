@@ -107,8 +107,10 @@ class TransferenciaProductoController extends Controller
 				 ->addColumn('datos_cotizacion', function ($data) {
 				$html = '';
 				$string_productos = $data->TransfersProduct->implode('product_id', ', ');	
-				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega_posible, '%d/%m/%Y'), '') AS fecha_entrega, 
-				COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
+
+				if (empty($string_productos)) return '';
+				
+				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor, COALESCE(DATE_FORMAT(t.fecha_entrega_posible, '%d/%m/%Y'), '') AS fecha_entrega,COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta,t.status from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
 				LEFT JOIN  users t2 ON t2.id= t.user_id
 				WHERE t1.product_id IN (".$string_productos.") 
 				GROUP BY invoice_number");
@@ -119,7 +121,8 @@ class TransferenciaProductoController extends Controller
                         $html .= "<strong>Cotizacion:</strong> $item->invoice_number" . '<br>';
                         $html .= "<strong>Vendedor:</strong> $item->vendedor" . '<br>';
                         $html .= "<strong>Fecha Emision:</strong> $item->fecha_venta" . '<br>';
-                        $html .= "<strong>Fecha Entrega:</strong> $item->fecha_entrega" . '<br>';
+                        $html .= "<strong>Fecha entrega posible:</strong> $item->fecha_entrega" . '<br>';
+                        $html .= "<strong>Estado:</strong> $item->status" . '<br>';
                     }
                 }
                 return $html;
@@ -128,12 +131,62 @@ class TransferenciaProductoController extends Controller
 				->addColumn('action', function ($data) {
 					return view('backend.accounting.traslado_mercancia.partials.actions', compact('data'));
 				})
+				 ->editColumn('fecha_traslado', function ($row) {
+					return $row->fecha_traslado ? \Carbon\Carbon::parse($row->fecha_traslado)->format('d/m/Y') : null;
+					})
+				->addColumn('deposito_origen', function ($row) {
+					return $row->almacen_origen->nombre ?? '';
+					})	
+				->addColumn('deposito_destino', function ($row) {
+						return $row->almacen_destino->nombre ?? '';
+					})		
+				->filterColumn('fecha_traslado', function ($query, $keyword) {
+					$date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+                        $query->whereDate('fecha_traslado', '>=', $date_range[0])
+                            ->whereDate('fecha_traslado', '<=', $date_range[1]);
+                    }
+			})
+			->filterColumn('deposito_origen', function ($query, $keyword) {
+                $query->whereHas('almacen_origen', function ($str) use ($keyword) {
+                    $str->where('id', '=', "{$keyword}");
+                });
+            })->filterColumn('deposito_destino', function ($query, $keyword) {
+                $query->whereHas('almacen_destino', function ($str) use ($keyword) {
+                    $str->where('id', '=', "{$keyword}");
+                });
+            })->filterColumn('datos_cotizacion', function($query, $keyword) {
+					$query->whereExists(function ($q) use ($keyword) {
+						$q->select(DB::raw(1))
+						  ->from('invoices as t')
+						  ->join('invoice_items as t1', 't1.invoice_id', '=', 't.id')
+						  ->leftJoin('users as t2', 't2.id', '=', 't.user_id')
+						  ->whereRaw('t1.product_id IN (
+								SELECT tp.product_id 
+								FROM transfers_products tp 
+								WHERE tp.transfers_id = transfers.id
+							)') 
+						  ->where(function($subQ) use ($keyword) {
+							  $subQ->where('t.invoice_number', 'LIKE', "%{$keyword}%")
+								   ->orWhere('t2.name', 'LIKE', "%{$keyword}%");
+						  });
+					});
+				})
 				->rawColumns(['transfers_product_count','datos_cotizacion', 'action']) 
 				->tojson();
         }
 		
-		
-		return view('backend.accounting.traslado_mercancia.index');
+			  $lugar_entregas = Lugar_entregas::orderBy("nombre", "asc")
+				->get()
+				->map(function ($item) {
+				return [
+					'id'   => $item->id,
+					'text' => $item->nombre 
+				];
+				})
+				->values()
+				->all();
+		return view('backend.accounting.traslado_mercancia.index',compact('lugar_entregas'));
     }
 	
 	 public function create(Request $request) {
@@ -522,11 +575,19 @@ class TransferenciaProductoController extends Controller
 						'products.idDeposito',
 						'products.ubicacion',
 						'products.fecha_ultimogiro',
+						'products.description',
 						'cars.tipo_vehiculo',
 						'cars.dominio',
-						'cars.motor_nro'
+						'cars.motor_nro',
+						'invoice_items.invoice_id', 
+						'invoices.acciones',
+						'invoices.ubicacion as ubicacion_invo',
+						'invoices.invoice_number',
+						'invoices.note'
 					])
 					->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+					->leftJoin('invoice_items', 'invoice_items.product_id', '=', 'products.id')
+					->leftJoin('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
 					->whereNull('products.car_id')
 					->whereIn('products.company_id', $company_id)
 					->where(function ($query) use ($fechaLimite) {
@@ -536,7 +597,6 @@ class TransferenciaProductoController extends Controller
 							->orWhere(function ($subQuery) use ($fechaLimite) {
 								$subQuery->where('products.stock', '=', 0)
 										 ->where('products.created_at', '>=', $fechaLimite); 
-										 // Nota: Ajusta 'products.created_at' por la columna de fecha que uses (ej. 'fecha_ultimogiro')
 							});
 					})
 					->when($request->almacen_id, function ($query, $almacenId) {
@@ -544,45 +604,6 @@ class TransferenciaProductoController extends Controller
 					});
 
 				$products->orderBy('products.nro_interno', 'asc');
-
-			/*	$products = Product::query()
-					->select([
-						'products.id',
-						'products.nro_interno',
-						'products.item_id', 
-						'products.marca_modelo',
-						'products.nro_oblea',
-						'products.idDeposito',
-						'products.ubicacion',
-						'products.fecha_ultimogiro',
-						'cars.tipo_vehiculo', 
-						'cars.dominio', 
-						'cars.motor_nro'
-					])
-					->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
-					->whereNull('products.car_id') 
-					->whereIn('products.company_id', $company_id)
-					->where(function ($query) {
-						$query->where('products.stock', '>=', 1) // Trae los que tienen stock disponible
-							  ->orWhereNull('products.fecha_desarme_a_stock'); // O los que no han ingresado formalmente a stock
-					})
-					->when($request->almacen_id, function ($query, $almacenId) {
-							return $query->where('products.idDeposito', $almacenId);
-					});
-					// ->when($request->almacen_id, function ($query, $almacenId) {
-						   // return $query->where('products.idDeposito', $almacenId);
-					// }, function ($query) {
-						   // return $query->where(function ($subQuery) {
-							// $subQuery->whereNull('products.idDeposito')
-									 // ->orWhere('products.idDeposito', '=', '');
-						// });
-					// });
-					
-
-				$products->orderBy('products.nro_interno', 'asc');
-*/
-			
-					
 
             return DataTables::of($products)
                 ->addIndexColumn()
@@ -601,7 +622,6 @@ class TransferenciaProductoController extends Controller
                 ->addColumn('modelo', function ($data) {
                     return ($data->marcaModelo->modelo->modelo ?? '');
                 })
-				
 				 ->addColumn('dominio', function ($data) {
                     return $data->dominio ?? '';
                 })
@@ -614,7 +634,57 @@ class TransferenciaProductoController extends Controller
 				->addColumn('nro_oblea', function ($data) use ($request) {
 					return $data->nro_oblea ?? '';
                 })
-                ->rawColumns(['selection'])
+				->addColumn('cotizacion', function ($data) {
+                    return $data->invoice_number ?? '';
+                })
+				->addColumn('datos', function ($data) {
+					
+					$html = '';
+					if ($data->acciones ?? ''){
+						$html .= "<strong>Acciones:</strong> $data->acciones<br>";
+					}	
+					if ($data->ubicacion_invo ?? ''){
+						$html .= "<strong>Ubicación:</strong> $data->ubicacion_invo<br>";
+                   
+                    }
+					if ($data->note ?? ''){
+						 $html .= "<strong>Observaciones:</strong> $data->note<br>";
+					}
+					if ($data->description ?? ''){
+						 $html .= "<strong>Descripcion item:</strong> $data->description<br>";
+					}	
+				
+                return $html;
+                })
+				->filterColumn('dominio', function ($query, $keyword) {
+					   $query->where('cars.dominio', 'like', "%{$keyword}%");
+				})
+				->filterColumn('cotizacion', function ($query, $keyword) {
+					$query->where('invoices.invoice_number', 'like', "%{$keyword}%");
+				})
+				->filterColumn('productItem', function ($query, $keyword) {
+					$query->whereHas('item', function ($str) use ($keyword) {
+						$str->where('item_name',  'like', "%{$keyword}%");
+					});
+				})
+				->filterColumn('marca', function ($query, $keyword) {
+					$query->whereHas('vehiculo.marca_modelo.marca', function ($sub) use ($keyword) {
+					$sub->where('marca', 'like', "%{$keyword}%");
+            });
+				})
+				->filterColumn('modelo', function ($query, $keyword) {
+					$query->whereHas('vehiculo.marca_modelo.modelo', function ($sub) use ($keyword) {
+						$sub->where('modelo', 'like', "%{$keyword}%");
+					});
+				})
+				->filterColumn('motor_nro', function ($query, $keyword) {
+					   $query->where('cars.motor_nro', 'like', "%{$keyword}%");
+				})
+				->filterColumn('nro_oblea', function ($query, $keyword) {
+					   $query->where('products.nro_oblea', 'like', "%{$keyword}%");
+				})
+				
+                ->rawColumns(['selection','datos'])
                 ->make(true);
         }
     }
