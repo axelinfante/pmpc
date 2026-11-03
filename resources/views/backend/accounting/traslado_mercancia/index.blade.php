@@ -45,7 +45,8 @@
 					  <tr>
 						<th>Fecha</th>
 						<th>Referencia</th>
-						<th>Estado</th>
+						<th>Deposito Origen</th>
+						<th>Deposito Destino</th>
 						<th>Productos</th>
 						<th>Datos</th>
 						<th class="col-acciones text-center notexport">{{ _lang('Action') }}</th> 
@@ -83,7 +84,7 @@
 						}
 					},
 					//ajax: "{{ route('transfers.index') }}",
-					visibleButtonsFilter:false,
+					visibleButtonsFilter:true,
 					visibleButtons: {
 					reset: true,
 					excel: true,
@@ -100,13 +101,21 @@
 						}
 					}
 				],
+				columnFilters: ['daterangepicker',, { 
+					 type: 'select', 
+					 data: @json($lugar_entregas)
+					},{ 
+					 type: 'select', 
+					 data: @json($lugar_entregas)
+					},{ defaultText: 'N/A' },,'none'], 
 				   columns: [
                     { data: 'fecha_traslado', name: 'fecha_traslado' },
                     { data: 'reference', name: 'reference' },
-                    { data: 'status', name: 'status' },
+                    { data: 'deposito_origen', name: 'deposito_origen' },
+                    { data: 'deposito_destino', name: 'deposito_destino' },
                     { data: 'transfers_product_count', name: 'transfers_product_count' },
                     { data: 'datos_cotizacion', name: 'datos_cotizacion' },
-                    { data: 'action', name: 'action', orderable: false}
+                    { data: 'action', name: 'action',  orderable: false, searchable: false}
 					],
 				});
 				
