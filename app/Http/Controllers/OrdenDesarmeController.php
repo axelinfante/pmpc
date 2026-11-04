@@ -905,6 +905,10 @@ public function get_table_data(Request $request)
 				return formatDate($orden->fecha_venta);
 				
             })
+			->editColumn('fecha_entrega_posible', function ($orden) {
+				return formatDate($orden->venta->fecha_entrega_posible);
+				
+            })
             ->editColumn('lugar_venta', function ($orden) {
                 return $orden->lugar_venta;
             })
@@ -991,6 +995,20 @@ public function get_table_data(Request $request)
             ->addColumn('cliente', function ($orden) {
                 return $orden->venta->client->contact_name ?? '';
             })
+			->addColumn('prioridad', function ($orden) {
+    $prioridad = strtolower($orden->prioridad); 
+
+    switch ($prioridad) {
+        case 'alta':
+            return '<span class="badge bg-danger">Alta</span>';
+        case 'normal':
+            return '<span class="badge bg-warning text-dark">Normal</span>';
+        case 'baja':
+            return '<span class="badge bg-success">Baja</span>';
+        default:
+            return '<span class="badge bg-secondary">' . e($orden->prioridad ?? 'No asignada') . '</span>';
+    }
+})
             ->addColumn('action', function ($orden) use ($ocultar,$evaluarMostrar) {
 				/* $url = route('orden-desarme-one.generar-pdf', $orden->id);
 
@@ -1075,6 +1093,25 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
         return '<span>' . $orden->puesto . '</span>';
     }
 })
+		->addColumn('datos', function ($orden) {
+					//return $orden?->venta?->acciones;
+					$html = '';
+					if ($orden?->venta?->acciones ?? ''){
+						$html .= "<strong>Acciones:</strong> {$orden?->venta?->acciones}<br>";
+					}	
+					if ($orden?->venta?->ubicacion ?? ''){
+						$html .= "<strong>Ubicación:</strong> {$orden?->venta?->ubicacion}<br>";
+                   
+                    }
+					if ($orden?->venta?->note ?? ''){
+						 $html .= "<strong>Observaciones:</strong> {$orden?->venta?->note}<br>";
+					}
+					if ($orden?->producto?->description ?? ''){
+						 $html .= "<strong>Descripcion item:</strong> {$orden?->producto?->description}<br>";
+					}	
+				
+                return $html;
+                })
 			->filterColumn('f_ingreso_puesto', function ($query, $keyword) {
                     $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
                     if (count($date_range) == 2) {
@@ -1116,7 +1153,15 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                             ->whereDate('fecha_venta', '<=', $date_range[1]);
                     }
                 })
-			
+				->filterColumn('fecha_entrega_posible', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+						 $query->whereHas('venta', function ($str) use ($keyword,$date_range) {
+							 $str->whereDate('fecha_entrega_posible', '>=', $date_range[0])
+                            ->whereDate('fecha_entrega_posible', '<=', $date_range[1]);
+						});
+                    }
+                })
 			 ->filterColumn('cliente', function ($query, $keyword) {
 				 $query->whereHas('venta.client', function ($str) use ($keyword) {
 						$str->where('contact_name', 'like', "%{$keyword}%");
@@ -1156,10 +1201,13 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                         $str->where('estado', 'like', "%{$keyword}%");
                     });
             })
+			->filterColumn('prioridad', function ($query, $keyword) {
+                  $query->where('prioridad', 'like', "%{$keyword}%");
+            })
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;
             })
-            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado','obs_desarme_busqueda'])
+            ->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'venta', 'interno', 'puesto', 'f_ingreso_puesto','pieza', 'estado','obs_desarme_busqueda','prioridad','datos'])
             ->make(true);
 	   }	
     }
@@ -1464,6 +1512,42 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                         $str->where('products.ubicacion', 'like', "%{$keyword}%");
 				});
             })
+			->editColumn('fecha_entrega_posible', function ($orden) {
+				return formatDate($orden->venta->fecha_entrega_posible ?? '');
+				
+            })
+			->addColumn('prioridad', function ($orden) {
+    $prioridad = strtolower($orden->prioridad); 
+
+    switch ($prioridad) {
+        case 'alta':
+            return '<span class="badge bg-danger">Alta</span>';
+        case 'normal':
+            return '<span class="badge bg-warning text-dark">Normal</span>';
+        case 'baja':
+            return '<span class="badge bg-success">Baja</span>';
+        default:
+            return '<span class="badge bg-secondary">' . e($orden->prioridad ?? 'No asignada') . '</span>';
+    }
+})
+->addColumn('datos', function ($orden) {
+					$html = '';
+					if ($orden->venta->acciones ?? ''){
+						$html .= "<strong>Acciones:</strong> {$orden->venta->acciones}<br>";
+					}	
+					if ($orden?->venta?->ubicacion ?? ''){
+						$html .= "<strong>Ubicación:</strong> {$orden?->venta?->ubicacion}<br>";
+                   
+                    }
+					if ($orden?->venta?->note ?? ''){
+						 $html .= "<strong>Observaciones:</strong> {$orden?->venta?->note}<br>";
+					}
+					if ($orden?->producto?->description ?? ''){
+						 $html .= "<strong>Descripcion item:</strong> {$orden?->producto?->description}<br>";
+					}	
+				
+                return $html;
+                })
 				->editColumn('vendedor', function ($orden) {
 						return ($orden->cotizacion->vendedor->name ?? null) ?? ($orden->venta->vendedor->name ?? '');
 					})
@@ -1526,26 +1610,7 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
                 $ruta = action('InvoiceController@show', $orden->venta->id);
                 $a = "<a href='$ruta'>$text </a>";
                 return $a;
-				
-	
-
-
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-            })
+	        })
 			->addColumn('interno', function ($orden) {
                 return nroInternoAlias($orden->car->company_id, $orden->car->tipo_vehiculo, $orden->car->id);  //$orden->car->id."--".$orden->interno;
             })
@@ -1593,11 +1658,21 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
 
 			return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';					
 					
+            })->filterColumn('fecha_entrega_posible', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+						 $query->whereHas('venta', function ($str) use ($keyword,$date_range) {
+							 $str->whereDate('fecha_entrega_posible', '>=', $date_range[0])
+                            ->whereDate('fecha_entrega_posible', '<=', $date_range[1]);
+						});
+                    }
+                })->filterColumn('prioridad', function ($query, $keyword) {
+                  $query->where('prioridad', 'like', "%{$keyword}%");
             })
             ->setRowId(function ($orden) {
                 return "row_" . $orden->id;
             })
-            ->rawColumns(['action', 'invoice_number', 'interno'])
+            ->rawColumns(['action', 'invoice_number', 'interno','prioridad','datos'])
             //->rawColumns(['action', 'members.name', 'status', 'id', 'procesar', 'invoice_number', 'interno', 'puesto', 'f_ingreso_puesto'])
             ->make(true);
 		}
