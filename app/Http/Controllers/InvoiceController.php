@@ -69,7 +69,8 @@ class InvoiceController extends Controller
      */
 
     public $status;
-
+	private const EXCLUDED_CAR_IDS = ['11156', '11628'];
+	
     public function __construct()
     {
         date_default_timezone_set(get_company_option('timezone', get_option('timezone', 'Asia/Dhaka')));
@@ -1280,13 +1281,13 @@ public function store(Request $request)
             }
 				
 				// verificar si item ya fue facturado
-			
+		 if (!in_array((string)$car_id_actual, self::EXCLUDED_CAR_IDS, true)) {
 			$product = Product::where('item_id', $item_id)
 							  ->where('nro_interno', $car_id_actual)
 							  ->lockForUpdate() // Opcional, pero recomendado si validas stock/concurrencia
 							  ->first();
 
-			if ($product) {
+				if ($product) {
 				// Puedes lanzar una excepción, retornar un error o continuar
 	///			throw new \Exception("El producto {$item->item_name} y nro interno {$car_id_actual} ya se encuentra creado. verificar la factura emitida anteriormente");
 				
@@ -1297,6 +1298,7 @@ public function store(Request $request)
                     ? response()->json(['result' => 'error', 'message' => [$msg]], 422)
                     : redirect()->back()->withInput()->withErrors(['error' => $msg]);
 				}
+			 }	
 				
 				$product = new Product();
 				$product->item_id = $item_id;
@@ -6527,7 +6529,7 @@ public function guardarComision($request, $invoice)
 					
 			
 			// verificar si item ya fue facturado
-			
+		if (!in_array((string)$carIdActual, self::EXCLUDED_CAR_IDS, true)) {
 			$product = Product::where('item_id', $itemId)
 							  ->where('nro_interno', $carIdActual)
 							  ->lockForUpdate() // Opcional, pero recomendado si validas stock/concurrencia
@@ -6537,6 +6539,7 @@ public function guardarComision($request, $invoice)
 				// Puedes lanzar una excepción, retornar un error o continuar
 				throw new \Exception("El producto {$item->item_name} y nro interno {$carIdActual} ya se encuentra creado. verificar la factura emitida anteriormente");
 			}
+		}
 			///
 
             $product = new Product();
