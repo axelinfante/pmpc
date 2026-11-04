@@ -47,8 +47,10 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
                                 {{-- <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Reserva') }}</th> --}}
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('venta') }}</th>
-                                <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
-                                </th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha Entrega') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Prioridad') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Datos') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cliente') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Lugar de venta') }}
                                 </th>
@@ -519,6 +521,17 @@
                     }, {
                         data: "fecha_venta",
                         name: "fecha_venta"
+                    },
+					 {
+                        data: "fecha_entrega_posible",
+                        name: "fecha_entrega_posible"
+                    },
+					{
+                        data: "prioridad",
+                        name: "prioridad"
+                    },{
+                        data: "datos",
+                        name: "datos"
                     }, {
                         data: "cliente",
                         name: "cliente"
@@ -660,6 +673,54 @@
 								$inputFecha.on('keydown', function(e) {
 									e.preventDefault();
 								});
+
+} else if (colIdx == 7) {
+								$(cell).html('<input type="text" id="fecha_venta" name="fecha_venta" class="form-control filtrov" placeholder="Rango de fechas..." autocomplete="off" />');
+
+								var $inputFecha = $('#fecha_venta', cell);
+
+								$inputFecha.daterangepicker({
+									autoUpdateInput: false,
+									opens: 'left',
+									locale: {
+										format: 'YYYY-MM-DD',
+										cancelLabel: 'Limpiar',
+										applyLabel: 'Aplicar',
+										fromLabel: 'Desde',
+										toLabel: 'Hasta',
+										customRangeLabel: 'Personalizado',
+										daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+										monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+									}
+								});
+							   $inputFecha.on('apply.daterangepicker', function(ev, picker) {
+									let dateRango = picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD');
+									$(this).val(dateRango);
+									api.column(colIdx).search(dateRango).draw();
+								});
+
+								$inputFecha.on('cancel.daterangepicker', function(ev, picker) {
+									$(this).val('');
+									api.column(colIdx).search('').draw();
+								});
+
+								$inputFecha.on('keydown', function(e) {
+									e.preventDefault();
+								});
+
+} else if (colIdx == 8) {
+								let selectString = `<select id="prioridad" name="prioridad" style="width:100%" class="prioridad_filter">`;
+								selectString += '<option value=""> </option>';
+								selectString += '<option value="alta">Alta</option>';
+								selectString += '<option value="normal">Normal</option>';
+								selectString += '<option value="baja">Baja</option>';
+								selectString += '</select>';
+								$(cell).html(selectString);
+                                $('.prioridad_filter').on('change', function() {
+								  api.column(colIdx).search(this.value).draw();
+								});
+} else if (colIdx == 9) {
+								 $(cell).html('<span class="text-muted small">N/A</span>');
 }else{
                                 $(cell).html('<input class ="filtrov" style="width:100%" type="text" placeholder="' +
                                 title + '" />');

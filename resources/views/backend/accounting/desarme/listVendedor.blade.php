@@ -39,7 +39,9 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
                                 </th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('venta') }}</th>
-
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha Entrega') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Prioridad') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Datos') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Reserva') }}</th>
 
@@ -137,7 +139,10 @@
 					 type: 'select', 
 					 data: @json($puestos) // Array simple
 					}
-					,'daterangepicker',,,'daterangepicker','input'],
+					,'daterangepicker',,'daterangepicker',{ 
+            type: 'select', 
+            data: ['alta','normal','baja'] // Array simple
+        },'none',,'input'],
 					columnDefs: [
     {
         "targets": 0, 
@@ -201,6 +206,9 @@
 					{ data : "puesto", name : "puesto" },
 					{ data : "fecha_venta", name : "fecha_venta" },
 					{ data: "venta", name: "venta" }, 
+					{data: "fecha_entrega_posible", name: "fecha_entrega_posible"},
+					{data: "prioridad",name: "prioridad"},
+					{data: "datos",name: "datos"}, 
 					{ data: "interno", name: "interno" }, 
 					{ data: "cotizacion", name: "cotizacion" }, 
 					{ data: "lugar_venta", name: "lugar_venta" }, 
