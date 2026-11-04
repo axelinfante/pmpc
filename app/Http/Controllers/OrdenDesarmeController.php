@@ -906,7 +906,7 @@ public function get_table_data(Request $request)
 				
             })
 			->editColumn('fecha_entrega_posible', function ($orden) {
-				return formatDate($orden->venta->fecha_entrega_posible);
+				return formatDate($orden->venta->fecha_entrega_posible ?? '');
 				
             })
             ->editColumn('lugar_venta', function ($orden) {
