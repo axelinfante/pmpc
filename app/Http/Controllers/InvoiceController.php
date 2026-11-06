@@ -294,7 +294,7 @@ public function store(Request $request)
 							$this->decrementStock($invoiceItem, $product);
 
 							// Órdenes (desarme / despacho) — unificado
-							$this->createOrdersForProduct($invoice, $invoiceItem, $product);
+							$this->createOrdersForProduct($request,$invoice, $invoiceItem, $product);
 						}
 
 					}
@@ -6580,7 +6580,7 @@ public function guardarComision($request, $invoice)
             $invoiceItem->save();
 
             // Orden desarme
-            $this->createOrdenDesarme($invoice, $product);
+            $this->createOrdenDesarme($request,$invoice, $product);
 
             // Orden despacho 
             OrdenDespacho::updateOrCreate(
@@ -6644,35 +6644,36 @@ public function guardarComision($request, $invoice)
         $stock->save();
     }
 
-    protected function createOrdersForProduct(Invoice $invoice, InvoiceItem $invoiceItem, Product $product): void
+    protected function createOrdersForProduct(Request $request,Invoice $invoice, InvoiceItem $invoiceItem, Product $product): void
     {
         $estado = $product->estado ?? '';
         $company = $product->company_id == 1 ? 'PM-' : ($product->company_id == 2 ? 'PC-' : '');
         $interno = $company . ($product->idCar ?? $product->nro_interno);
 
         if ($estado === 'desarme' && $product->nro_interno > 0) {
-            $this->createOrdenDesarme($invoice, $product, $interno);
+            $this->createOrdenDesarme($request,$invoice, $product, $interno);
             return;
         }
 
         if ($estado === 'directo') {
-            $this->createOrdenDesarme($invoice, $product, $interno);
+            $this->createOrdenDesarme($request,$invoice, $product, $interno);
         }
 
         // En 'directo' y en el resto → orden de despacho
         $this->createOrdenDespacho($invoice, $invoiceItem, $product);
 	}
 
-    protected function createOrdenDesarme(Invoice $invoice, Product $product, ?string $interno = null): void
+    protected function createOrdenDesarme(Request $request,Invoice $invoice, Product $product, ?string $interno = null): void
     {
         $company = $product->company_id == 1 ? 'PM-' : ($product->company_id == 2 ? 'PC-' : '');
         $interno = $interno ?: $company . ($product->idCar ?? $product->nro_interno);
+		$prioridad = $request->input('prioridad_desarmar', 'normal');
 
         $orden = new Orden_desarme();
         $orden->id_venta     = $invoice->id;
         $orden->fecha_venta  = $invoice->invoice_date;
         $orden->idCar        = $product->idCar ?? $product->nro_interno;
-        $orden->prioridad    = 'normal';
+        $orden->prioridad    = $prioridad."cc";// 'normal';
         $orden->interno      = $interno;
         $orden->marca_modelo = $product->marca_modelo;
         $orden->pieza        = $product->item->id;
