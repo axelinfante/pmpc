@@ -6673,7 +6673,7 @@ public function guardarComision($request, $invoice)
         $orden->id_venta     = $invoice->id;
         $orden->fecha_venta  = $invoice->invoice_date;
         $orden->idCar        = $product->idCar ?? $product->nro_interno;
-        $orden->prioridad    = $prioridad."cc";// 'normal';
+        $orden->prioridad    = $prioridad;// 'normal';
         $orden->interno      = $interno;
         $orden->marca_modelo = $product->marca_modelo;
         $orden->pieza        = $product->item->id;
