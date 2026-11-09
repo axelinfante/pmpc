@@ -4,10 +4,12 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableOrdenesDesarme;
 
-class Orden_desarme extends Model
+class Orden_desarme extends Model implements AuditableOrdenesDesarme
 {
-    use HasFactory;
+    use HasFactory,Auditable;
     protected $table = 'ordenes_desarme';
 
     public function producto()

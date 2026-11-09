@@ -334,11 +334,13 @@ $ordenes = OrdenDespacho::select('ordenes_despacho.*')
 			->addColumn('deposito', function ($orden) {
             // Add the extra data to the main object
 					//dd($orden->itemInvoice->product->vehiculo->deposito);
-				return $orden->itemInvoice->product->vehiculo->lugar_entrega->nombre ?? ''; 
+				//return $orden->itemInvoice->product->vehiculo->lugar_entrega->nombre ?? ''; 
+				return $orden->itemInvoice->product->deposito->nombre ?? ''; 
 			})
-			->filterColumn('deposito', function ($query, $keyword) {
+/*			->filterColumn('deposito', function ($query, $keyword) {
 				 if ($keyword != "") {
-				$query->whereHas('itemInvoice.product.vehiculo.lugar_entrega', function ($q) use ($keyword) {
+				//$query->whereHas('itemInvoice.product.vehiculo.lugar_entrega', function ($q) use ($keyword) {
+				$query->whereHas('itemInvoice.product.deposito', function ($q) use ($keyword) {
 					
                     $ids = explode(",", $keyword);
                     if (in_array("-1", $ids)) {
@@ -351,7 +353,18 @@ $ordenes = OrdenDespacho::select('ordenes_despacho.*')
 					
 					});
 				 }	
-            })
+            })*/
+				->filterColumn('deposito', function ($query, $keyword) {
+					if (!empty($keyword)) {
+						$ids = preg_split('/[|,]/', $keyword);
+						$ids = array_filter($ids); 
+						if (!empty($ids)) {
+							$query->whereHas('itemInvoice.product.deposito', function ($q) use ($ids) {
+								$q->whereIn('id', $ids); 
+							});
+						}
+					}
+				})
 			->filterColumn('nro', function ($query, $keyword) {
                    $query->where('ordenes_despacho.id', 'LIKE', '%' . $keyword . '%');
 
@@ -478,7 +491,7 @@ $ordenes = OrdenDespacho::select('ordenes_despacho.*')
             ->filterColumn('observaciones', function ($query, $keyword) {
                 $query->where('observaciones', 'like', "%{$keyword}%");
             }) 
-			->filterColumn('acciones_cotizacion', function ($query, $keyword) {
+			/*->filterColumn('acciones_cotizacion', function ($query, $keyword) {
 				if (!empty($keyword)) {
 						$ids = explode(",", $keyword);
 
@@ -495,7 +508,19 @@ $ordenes = OrdenDespacho::select('ordenes_despacho.*')
 							});
 						});
 					}
-				})
+				})*/
+			->filterColumn('acciones_cotizacion', function ($query, $keyword) {
+					if (!empty($keyword)) {
+						$ids = preg_split('/[|,]/', $keyword);
+						$ids = array_filter($ids); 
+						if (!empty($ids)) {
+							$query->whereHas('cotizacion', function ($q) use ($ids) {
+								$q->whereIn('acciones', $ids); 
+							});
+						}
+					}
+				})				
+				
 		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente', 'acciones_cotizacion'])
          ->make(true);
 		
