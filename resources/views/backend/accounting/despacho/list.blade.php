@@ -41,7 +41,7 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cotización') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
-								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Deposito') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Deposito pieza') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Ubicación') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Marca') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Modelo') }}</th>
@@ -409,8 +409,7 @@
                         if (!cell.length) return;
 
                         var title = $(cell).text();
-
-                        // Si es la columna "forma_entrega"
+						var slug_title = title.trim().toLowerCase().replace(/\s+/g, '_');
                         if (colIdx === columnaFormaEntrega) {
 							 const selectHTML = {!! json_encode(formasEntrega('forma_entrega','',true)) !!};
 							var select = $(selectHTML).appendTo(cell.empty())
@@ -422,9 +421,9 @@
 								});
                         } else if (colIdx != 0 && colIdx != 1 && colIdx != 23) {
 							
-							if (colIdx == 6) {
-								
-								var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
+							/* if (colIdx == 6) { 
+									
+								var select = $('<select id="' + slug_title + '" name="' + slug_title + '" multiple="true" class="form-control select2"></select>')
 								.appendTo(cell.empty())
 								.on( 'change', function () {
 											var val = $(this).val();
@@ -437,15 +436,15 @@
 									select.append( '<option value="'+row_xx.id+'">'+row_xx.nombre+'</option>' )
 							}
 							
-								$('.select2').select2({
+								select.select2({
 									multiple: true,
-									closeOnSelect: false//,
-								  }); 
+									closeOnSelect: false
+								}); 
 							
 							
 							}if (colIdx == 13) {
 								
-								var select = $('<select id="' + title + '" multiple="true" class="form-control select2"></select>')
+								var select = $('<select id="' + slug_title + '" multiple="true" class="form-control select2"></select>')
 								.appendTo(cell.empty())
 								.on( 'change', function () {
 											var val = $(this).val();
@@ -457,13 +456,39 @@
 									select.append( '<option value="'+row_a+'">'+row_a+'</option>' )
 							}
 							
-								$('.select2').select2({
+								select.select2({
 									multiple: true,
-									closeOnSelect: false//,
-								  }); 
+									closeOnSelect: false
+								}); 
 							
 							
-							}else{
+							} */
+							
+							if ([6, 13].includes(colIdx)) {
+								var opciones = (colIdx === 6) ? lugarentregas_tables : acciones;
+								
+								var select = $('<select id="' + slug_title + '" name="' + slug_title + '" multiple="multiple" class="form-control select2"></select>')
+									.appendTo(cell.empty())
+									.on('change', function() {
+										var val = $(this).val();
+										table.column(colIdx).search(val ? val.join('|') : '', true, false).draw();
+									});
+								
+								//select.append('<option value="-1">VACIOS</option>');
+								
+								for (const item of opciones) {
+									let id = (colIdx === 6) ? item.id : item;
+									let nombre = (colIdx === 6) ? item.nombre : item;
+									
+									select.append('<option value="' + id + '">' + nombre + '</option>');
+								}
+								
+								select.select2({
+									multiple: true,
+									closeOnSelect: false
+								});
+							}
+							else{
 								
 								var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
 								
@@ -527,32 +552,6 @@
                             });
 							};
 								}
-							
-                            /*var tipoInput = columnasFecha.includes(colIdx) ? 'date' : 'text';
-
-                            $(cell).html(
-                                '<input class="filtros" style="width:100%" type="' + tipoInput +
-                                '" placeholder="' + title + '" />'
-                            );
-
-                            $('input', cell).each(function() {
-                                let cursorPosition = 0;
-
-                                $(this).off('change')
-                                    .on('change', function(e) {
-                                        $(this).attr('title', $(this).val());
-                                        let regexr = '({search})';
-                                        cursorPosition = this.selectionStart;
-
-                                     //if (e.keyCode == 13) { 
-									  api.column(colIdx).search(
-											this.value
-									  ).draw();
-									  
-									  
-                                    });
-                            });
-							};*/
                         } else {
                             $(cell).html('');
                         }
