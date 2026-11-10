@@ -31,7 +31,7 @@
                                 <div class="col-md-6">
                                     <label for="almacen_origen_id">Almacen Origen </label>
                                     <select class="form-select" name="almacen_origen_id" id="almacen_origen_id" style="width:100%">
-                                        @foreach ($lugar_entregas as $item)
+                                        @foreach ($lugar_entregas_origen as $item)
                                             <option value="{{$item->id}}" {{ old('almacen_origen_id') == $item->id ? 'selected' : '' }}>
                                                 {{$item->nombre}}
                                             </option>

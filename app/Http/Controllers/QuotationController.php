@@ -1234,7 +1234,7 @@ class QuotationController extends Controller
             // monto agregar a la cuenta corriente
             // buscar Abono cc
 
-            $methodP = PaymentMethod::where('name', 'like', '%Abono cc')->first();
+         /*   $methodP = PaymentMethod::where('name', 'like', '%Abono cc')->first();
             //dd($methodP);
 
             $transaction = new Transaction();
@@ -1258,7 +1258,7 @@ class QuotationController extends Controller
             $transaction->amount_usd = $request->input('amount_usd');
             $transaction->amount_peso = $request->input('amount_pesos');
 
-            $transaction->save();
+            $transaction->save();*/
         } else {
             $transaction = new Transaction();
             $transaction->trans_date = date('Y-m-d');
