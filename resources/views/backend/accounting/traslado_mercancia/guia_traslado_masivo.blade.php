@@ -195,7 +195,8 @@
     <table class="items-table">
         <thead>
             <tr>
-                   <th style="width: 15%;">Id Producto</th>
+                <th style="width: 15%;">Id Producto</th>
+                <th style="width: 15%;">Cotizacion</th>
                 <th style="width: 50%;">Descripción del Artículo / Producto</th>
                 <th style="width: 20%;">Nro Interno</th>
                 <th style="width: 15%;">Nro Oblea</th>
@@ -206,6 +207,13 @@
                 @foreach($datos->TransfersProduct as $items)
                     <tr>
                          <td>{{ $items->product_id ?? '' }} {{ ($items->inventario->deleted_at) ? 'Anulado':'' }} </td>
+                         <td>
+										@if($items->inventario?->invoiceItems?->isNotEmpty())
+												@foreach($items->inventario->invoiceItems as $invItem)
+													{{ $invItem->invoice?->invoice_number ?? '' }}<br>
+												@endforeach
+										@endif
+										</td>
                                         <td>{{ $items->inventario->item->item_name  ?? '' }}</td>
 										<td>{{ nroInternoAlias($items->inventario->company_id, $items->inventario->tipo_vehiculo, $items->inventario->nro_interno)  }}</td>
 										<td>{{ $items->inventario->nro_oblea ?? '' }}</td>
