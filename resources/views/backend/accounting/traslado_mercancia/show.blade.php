@@ -35,6 +35,7 @@
                                 </tr>
                                 <tr>
                                     <th >Id Producto</th>
+									<th >Cotizacion</th>
                                     <th >Producto</th>
                                     <th >Nro Interno</th>
                                     <th >Nro Oblea</th>
@@ -44,6 +45,13 @@
                                 @foreach($transfer->TransfersProduct as $items)
                                     <tr>	
                                         <td>{{ $items->product_id ?? '' }}</td>
+										<td>
+										@if($items->inventario?->invoiceItems?->isNotEmpty())
+												@foreach($items->inventario->invoiceItems as $invItem)
+													{{ $invItem->invoice?->invoice_number ?? '' }}<br>
+												@endforeach
+										@endif
+										</td>
                                         <td>{{ $items->inventario->item->item_name  ?? '' }}</td>
 										<td>{{ nroInternoAlias($items->inventario->company_id, $items->inventario->tipo_vehiculo, $items->inventario->nro_interno)  }}</td>
 										<td>{{ $items->inventario->nro_oblea ?? '' }}</td>

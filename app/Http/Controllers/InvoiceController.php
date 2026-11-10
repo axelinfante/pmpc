@@ -3824,7 +3824,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
             WHERE t1.car_id IN (?)", [$car->id]);
             if (isset($reservas)) {
                 foreach ($reservas as $reserva) {
-                    $html .= $reserva->item_name . '<br>';
+                    $html .= $reserva->item_name . "({$reserva->quotation_number})<br>";
                 }
             }
 

@@ -191,11 +191,49 @@ class TransferenciaProductoController extends Controller
 	
 	 public function create(Request $request) {
            
+		   
+					$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+					$fechaLimite = Carbon::now()->subDays(20);
+
+					$productsQuery = Product::query()
+						->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
+						->leftJoin('invoice_items', 'invoice_items.product_id', '=', 'products.id')
+						->leftJoin('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+						->whereNull('products.car_id')
+						->whereIn('products.company_id', $company_id)
+						->where(function ($query) use ($fechaLimite) {
+							$query->where('products.stock', '>=', 1)
+								->orWhereNull('products.fecha_desarme_a_stock')
+								->orWhere(function ($subQuery) use ($fechaLimite) {
+									$subQuery->where('products.stock', '=', 0)
+											 ->where('products.created_at', '>=', $fechaLimite); 
+								});
+						})
+						->when($request->almacen_id, function ($query, $almacenId) {
+							return $query->where('products.idDeposito', $almacenId);
+						});
+
+
+					$conteoDepositos = (clone $productsQuery)
+						->select('products.idDeposito', DB::raw('count(products.id) as total'))
+						->groupBy('products.idDeposito')
+						->pluck('total', 'products.idDeposito');
+
+				$lugar_entregas_origen = Lugar_entregas::whereIn('id', $conteoDepositos->keys())
+					->get()
+					->map(function ($deposito) use ($conteoDepositos) {
+						$cantidad = $conteoDepositos[$deposito->id] ?? 0;
+						// Modificamos la propiedad nombre para que incluya la cantidad entre paréntesis
+						$deposito->nombre = $deposito->nombre . ' (' . $cantidad . ')';
+						return $deposito;
+					});
+		   
+		   
 		    $lugar_entregas = Lugar_entregas::all();
 			$almacen_origen_id=$request->almacen_origen_id ?? 0;
 			$almacen_destino_id=$request->almacen_destino_id ?? 0;
 			
-			return view('backend.accounting.traslado_mercancia.create',compact('lugar_entregas'))->with(['almacen_origen_id' => $almacen_origen_id, 'almacen_destino_id' => $almacen_destino_id]);
+			return view('backend.accounting.traslado_mercancia.create',compact('lugar_entregas','lugar_entregas_origen'))->with(['almacen_origen_id' => $almacen_origen_id, 'almacen_destino_id' => $almacen_destino_id]);
     }
 	
 	public function store(Request $request)
@@ -267,11 +305,20 @@ class TransferenciaProductoController extends Controller
 	
 	public function show(Transfer $transfer1, $id) {
 
-		 $transfer = Transfer::with([
-				'TransfersProduct.inventario' => function ($query) {
-					$query->withTrashed(); // Permite leer el inventario aunque esté eliminado lógicamente
-				}
-			])->findOrFail($id);
+		 // $transfer = Transfer::with([
+				// 'TransfersProduct.inventario' => function ($query) {
+					// $query->withTrashed(); // Permite leer el inventario aunque esté eliminado lógicamente
+				// }
+			// ])->findOrFail($id);
+			
+				$transfer = Transfer::with([
+					'TransfersProduct.inventario' => function ($query) {
+						$query->withTrashed(); 
+					},
+					'TransfersProduct.inventario.invoiceItems.invoice' => function ($query) {
+						$query->select('id', 'invoice_number', 'fecha_entrega_posible', 'invoice_date', 'user_id');
+					}
+				])->findOrFail($id);
 	
         return view('backend.accounting.traslado_mercancia.show', compact('transfer'));
     }
@@ -694,11 +741,21 @@ class TransferenciaProductoController extends Controller
 		/*$datos = Transfer::select('*')
 		->findOrFail($id);*/
 		
-		$datos = Transfer::with([
+		/*$datos = Transfer::with([
     'TransfersProduct.inventario' => function ($query) {
         $query->withTrashed();
     }
-])->findOrFail($id);
+])->findOrFail($id);*/
+
+
+				$datos = Transfer::with([
+					'TransfersProduct.inventario' => function ($query) {
+						$query->withTrashed(); 
+					},
+					'TransfersProduct.inventario.invoiceItems.invoice' => function ($query) {
+						$query->select('id', 'invoice_number', 'fecha_entrega_posible', 'invoice_date', 'user_id');
+					}
+				])->findOrFail($id);
 		
         $depositoOrigen = \DB::table('lugar_entregas')->where('id', $datos->almacen_origen_id)->first();
         $depositoDestino = \DB::table('lugar_entregas')->where('id', $datos->almacen_destino_id)->first();
@@ -706,6 +763,7 @@ class TransferenciaProductoController extends Controller
 		
 		$datos_cotizacion = '';
 				$string_productos = $datos->TransfersProduct->implode('product_id', ', ');	
+				//$productIds = $datos->TransfersProduct->pluck('product_id')->filter()->toArray();
 				$vend = DB::select("SELECT t.invoice_number, t2.name as vendedor,   COALESCE(DATE_FORMAT(t.fecha_entrega_posible, '%d/%m/%Y'), '') AS fecha_entrega, 
 				COALESCE(DATE_FORMAT(t.invoice_date, '%d/%m/%Y'), '') AS fecha_venta from invoices t inner join invoice_items t1 on t1.invoice_id = t.id
 				LEFT JOIN  users t2 ON t2.id= t.user_id
