@@ -3605,58 +3605,6 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
                 }
 
                 return ($sql != "") ? $query->whereRaw($sql) : "";
-
-                /*  $sql = "";
-                $buscarmarcasola = true;
-                if ($request->has('marca') && $request->has('modeloInput')) {
-                    $sql = "(marcas.marca LIKE '%{$request->post('marca')}%' and modelos.modelo LIKE '%{$request->post('modeloInput')}%')";
-                    $buscarmarcasola = false;
-                }
-                if ($request->has('marcaInput') && $request->has('modeloInput')) {
-                    $sql = "(marcas.marca LIKE '%{$request->post('marcaInput')}%' and modelos.modelo LIKE '%{$request->post('modeloInput')}%')";
-                    $buscarmarcasola = false;
-                }
-
-                if ($buscarmarcasola == true) {
-                    $sqlinterno = "";
-                    if ($request->has('marca')) {
-                        $sqlinterno = "marcas.marca LIKE '%{$request->post('marca')}%'";
-                    }
-
-                    if ($request->has('marcaInput')) {
-                        $sqlinterno = "marcas.marca LIKE '%{$request->post('marcaInput')}%'";
-                    }
-
-                    if ($request->has('modeloInput')) {
-
-                        if ($sqlinterno != "") {
-                            $sqlinterno = "({$sqlinterno} or modelos.modelo LIKE '%{$request->post('modeloInput')}%')";
-                        } else {
-                            $sqlinterno = "modelos.modelo LIKE '%{$request->post('modeloInput')}%'";
-                        }
-                    }
-                    $sql .= $sqlinterno;
-                }
-
-                if ($request->has('motor')) {
-                    $sql .= ($sql != "") ? " OR " : " ";
-                    $sql .= "cars.motor_nro LIKE '%{$request->post('motor')}%'";
-                }
-
-                if ($request->has('car_id')) {
-                    $sql .= ($sql != "") ? " OR " : " ";
-                    $sql .= "cars.id LIKE '%{$request->post('car_id')}%'";
-                }
-
-                if ($request->has('estado')) {
-                    $sql .= ($sql != "") ? " OR " : " ";
-                    $sql .= "cars.idEstado = '{$request->post('estado')}'";
-                }
-
-
-                //pieza: 1 -- item//
-
-                return ($sql != "") ? $query->whereRaw($sql) : "";*/
             });
         //echo $cars->toSql();
         $cars->groupBy('cars.id');
@@ -3785,14 +3733,19 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
                     }
                 }*/
 
-                $vend = DB::select("SELECT t4.item_name,t1.id,t3.nro_interno,t1.invoice_number FROM invoices t1 INNER JOIN invoice_items t2 ON t2.invoice_id = t1.id INNER JOIN products t3 ON t3.id=t2.product_id LEFT JOIN items t4 ON t4.id = t3.item_id WHERE nro_interno IN (" . $car->id . ")");
+                $vend = DB::select("SELECT t4.item_name,t1.id,t3.nro_interno,t1.invoice_number, t1.status FROM invoices t1 INNER JOIN invoice_items t2 ON t2.invoice_id = t1.id INNER JOIN products t3 ON t3.id=t2.product_id LEFT JOIN items t4 ON t4.id = t3.item_id WHERE nro_interno IN (" . $car->id . ")");
 
                 if (isset($vend)) {
                     foreach ($vend as $pieza) {
-                        $html .= "($pieza->invoice_number) $pieza->item_name" . '<br>';
+                        //$html .= "($pieza->invoice_number) $pieza->item_name" . '<br>';
+						  $esCancelado = strtolower(trim($pieza->status ?? '')) === 'canceled';
+						if ($esCancelado) {
+							$html .= "<span class='text-danger font-weight-bold'>({$pieza->invoice_number}) {$pieza->item_name} <span class='badge badge-danger'>Canceled</span></span><br>";
+						} else {
+							$html .= "({$pieza->invoice_number}) {$pieza->item_name}<br>";
+						}
                     }
                 }
-
 
                 $q = Quotation::where('car_id', $car->id)->with('quotation_items')
                     ->first();
@@ -5743,7 +5696,7 @@ $totalC2 = $results->total_c2;*/
 		
 	}
 
-public function get_table_data(Request $request)
+public function get_table_data_12112026(Request $request)
     {
 
         $currency = currency();
@@ -5792,10 +5745,6 @@ public function get_table_data(Request $request)
 			}
 
 			$invoices->when($request, function ($query) use ($request) {
-				/*if ($request->filled('invoice_number')) {
-					$query->where('invoices.invoice_number', 'like', "%{$request->get('invoice_number')}%");
-				}*/
-				
 				$query->when($request->filled('invoice_number'), function ($q) use ($request) {
 					$invoices = array_map('trim', explode(',', $request->input('invoice_number')));
 					count($invoices) > 1
@@ -5833,18 +5782,6 @@ public function get_table_data(Request $request)
 					}
 				}
 			});
-
-			//$results = $invoices->get();
-
-	/*$results->transform(function ($invoice) {
-    $invoice->total_returns = $invoice->total_returns ?? 0;
-    $invoice->total_paid    = $invoice->total_paid ?? 0;
-    
-    // Cálculo final del saldo pendiente
-    $invoice->balance_due = $invoice->grand_total - $invoice->total_returns - $invoice->total_paid;
-    
-    return $invoice;*/
-
         return Datatables::eloquent($invoices)
             ->addColumn('checkbox', function ($invoice) {
                 $d = 'disabled';
@@ -5936,23 +5873,6 @@ if (!isset($request->exportar)) {
 }
 
 return $tabla_html;
-
-
-				
-				/*$invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
-                $html = '';
-                if (!empty($invoice_item)):
-
-                    $ingresado = array();
-                    foreach ($invoice_item as $item):
-									$producto_completo=$item->product->item->item_name ?? '';
-									$producto_id=$item->product->id ?? '';
-									$html .= "($producto_id) $producto_completo";
-                    endforeach;
-
-                endif;
-
-                return $html;*/
             })
 			 ->addColumn('nro_interno', function ($invoice)  {
 			
@@ -6009,24 +5929,6 @@ if (!isset($request->exportar)) {
 }
 
 return $tabla_html;
-
-				 
-              /* $invoice_item = InvoiceItem::where('invoice_id', $invoice->id)->get();
-
-                //dd($invoice_item);
-                if (!empty($invoice_item)):
-                    $html = '';
-                    $ingresado = array();
-                    foreach ($invoice_item as $item):
-                        if (!in_array($item->product->nro_interno, $ingresado)) {
-                            array_push($ingresado, $item->product->nro_interno);
-                            $html .= nroInternoAlias($item->product->company_id, $item->product->tipo_vehiculo, $item->product->nro_interno) . '<br>';
-                        }
-                    endforeach;
-
-                endif;
-
-                return $html;*/
             })
 			    ->addColumn('action', function ($invoice) use ($aFacturar) {
 					
@@ -6701,6 +6603,614 @@ public function guardarComision($request, $invoice)
     }
 	
 	//---------------
+	
+	
+	public function get_table_data(Request $request)
+    {
+
+        $currency = currency();
+		$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
+
+        $aFacturar = $request->get('facturar', false);
+
+        $projects = DB::table('projects')
+            ->select('id', 'name as contact_name', DB::raw('"projects" as type'))
+			->whereIn('company_id', $company_id);
+
+        $all_contacts = DB::table('contacts')
+            ->select('id', 'contact_name', DB::raw('"contacts" as type'))
+            ->union($projects);
+			
+			
+			$invoices = Invoice::with([
+        'retiros_cliente_origen',
+        'invoice_items.product' => function ($query) {
+            $query->withTrashed()->with([
+                'item' => function ($q) {
+                    // $q->withTrashed();
+                },
+                'marcaModelo.marca',
+                'marcaModelo.modelo',
+				]);
+				},
+			])->joinSub($all_contacts, 'all_contacts', function ($join) {
+					$join->on('invoices.related_id', '=', 'all_contacts.id')
+						->on('invoices.related_to', '=', 'all_contacts.type');
+				})
+				->select('invoices.*', 'all_contacts.contact_name', 'all_contacts.id as contact_id')
+				->withSum('salesReturns as total_returns', 'grand_total')
+				->withSum('payments as total_paid', 'base_amount')
+				->withSum('retiros_cliente as total_retiro', 'amount')
+				->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
+				->whereIn('invoices.company_id', (array) $company_id)
+				->orderBy('invoices.id', 'desc');
+
+				
+			
+			
+
+		/*	$invoices = Invoice::with(['retiros_cliente_origen','invoice_items.product.item', 'invoice_items.product.marcaModelo.marca','invoice_items.product.marcaModelo.modelo'])->joinSub($all_contacts, 'all_contacts', function ($join) {
+					$join->on('invoices.related_id', '=', 'all_contacts.id')
+						->on('invoices.related_to', '=', 'all_contacts.type');
+				})
+				->select('invoices.*', 'all_contacts.contact_name', 'all_contacts.id as contact_id')
+				->withSum('salesReturns as total_returns', 'grand_total')
+				->withSum('payments as total_paid', 'base_amount')
+				->withSum('retiros_cliente as total_retiro', 'amount')
+				->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
+				->whereIn('invoices.company_id', (array) $company_id)
+				->orderBy('invoices.id', 'desc');
+*/
+
+			if (strtolower(auth()->user()->role->name ?? '') === 'vendedor') {
+				$invoices->where('invoices.user_id', auth()->id());
+			}
+
+			if ($aFacturar) {
+				$invoices->where('invoices.facturar', 1)
+						 ->whereNull('invoices.facturado');
+			}
+
+			$invoices->when($request, function ($query) use ($request) {
+				$query->when($request->filled('invoice_number'), function ($q) use ($request) {
+					$invoices = array_map('trim', explode(',', $request->input('invoice_number')));
+					count($invoices) > 1
+						? $q->whereIn('invoices.invoice_number', $invoices)
+						: $q->where('invoices.invoice_number', 'like', "%{$invoices[0]}%");
+				});
+
+				if ($request->filled('vendedor')) {
+					$query->where('invoices.user_id', $request->get('vendedor'));
+				}
+
+				if ($request->filled('revendedor')) {
+					$query->where('invoices.revendedor', $request->get('revendedor'));
+				}
+
+				if ($request->filled('company_id')) {
+					$query->where('invoices.company_id', $request->get('company_id'));
+				}
+
+				if ($request->filled('status')) {
+					$status = $request->get('status');
+					$statusArray = is_array($status) ? $status : json_decode($status, true);
+					if ($statusArray) {
+						$query->whereIn('invoices.status', $statusArray);
+					}
+				}
+
+				if ($request->filled('date_range')) {
+					$date_range = explode(" - ", $request->get('date_range'));
+					if (count($date_range) === 2) {
+						$query->whereRaw("DATE(invoices.invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [
+							trim($date_range[0]),
+							trim($date_range[1])
+						]);
+					}
+				}
+			});
+        return Datatables::eloquent($invoices)
+            ->addColumn('checkbox', function ($invoice) {
+                $d = 'disabled';
+                if (!isset($invoice->comision->isPaid)) {
+                    $d = '';
+                }
+                if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
+                    return "<input $d class='form-check' name='paidComi[]' type='checkbox' value='" . $invoice->id . "' >";
+                }
+                return "x";
+            })
+            ->addColumn('invoice_number', function ($invoice) {
+                $in = 'VEN-';
+                if ($invoice->company_id == 1) {
+                    $in .= 'PM-';
+                } else if ($invoice->company_id == 2) {
+                    $in .= 'PC-';
+                }
+                return '<a href="' . action('InvoiceController@show', $invoice->id) . '">' . $in . $invoice->invoice_number . '</a>';
+            })
+            ->addColumn('contact_name', function ($invoice) {
+                if ($invoice->related_to == 'contacts') {
+                    return '<a href="' . action('ContactController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Customer') . ')</span></a>';
+                }
+                return '<a href="' . action('ProjectController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Project') . ')</span></a>';
+            })
+         ->addColumn('marca_modelo', function ($invoice) {
+			$datos = $this->procesarItemsFactura($invoice);
+
+						if ($datos['es_unico_agrupado'] || isset($request->exportar)) {
+							return $datos['marca_modelo_html'];
+						}
+
+						return '<a class="view-details" href="javascript:void(0)" 
+							data-title="Nros Internos Factura : ' . ($invoice->invoice_number ?? '') . '"
+							data-body=\'' . htmlspecialchars($datos['marca_modelo_html'], ENT_QUOTES, 'UTF-8') . '\' 
+							data-toggle="modal" 
+							data-target="#detailsModal">
+							<i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+						</a>';
+		 })
+			 ->addColumn('pieza', function ($invoice) {
+				 
+					$datos = $this->procesarItemsFactura($invoice);
+
+					if ($datos['es_unico_pieza'] || isset($request->exportar)) {
+						return $datos['pieza_html'];
+					}
+
+					return '<a class="view-details" href="javascript:void(0)" 
+						data-title="Detalles de Factura : ' . ($invoice->invoice_number ?? '') . '"
+						data-body=\'' . htmlspecialchars($datos['pieza_html'], ENT_QUOTES, 'UTF-8') . '\' 
+						data-toggle="modal" 
+						data-target="#detailsModal">
+						<i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+					</a>';
+		return $tabla_html;
+					})
+					 ->addColumn('nro_interno', function ($invoice)  {
+						 
+					$datos = $this->procesarItemsFactura($invoice);
+
+						if ($datos['es_unico_agrupado'] || isset($request->exportar)) {
+							return $datos['nro_html'];
+						}
+
+						return '<a class="view-details" href="javascript:void(0)" 
+							data-title="Nros Internos Factura : ' . ($invoice->invoice_number ?? '') . '"
+							data-body=\'' . htmlspecialchars($datos['nro_html'], ENT_QUOTES, 'UTF-8') . '\' 
+							data-toggle="modal" 
+							data-target="#detailsModal">
+							<i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+						</a>';
+					})
+						->addColumn('action', function ($invoice) use ($aFacturar) {
+							
+							
+						$balance_due = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+						
+						
+						if  ($invoice->status == 'Canceled')
+						{
+							return '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
+							. '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>';
+						}
+						if (!$aFacturar) {
+							$class = 'd-none';
+							if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
+								$class = '';
+							}
+
+							$html = '<div class="dropdown text-center">'
+								. '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
+								. _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+								. '<div class="dropdown-menu">'
+								. '<a class="dropdown-item" href="' . action('InvoiceController@edit', $invoice->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a>'
+								. '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_comision', $invoice->id) .
+								'"><i class="fas fa-usd"></i> ' . _lang('Comisión') . '</a>'
+								. '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_observaciones', $invoice->id) .
+								'"><i class="fas fa-usd"></i> ' . _lang('Observaciones') . '</a>'
+								. '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>';
+							if ($balance_due > 0){
+									 $html .= '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>';
+							}
+							
+								$html .= '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
+								. '<a href="' . url('invoices/view_payment/' . $invoice->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>';
+							   
+								$html .= '<form action="' . action('InvoiceController@destroy', $invoice['id']) . '" method="post">'
+									. csrf_field()
+									. '<input name="_method" type="hidden" value="DELETE">'
+									. '<button class="button-link btn-remove-invoice" type="submit"><i class="fas fa-recycle"></i> ' . _lang('Anular') . '</button>'
+									. '</form>';
+							//}
+
+							$html .= '</div></div>';
+							return $html;
+						} else {
+							return '<div class="dropdown text-center">'
+								. '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
+								. _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+								. '<div class="dropdown-menu">'
+								. '<a class="dropdown-item" href="#"><i class="fas fa-money-bill"></i> ' . _lang('Facturar') . '</a>'
+								. '</div></div>';
+						}
+					})
+					->editColumn('invoice_date', function ($invoice) {
+						return formatDate($invoice->invoice_date);
+					})
+					->editColumn('fecha_entrega', function ($invoice) {
+						return formatDate($invoice->fecha_entrega);
+					})->editColumn('fecha_entrega', function ($invoice) {
+						return formatDate($invoice->fecha_entrega);
+					})
+
+
+					//ultima fecha de pago
+					->editColumn('fecha_pago', function ($invoice) {
+						//$date_format = get_company_option('date_format', 'Y-m-d');
+						$transactions = Transaction::where("invoice_id", $invoice->id)->orderBy('id', 'desc')->first();
+						if (isset($transactions)) {
+							return formatDate($transactions->trans_date);
+							}
+						return '';
+					})
+					->editColumn('monto_adeudado', function ($invoice) use ($currency) {
+						$t = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0))  - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+						
+						$acc_currency = currency($invoice->client->currency);
+						if ($invoice->usd) {
+							$acc_currency = 'USD';
+						}
+	
+						return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
+					})
+					->editColumn('paid', function ($invoice) use ($currency) {
+						$t = (($invoice->total_paid ?? 0)-(($invoice->total_retiro ?? 0)+($invoice->total_retiro_origen ?? 0)));/// 
+						$acc_currency = currency($invoice->client->currency);
+						if ($invoice->usd) {
+							$acc_currency = 'USD';
+						}
+						return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
+					})
+					 ->editColumn('status', function ($invoice) {
+						return invoice_status($invoice->status);
+					})
+				   ->filterColumn('nro_interno', function ($query, $keyword) {
+						$query->orwhereHas('invoice_items', function ($str) use ($keyword) {
+							$str->whereHas('product', function ($str) use ($keyword) {
+								$str->where('products.nro_interno', 'like', "%{$keyword}");
+							});
+						});
+					})
+					->filterColumn('vendedor', function ($query, $keyword) {
+						$query->orwhereHas('vendedor', function ($str) use ($keyword) {
+							$str->where('name', 'like', "%{$keyword}%");
+						});
+					})
+
+					->filterColumn('invoice_number', function ($query, $keyword) {
+
+
+						$sql = "CONCAT(users.first_name,'-',users.last_name)  like ?";
+
+						$query->where('invoice_number', 'like', "%{$keyword}%");
+					})
+					->filterColumn('contact_name', function ($query, $keyword) {
+						$sql = "all_contacts.contact_name  like ?";
+						$query->whereRaw($sql, ["%{$keyword}%"]);
+					})
+					->filterColumn('monto_adeudado', function ($query, $keyword) {})
+					->editColumn('vendedor', function ($invoice) {
+						$vend = $invoice->vendedor->name;
+						return $vend;
+					})
+
+					->editColumn('porcentajeComision', function ($invoice) {
+						$percent = $invoice->comision->porcentaje;
+						return $percent;
+					})
+
+					->editColumn('comision', function ($invoice) {
+						$comision = $invoice->comision->monto;
+						return $comision;
+					})
+					->editColumn('grand_total', function ($invoice) use ($currency) {
+						$salesReturnstotal = ($invoice->total_returns ?? 0);
+						$acc_currency = currency($invoice->client->currency);
+						if ($invoice->is_usd) {
+							$acc_currency = 'USD';
+						}
+						return "<span class='float-right'>" . decimalPlace(($invoice->grand_total-$salesReturnstotal), $acc_currency) . "</span>";
+					})->filterColumn('invoice_date', function ($query, $keyword) {
+							if ($keyword != '') {
+								$date_range = explode(' - ', $keyword);
+								if (count($date_range) == 2) {
+									$query->whereDate('invoices.invoice_date', '>=', $date_range[0])
+										->whereDate('invoices.invoice_date', '<=', $date_range[1]);
+								} else {
+									$query->whereDate('invoices.invoice_date', '=', $keyword);
+								}
+							}
+						})
+						->filterColumn('fecha_entrega', function ($query, $keyword) {
+							if ($keyword == "todos") {
+								$query->where('invoices.fecha_entrega', '=', "")
+									->orWhereNull('invoices.fecha_entrega');
+							} elseif ($keyword != "") {
+								 $date_range = explode(' - ', $keyword);
+							if (count($date_range) == 2) {
+								$query->whereDate('invoices.fecha_entrega', '>=', $date_range[0])
+									->whereDate('invoices.fecha_entrega', '<=', $date_range[1]);
+							} else {
+								$query->whereDate('invoices.fecha_entrega', '=', $keyword);
+							}
+							}
+						})
+						->filterColumn('fecha_pago', function ($query, $keyword) {
+							$query->orWhereHas('transaction', function ($str) use ($keyword) {
+									if ($keyword === "todos") {
+										$str->where(function ($q) {
+											$q->where('transactions.trans_date', '=', "")
+											  ->orWhereNull('transactions.trans_date');
+										});
+									} elseif ($keyword !== "") {
+										$date_range = explode(' - ', $keyword);
+										
+										if (count($date_range) === 2) {
+											$str->whereDate('transactions.trans_date', '>=', $date_range[0])
+												->whereDate('transactions.trans_date', '<=', $date_range[1]);
+										} else {
+											$str->whereDate('transactions.trans_date', '=', $keyword);
+										}
+									}
+								});
+						})
+					->setRowId(function ($invoice) {
+						return "row_" . $invoice->id;
+					})
+					 ->filterColumn('pieza', function ($query, $keyword) {
+						  $query->whereHas('invoice_items', function ($q) use ($keyword) {
+							   $q->whereHas('product', function ($q) use ($keyword) {
+										$q->whereRaw('products.id LIKE ?', ['%' . strtolower($keyword) . '%']);
+							   });
+							
+								$q->orwhereHas('item', function ($q) use ($keyword) {
+									$q->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
+								});
+							
+							
+						});
+						
+						
+					})
+					->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid','pieza','marca_modelo'])
+					->make(true);
+			}	
+			
+				/**
+				 * Procesa los ítems de una factura una sola vez por fila y guarda el resultado en caché local.
+				 */
+			/*	private function procesarItemsFactura($invoice): array
+				{
+					static $cache = [];
+
+					// Si esta factura ya se procesó en otro addColumn de esta misma fila, la devolvemos directo
+					if (isset($cache[$invoice->id])) {
+						return $cache[$invoice->id];
+					}
+
+					// Usamos la relación precargada con 'with' (sin hacer nuevas consultas SQL)
+					$items = $invoice->invoice_items->filter()->sortBy('product.nro_interno');
+
+					// --- 1. GENERAR DATOS PARA COLUMNA "PIEZA" ---
+					$htmlPieza = '';
+					if ($items->count() === 1) {
+						$item = $items->first();
+						$alias = nroInternoAlias(
+							$item->product->company_id ?? null,
+							$item->product->tipo_vehiculo ?? null,
+							$item->product->nro_interno ?? null
+						) ?: 'Sin Nro Interno';
+
+						$productoId = $item->product->id ?? '';
+						$itemNombre = $item->product->item->item_name ?? '';
+						$htmlPieza = "({$productoId}) {$alias} - {$itemNombre}";
+					} elseif ($items->isNotEmpty()) {
+						$tabla = '<table class="table table-striped"><thead><tr><th>ID</th><th>Nro Interno</th><th>Ítem</th></tr></thead><tbody>';
+						foreach ($items as $item) {
+							$alias = nroInternoAlias(
+								$item->product->company_id ?? null,
+								$item->product->tipo_vehiculo ?? null,
+								$item->product->nro_interno ?? null
+							) ?: 'Sin Nro Interno';
+
+							$tabla .= '<tr>'
+								. '<td>' . ($item->product->id ?? '') . '</td>'
+								. '<td>' . $alias . '</td>'
+								. '<td>' . ($item->product->item->item_name ?? '') . '</td>'
+								. '</tr>';
+						}
+						$tabla .= '</tbody></table>';
+						$htmlPieza = $tabla;
+					}
+
+					  // --- 2. COLUMNAS AGRUPADAS POR "NRO_INTERNO" (Nro Interno + Marca/Modelo) ---
+					$itemsAgrupados = $items->groupBy('product.nro_interno')->sortKeys()->map->first();
+					$htmlNroInterno = '';
+					$htmlMarcaModelo = '';
+
+					if ($itemsAgrupados->count() === 1) {
+						$item = $itemsAgrupados->first();
+						$car = $item->product;
+
+						// Nro Interno único
+						$htmlNroInterno = nroInternoAlias(
+							$car->company_id ?? null,
+							$car->tipo_vehiculo ?? null,
+							$car->nro_interno ?? null
+						);
+
+						// Marca y Modelo único (usando la relación marcaModelo)
+						$marca  = $car->marcaModelo->marca->marca ?? '';
+						$modelo = $car->marcaModelo->modelo->modelo ?? '';
+						$htmlMarcaModelo = trim("{$marca} {$modelo}");
+
+					} elseif ($itemsAgrupados->isNotEmpty()) {
+						$tablaNro = '<table class="table table-striped"><thead><tr><th>Nro Interno</th></tr></thead><tbody>';
+						$tablaMarca = '<table class="table table-striped"><thead><tr><th>Nro Interno</th><th>Marca / Modelo</th></tr></thead><tbody>';
+
+						foreach ($itemsAgrupados as $item) {
+							$car = $item->product;
+							$alias = nroInternoAlias(
+								$car->company_id ?? null,
+								$car->tipo_vehiculo ?? null,
+								$car->nro_interno ?? null
+							) ?: 'Sin Nro Interno';
+
+							$marca  = $car->marcaModelo->marca->marca ?? '';
+							$modelo = $car->marcaModelo->modelo->modelo ?? '';
+							$marcaModeloTxt = trim("{$marca} {$modelo}") ?: 'Sin Marca/Modelo';
+
+							$tablaNro .= '<tr><td>' . $alias . '</td></tr>';
+							$tablaMarca .= '<tr><td>' . $alias . '</td><td>' . $marcaModeloTxt . '</td></tr>';
+						}
+
+						$tablaNro .= '</tbody></table>';
+						$tablaMarca .= '</tbody></table>';
+
+						$htmlNroInterno = $tablaNro;
+						$htmlMarcaModelo = $tablaMarca;
+					}
+
+					// Guardamos en el caché estático para que los siguientes addColumn lo reutilicen
+					return $cache[$invoice->id] = [
+						'es_unico_pieza' => $items->count() === 1,
+						'es_unico_nro'   => $itemsAgrupados->count() === 1,
+						'pieza_html'     => $htmlPieza,
+						'marcamodelo_html'     => $htmlMarcaModelo,
+						'nro_html'       => $htmlNroInterno,
+					];
+				}*/
+
+
+			private function procesarItemsFactura($invoice): array
+			{
+				static $cache = [];
+
+				if (isset($cache[$invoice->id])) {
+					return $cache[$invoice->id];
+				}
+
+				$items = $invoice->invoice_items->filter()->sortBy('product.nro_interno');
+
+				$htmlPieza = '';
+				if ($items->count() === 1) {
+					$item = $items->first();
+					$product = $item->product;
+
+					$alias = nroInternoAlias(
+						$product->company_id ?? null,
+						$product->tipo_vehiculo ?? null,
+						$product->nro_interno ?? null
+					) ?: 'Sin Nro Interno';
+
+					$productoId = $product->id ?? '';
+					$itemNombre = $product->item->item_name ?? '';
+					$estatusTxt = ($product && !empty($product->deleted_at)) ? ' <span class="badge badge-warning">No se desarmó</span>' : '';
+
+					$htmlPieza = "({$productoId}) {$alias} - {$itemNombre}{$estatusTxt}";
+
+				} elseif ($items->isNotEmpty()) {
+					$tabla = '<table class="table table-striped"><thead><tr><th>ID</th><th>Nro Interno</th><th>Ítem</th><th>Estatus</th></tr></thead><tbody>';
+
+					foreach ($items as $item) {
+						$product = $item->product;
+						$alias = nroInternoAlias(
+							$product->company_id ?? null,
+							$product->tipo_vehiculo ?? null,
+							$product->nro_interno ?? null
+						) ?: 'Sin Nro Interno';
+
+						$esEliminado = ($product && !empty($product->deleted_at));
+						$estatusBadge = $esEliminado 
+							? '<span class="badge badge-warning">No se desarmó</span>' 
+							: '<span class="badge badge-success">Activo</span>';
+
+						$tabla .= '<tr>'
+							. '<td>' . ($product->id ?? '') . '</td>'
+							. '<td>' . $alias . '</td>'
+							. '<td>' . ($product->item->item_name ?? '') . '</td>'
+							. '<td>' . $estatusBadge . '</td>'
+							. '</tr>';
+					}
+					$tabla .= '</tbody></table>';
+					$htmlPieza = $tabla;
+				}
+
+				$itemsAgrupados = $items->groupBy('product.nro_interno')->sortKeys()->map->first();
+				$htmlNroInterno = '';
+				$htmlMarcaModelo = '';
+
+				if ($itemsAgrupados->count() === 1) {
+					$item = $itemsAgrupados->first();
+					$car = $item->product;
+					$esEliminado = ($car && !empty($car->deleted_at));
+					$estatusTxt = $esEliminado ? ' <span class="badge badge-warning">No se desarmó</span>' : '';
+
+					// Nro Interno único
+					$alias = nroInternoAlias(
+						$car->company_id ?? null,
+						$car->tipo_vehiculo ?? null,
+						$car->nro_interno ?? null
+					);
+					$htmlNroInterno = $alias . $estatusTxt;
+
+					// Marca y Modelo único
+					$marca  = $car->marcaModelo->marca->marca ?? '';
+					$modelo = $car->marcaModelo->modelo->modelo ?? '';
+					$htmlMarcaModelo = trim("{$marca} {$modelo}") . $estatusTxt;
+
+				} elseif ($itemsAgrupados->isNotEmpty()) {
+					$tablaNro = '<table class="table table-striped"><thead><tr><th>Nro Interno</th><th>Estatus</th></tr></thead><tbody>';
+					$tablaMarca = '<table class="table table-striped"><thead><tr><th>Nro Interno</th><th>Marca / Modelo</th><th>Estatus</th></tr></thead><tbody>';
+
+					foreach ($itemsAgrupados as $item) {
+						$car = $item->product;
+						$alias = nroInternoAlias(
+							$car->company_id ?? null,
+							$car->tipo_vehiculo ?? null,
+							$car->nro_interno ?? null
+						) ?: 'Sin Nro Interno';
+
+						$marca  = $car->marcaModelo->marca->marca ?? '';
+						$modelo = $car->marcaModelo->modelo->modelo ?? '';
+						$marcaModeloTxt = trim("{$marca} {$modelo}") ?: 'Sin Marca/Modelo';
+
+						$esEliminado = ($car && !empty($car->deleted_at));
+						$estatusBadge = $esEliminado 
+							? '<span class="badge badge-warning">No se desarmó</span>' 
+							: '<span class="badge badge-success">Activo</span>';
+
+						$tablaNro .= '<tr><td>' . $alias . '</td><td>' . $estatusBadge . '</td></tr>';
+						$tablaMarca .= '<tr><td>' . $alias . '</td><td>' . $marcaModeloTxt . '</td><td>' . $estatusBadge . '</td></tr>';
+					}
+
+					$tablaNro .= '</tbody></table>';
+					$tablaMarca .= '</tbody></table>';
+
+					$htmlNroInterno = $tablaNro;
+					$htmlMarcaModelo = $tablaMarca;
+				}
+
+				return $cache[$invoice->id] = [
+					'es_unico_pieza'    => $items->count() === 1,
+					'es_unico_agrupado' => $itemsAgrupados->count() === 1,
+					'pieza_html'        => $htmlPieza,
+					'nro_html'          => $htmlNroInterno,
+					'marca_modelo_html' => $htmlMarcaModelo,
+				];
+			}
+
 
 
 
