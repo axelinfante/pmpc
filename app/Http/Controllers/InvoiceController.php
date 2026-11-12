@@ -3740,7 +3740,7 @@ btn-xs " target="_blank" data-title=" ' . _lang('Venta') . '"><i class="ti-shopp
                         //$html .= "($pieza->invoice_number) $pieza->item_name" . '<br>';
 						  $esCancelado = strtolower(trim($pieza->status ?? '')) === 'canceled';
 						if ($esCancelado) {
-							$html .= "<span class='text-danger font-weight-bold'>({$pieza->invoice_number}) {$pieza->item_name} <span class='badge badge-danger'>Canceled</span></span><br>";
+						//	$html .= "<span class='text-danger font-weight-bold'>({$pieza->invoice_number}) {$pieza->item_name} <span class='badge badge-danger'>Canceled</span></span><br>";
 						} else {
 							$html .= "({$pieza->invoice_number}) {$pieza->item_name}<br>";
 						}
