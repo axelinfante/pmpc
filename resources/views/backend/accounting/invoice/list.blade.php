@@ -87,6 +87,7 @@
                                     <th>{{ _lang('Fecha de entrega') }}</th>
                                     <th>{{ _lang('Fecha del ultimo pago') }}</th>
                                     <th>{{ _lang('Nro Interno') }}</th>
+                                    <th>{{ _lang('Marca / Modelo') }}</th>
 									<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Pieza') }}</th>
                                     <!--<th>{{ _lang('Productos') }}</th>
                                     <th>{{ _lang('id_Productos') }}</th>-->
@@ -173,7 +174,7 @@
             $('#invoice-table thead tr').clone(true).appendTo('#invoice-table thead');
             $('#invoice-table thead tr:eq(1) th').each(function(i) {
                 var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 13 && i != 3 && i != 4 && i != 5) {
+                if (i != 0 && i != 14 && i != 3 && i != 4 && i != 5 && i != 7) {
                     $(this).html(
                         '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' +
                         title + '" />');
@@ -202,54 +203,12 @@
 							let val = $(this).val();
 							invoice_table.column(i).search(val ? val : '', true, false).draw();
 						});
-						/*let name_ingreso = "fechaentrega_vacio";
-							$(this).html( '<input type="checkbox" id="mostrar-todos-'+name_ingreso+'">vacios <input type="date" style="width:100%;" id="fecha_entrega_stock" name="fecha_entrega_stock" value="" class="form-control select-filter" />' );
-								let campoInput = $('#fecha_entrega_stock');
-								$('#mostrar-todos-'+name_ingreso).change(function () {
-								  let buscar= ($(this).is(':checked')) ? "todos":"";
-									if ($(this).is(':checked')) {
-										campoInput.hide();
-									} else {
-									   campoInput.val(''); 
-									   campoInput.show();
-									}
-
-									invoice_table
-									.column(i)
-									.search(buscar)
-									.draw();
-								});
-								campoInput.on('change', function () {
-									let val = $(this).val();
-									invoice_table.column(i).search(val ? val : '', true, false).draw();
-								});*/
 				}else if(i == 5) {
 					$(this).html( '<input style="width:100%;" type="date" id="fecha_pago_date" name="fecha_pago_date" value="" class="form-control select-filter" />' );
 						$('#fecha_pago_date').on('change', function () {
 							let val = $(this).val();
 							invoice_table.column(i).search(val ? val : '', true, false).draw();
 						});
-						/* let name_ingreso = "fechapago_vacio";
-							$(this).html( '<input type="checkbox" id="mostrar-todos-'+name_ingreso+'">vacios <input type="date" style="width:100%;" id="fecha_pago_stock" name="fecha_pago_stock" value="" class="form-control select-filter" />' );
-								let campoInput = $('#fecha_pago_stock');
-								$('#mostrar-todos-'+name_ingreso).change(function () {
-								  let buscar= ($(this).is(':checked')) ? "todos":"";
-									if ($(this).is(':checked')) {
-										campoInput.hide();
-									} else {
-									   campoInput.val(''); 
-									   campoInput.show();
-									}
-
-									invoice_table
-									.column(i)
-									.search(buscar)
-									.draw();
-								});
-								campoInput.on('change', function () {
-									let val = $(this).val();
-									invoice_table.column(i).search(val ? val : '', true, false).draw();
-								});*/
 				}else {
                     $(this).html('');
                 }
@@ -325,11 +284,11 @@
                                 data: "nro_interno",
                                 name: "nro_interno"
                             },
-                      /*  {
-                            data: "producto",
-                            name: "producto"
+                        {
+                            data: "marca_modelo",
+                            name: "marca_modelo"
                         },
-						{
+						/*{
                             data: "idproducto",
                             name: "idproducto"
                         },*/
@@ -398,37 +357,6 @@
                                 page: 'all'
                             }
 						}, action: newexportaction, 
-                        /*action: function() {
-                            let params = invoice_table.ajax.params(); // Obtén los parámetros del DataTable
-
-                            $.ajax({
-                                url: '{{ route('invoices.export.excel') }}', // URL de la ruta
-                                type: 'POST', // Cambia el método a POST
-                                data: {
-                                    ...params, // Incluye los parámetros del DataTable
-                                    _token: '{{ csrf_token() }}' // Añade el token CSRF
-                                },
-                                xhrFields: {
-                                    responseType: 'blob' // Importante para manejar archivos como respuesta
-                                },
-                                success: function(response) {
-                                    // Descarga el archivo Excel
-                                    let blob = new Blob([response], {
-                                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                                    });
-                                    let link = document.createElement('a');
-                                    link.href = window.URL.createObjectURL(blob);
-                                    link.download =
-                                        'invoices.xlsx'; // Nombre del archivo descargado
-                                    link.click();
-                                },
-                                error: function(xhr) {
-                                    // Maneja errores
-                                    alert('Hubo un error al exportar el archivo.');
-                                }
-                            });
-                        }*/
-
                     },
                     {
                         extend: 'pdf',
@@ -444,37 +372,6 @@
                                 page: 'all'
                             }
 						}, action: newexportaction, 
-                        /*action: function() {
-                            let params = invoice_table.ajax.params(); // Obtén los parámetros del DataTable
-
-                            $.ajax({
-                                url: '{{ route('invoices.export.pdf') }}', // Ruta para generar el PDF
-                                type: 'POST', // Usamos POST para enviar los datos
-                                data: {
-                                    ...params, // Incluye los parámetros del DataTable
-                                    _token: '{{ csrf_token() }}' // Agrega el token CSRF
-                                },
-                                xhrFields: {
-                                    responseType: 'blob' // Importante para manejar archivos como respuesta
-                                },
-                                success: function(response) {
-                                    // Descarga el archivo PDF
-                                    let blob = new Blob([response], {
-                                        type: 'application/pdf'
-                                    });
-                                    let link = document.createElement('a');
-                                    link.href = window.URL.createObjectURL(blob);
-                                    link.download =
-                                    'invoices.pdf'; // Nombre del archivo descargado
-                                    link.click();
-                                },
-                                error: function(xhr) {
-                                    // Manejo de errores
-                                    alert('Hubo un error al exportar el archivo.');
-                                }
-                            });
-                        }*/
-
                     },
 
                 ],
