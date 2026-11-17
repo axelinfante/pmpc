@@ -416,6 +416,227 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
         }
     }
 
+
+
+/**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+public function update(Request $request, $id)
+{
+    $validator = Validator::make($request->all(), [
+        'producto_id' => 'required'
+    ], [
+        'producto_id.required' => _lang('La pieza debe encontrarse disponible'),
+    ]);
+
+    if ($validator->fails()) {
+        if ($request->ajax()) {
+            return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+        }
+        return redirect('orden-desarme')->withErrors($validator)->withInput();
+    }
+
+    $orden_desarme = Orden_desarme::findOrFail($id);
+
+    DB::transaction(function () use ($request, $orden_desarme) {
+        $orden_desarme->pedido_pasado                   = $request->input('pedido_pasado');
+        $orden_desarme->interno                         = $request->input('interno');
+        $orden_desarme->lugar_venta                     = $request->input('lugar_venta');
+        $orden_desarme->detalle_pieza                   = $request->input('detalle_pieza');
+        $orden_desarme->detalle_anulado                 = $request->input('detalle_anulado');
+        $orden_desarme->ubicacion                       = $request->input('ubicacion');
+        $orden_desarme->estado                          = $request->input('estado');
+        $orden_desarme->autorizo                        = $request->input('autorizo');
+        $orden_desarme->fecha_estimada_pieza_disponible = $request->input('fecha_estimada_pieza_disponible');
+        $orden_desarme->existe                          = $request->input('existe');
+        $orden_desarme->falta                           = $request->input('falta');
+        $orden_desarme->informo_ausencia                = $request->input('informo_ausencia');
+        $orden_desarme->obs_desarme_busqueda            = $request->input('obs_desarme_busqueda');
+        $orden_desarme->fecha_desarmado_anulado         = $request->input('fecha_desarmado_anulado');
+        $orden_desarme->cargando_camioneta              = $request->input('cargando_camioneta');
+        $orden_desarme->entregado                       = $request->input('entregado');
+        $orden_desarme->fecha_embalado                  = $request->input('fecha_embalado');
+        $orden_desarme->fecha_avisado_vendedor          = $request->input('fecha_avisado_vendedor');
+        $orden_desarme->idCar                           = $request->input('idCar');
+        $orden_desarme->product_id                      = $request->input('producto_id') ?? 0;
+        $orden_desarme->puesto_final                    = $request->input('puesto_final') ?? '';
+
+        if (!empty($orden_desarme->fecha_desarmado_anulado)) {
+            $orden_desarme->estado = 'completado';
+        }
+
+        $orden_desarme->save();
+
+        if (!empty($orden_desarme->fecha_desarmado_anulado)) {
+            $item_invoice = InvoiceItem::where('invoice_id', $orden_desarme->id_venta)
+                ->where('item_id', $orden_desarme->pieza)
+                ->first();
+
+            $stock = Product::find($orden_desarme->product_id);
+
+            if ($item_invoice && $orden_desarme->id_venta) {
+				
+                $orden_despacho = OrdenDespacho::firstOrNew([
+                    'invoice_id'     => $orden_desarme->id_venta,
+                    'invoiceitem_id' => $item_invoice->id,
+                ]);
+
+                if (!$orden_despacho->exists) {
+                    $orden_despacho->description = $item_invoice->description;
+                    $orden_despacho->quantity    = $item_invoice->quantity;
+                    $orden_despacho->company_id  = $item_invoice->company_id;
+                    $orden_despacho->estatus     = 'pendiente';
+                    $orden_despacho->save();
+
+                    // Solo descuenta stock la primera vez que se genera el despacho
+                    //if ($stock) {
+                    //    $stock->stock -= $item_invoice->quantity;
+                   // }
+                }
+            }
+
+            if ($stock) {
+                $stock->fecha_desarme_a_stock = now();
+                $stock->save();
+            }
+        }
+    });
+
+    return response()->json([
+        'result'  => 'success',
+        'action'  => 'store',
+        'message' => _lang('Orden Actualizada Correctamente'),
+        'data'    => $orden_desarme
+    ]);
+}
+
+
+/**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update_x(Request $request, $id)
+    {
+        //
+		
+		$validator = Validator::make($request->all(), [
+            'producto_id' => 'required'
+        ], [
+            'product_id.required' => _lang('La pieza de encontrarse disponibles'),
+        ]);
+		
+		 if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json(['result' => 'error', 'message' => $validator->errors()->all()]);
+            } else {
+                return redirect('orden-desarme')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
+        $orden_desarme = Orden_desarme::find($id);
+        $cadete_operario_aterior = $orden_desarme->idCadete_operario;
+
+        $estado_anterior = $orden_desarme->estado;
+
+        $orden_desarme->pedido_pasado =  $request->input('pedido_pasado');
+        $orden_desarme->interno =  $request->input('interno');
+        $orden_desarme->lugar_venta =  $request->input('lugar_venta');
+        $orden_desarme->detalle_pieza =  $request->input('detalle_pieza');
+        $orden_desarme->detalle_anulado =  $request->input('detalle_anulado');
+        $orden_desarme->ubicacion =  $request->input('ubicacion');
+        $orden_desarme->estado =  $request->input('estado');
+        $orden_desarme->autorizo =  $request->input('autorizo');
+        $orden_desarme->fecha_estimada_pieza_disponible =  $request->input('fecha_estimada_pieza_disponible');
+        $orden_desarme->existe =  $request->input('existe');
+        $orden_desarme->falta =  $request->input('falta');
+        $orden_desarme->informo_ausencia =  $request->input('informo_ausencia');
+        $orden_desarme->obs_desarme_busqueda =  $request->input('obs_desarme_busqueda');
+        $orden_desarme->fecha_desarmado_anulado =  $request->input('fecha_desarmado_anulado');
+        $orden_desarme->cargando_camioneta =  $request->input('cargando_camioneta');
+        $orden_desarme->entregado =  $request->input('entregado');
+        $orden_desarme->fecha_embalado =  $request->input('fecha_embalado');
+        $orden_desarme->fecha_avisado_vendedor =  $request->input('fecha_avisado_vendedor');
+		
+        $orden_desarme->idCar =  $request->input('idCar');
+        $orden_desarme->product_id =  $request->input('producto_id') ?? 0;
+		
+		 $orden_desarme->puesto_final = $request->input('puesto_final') ?? '';
+		 
+		 if ($orden_desarme->fecha_desarmado_anulado !== null) { 
+			$orden_desarme->estado = 'completado'; 
+		}
+		 
+        $orden_desarme->save();
+		
+        if ($orden_desarme->fecha_desarmado_anulado !== null)
+         {       
+            $item_invoice = InvoiceItem::where('invoice_id',$orden_desarme->id_venta )->where('item_id',$orden_desarme->pieza)->first();
+			$stock = Product::where("id", $orden_desarme->product_id)->first();
+			if($item_invoice)
+			{
+				 $stock->stock = $stock->stock - $item_invoice->quantity;
+				 
+				 $orden_despacho = OrdenDespacho::firstOrNew([
+						'invoice_id'     => $orden_desarme->venta->id,
+						'invoiceitem_id' => $item_invoice->id,
+					]);
+
+					if (!$orden_despacho->exists) {
+						$orden_despacho->description = $item_invoice->description;
+						$orden_despacho->quantity    = $item_invoice->quantity;
+						$orden_despacho->company_id  = $item_invoice->company_id;
+						$orden_despacho->estatus     = 'pendiente';
+						$orden_despacho->save();
+					}
+				 
+				 	/*$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden_desarme->venta->id)->where('invoiceitem_id', '=',  $orden_desarme->product_id)->first();
+
+					if(!$orden_despacho_){
+						//Notification::send(User::find($orden_desarme->venta->user_id), new OrdenUpdated($orden_desarme));
+
+						$orden_despacho = new OrdenDespacho();
+
+						$orden_despacho->invoice_id = $orden_desarme->venta->id;
+
+						$orden_despacho->invoiceitem_id = $item_invoice->id; // $orden_desarme->product_id;---
+						$orden_despacho->description =  $item_invoice->description;
+						$orden_despacho->quantity =  $item_invoice->quantity;
+						$orden_despacho->company_id =  $item_invoice->company_id;
+						$orden_despacho->estatus = 'pendiente';
+
+						$orden_despacho->save();
+
+						//$message = "Cambio de estado en orden de desarme <b><a href='" . route('orden-desarme.show', $orden_desarme->id) . "'>$orden_desarme->id</a></b>";
+
+						//$user = User::find($orden_desarme->venta->user_id);
+						//$email = $user->email;
+						//Mail::to($email)->send(new OrdenDesarmeNotificacion($message));
+					 }
+					*/
+
+			}		
+			$stock->fecha_desarme_a_stock = date('Y-m-d H:i:s');
+			$stock->save();
+        }
+
+
+        return response()->json([
+            'result' => 'success',
+            'action' => 'store',
+            'message' => _lang('Orden Actualizada Correctamente'),
+            'data' => $orden_desarme
+        ]);
+    }
+	
+
     /**
      * Update the specified resource in storage.
      *
@@ -423,7 +644,7 @@ class="btn btn-danger btn-xs btn-remove ' . $ocultar . '" type="submit"><i class
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update_old(Request $request, $id)
     {
         //
 		
@@ -1737,10 +1958,23 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
 											$stock->estado = "optimo";
 										  }
 										 */
-										 $stock->stock = $stock->stock - $item_invoice->quantity;
-										 //$stock->save();
+										// $stock->stock = $stock->stock - $item_invoice->quantity;
+															 //$stock->save();
+															 
+									  $orden_despacho = OrdenDespacho::firstOrNew([
+											'invoice_id'     => $orden_desarme->venta->id,
+											'invoiceitem_id' => $item_invoice->id,
+										]);
+
+										if (!$orden_despacho->exists) {
+											$orden_despacho->description = $item_invoice->description;
+											$orden_despacho->quantity    = $item_invoice->quantity;
+											$orden_despacho->company_id  = $item_invoice->company_id;
+											$orden_despacho->estatus     = 'pendiente';
+											$orden_despacho->save();
+										}
 										
-										$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden_desarme->venta->id)->where('invoiceitem_id', '=',  $orden_desarme->product_id)->first();
+										/*$orden_despacho_ = OrdenDespacho::where('invoice_id', '=',  $orden_desarme->venta->id)->where('invoiceitem_id', '=',  $orden_desarme->product_id)->first();
 
 											if(!$orden_despacho_){
 												$orden_despacho = new OrdenDespacho();
@@ -1755,7 +1989,7 @@ return '<div class="text-center">' . $ordenDesarmeBtn . '</div>';
 
 												$orden_despacho->save();
 											 }
-
+										*/
 
 									}		
 									/// proceso para desarme-stock
