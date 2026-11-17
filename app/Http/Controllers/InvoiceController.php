@@ -613,17 +613,6 @@ public function store(Request $request)
                         $orden_desarme->save();
                         // enviar notificacion al operario de creada una orden
                     //  Notification::send($operario, new OrdenCreated($orden_desarme));
-        /*}elseif($desarmarValue == 'despacho'){
-            
-                $orden_despacho = new OrdenDespacho();
-                $orden_despacho->invoice_id = $invoice->id;
-                $orden_despacho->invoiceitem_id = $invoiceItem->id;
-                $orden_despacho->description = $product->description;
-                $orden_despacho->quantity = 1;
-                $orden_despacho->company_id = $product->company_id;
-                $orden_despacho->estatus = 'pendiente';
-                $orden_despacho->save();
-        */  
         }elseif($desarmarValue == 'directo'){
             // retiro directo
 			
@@ -6540,6 +6529,7 @@ public function guardarComision($request, $invoice)
         }
 
         $stock->stock -= $invoiceItem->quantity;
+		
         if ($product->estado === 'desarme') {
             $stock->estado = 'optimo';
         }
