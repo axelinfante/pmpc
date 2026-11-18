@@ -304,7 +304,7 @@
                 },
                 //dom: 'Bfrtip',
 				dom: 'Bfrltip',
-                buttons: [
+                buttons: /* [
 				{
                     text: 'Reset Filter',
                     action: function(e, dt, node, config) {
@@ -380,28 +380,6 @@
 						
                     }
 					},
-					/*{
-                    text: 'Confirmacion de despacho',
-			        className: 'btn btn-xs',
-					attr: {
-						title: "Confirmacion de despacho",
-						id: "confirmacion-button",
-						"data-title": "Confirmacion de despacho",
-					},
-					action: function (e, dt, node, config) {
-						var selectedIds = [];
-						$('.row-checkbox:checked').each(function() {
-							selectedIds.push($(this).data('id'));
-						});
-
-						if (selectedIds.length === 0) {
-							alert('Por favor, seleccione al menos un registro para continuar.');
-							return;
-						}
-					  $('#modal_orden_id_max').val(selectedIds);
-					  $('#modalConfirmarEntregaMax').modal('show');
-					}
-				},*/
 				{
                     text: 'Confirmacion de desarme',
 			        className: 'btn btn-xs ajax-modal',
@@ -413,17 +391,6 @@
 						"data-reload": "false" 
 					},
 					init: function (dt, node, config) {
-						 /*var selectedIds = [];
-                            $('.row-checkbox:checked').each(function() {
-                                selectedIds.push($(this).data('id'));
-                            });
-
-                            if (selectedIds.length === 0) {
-                                alert('Seleccione al menos una orden.');
-                                return;
-                            }
-						
-						$(node).attr('href', '{{ url('orden-desarme/generar-ordenesdesarme') }}/' + selectedIds)*/
 					},
 					  action: function (e, dt, node, config) {
 							e.preventDefault();
@@ -483,7 +450,128 @@
                 action: function ( e, dt, node, config ) {
 						}
 					}
-                ],
+                ], */
+				[
+    {
+        text: 'Reset Filter',
+        action: function(e, dt, node, config) {
+            $('.filtrov').val('');
+            table.search('').columns().search('').draw();
+        }
+    },
+    {
+        extend: 'pdf',
+        text: 'Exportar a PDF',
+        orientation: 'landscape',
+        pageSize: 'A4',
+        exportOptions: exportFormatter
+    },
+    {
+        extend: 'excel',
+        text: 'Exportar a Excel',
+        exportOptions: exportFormatter
+    },
+    {
+        text: 'Generar Orden Desarme',
+        action: function(e, dt, node, config) {
+            var selectedIds = [];
+            $('.row-checkbox:checked').each(function() {
+                selectedIds.push($(this).data('id'));
+            });
+
+            if (selectedIds.length === 0) {
+                alert('Seleccione al menos una orden para imprimir.');
+                return;
+            }
+
+            window.open('{{ url('orden-desarme/generar-pdf') }}/' + selectedIds.join(','), '_blank');
+        }
+    },
+    {
+        text: 'Puestos',
+        action: function(e, dt, node, config) {
+            $("#puesto_id").val(0);
+            $("#puesto").val("");
+            $("#predeterminada").val(0);
+            $("#activo").val(1);
+            $('#puestosModal').modal('show');
+        }
+    },
+    {
+        text: 'Confirmacion de desarme',
+        className: 'btn btn-xs',
+        titleAttr: 'Confirmacion de desarme',
+        attr: {
+            title: "Confirmación de desarme",
+            id: "desarme-button",
+            "data-reload": "false"
+        },
+        action: function(e, dt, node, config) {
+            e.preventDefault();
+
+            var selectedIds = [];
+            $('.row-checkbox:checked').each(function() {
+                selectedIds.push($(this).data('id'));
+            });
+
+            if (selectedIds.length === 0) {
+                alert('Seleccione al menos una orden.');
+                return false;
+            }
+
+            var baseUrl = "{{ url('orden-desarme/generar-ordenesdesarme') }}";
+            var finalUrl = baseUrl + '/' + selectedIds.join(',');
+
+            var tempLink = $('<a>', {
+                href: finalUrl,
+                class: 'ajax-modal d-none',
+                title: 'Confirmación de desarme',
+                'data-reload': 'false'
+            });
+
+            $('body').append(tempLink);
+            tempLink.trigger('click');
+            tempLink.remove();
+        }
+    },
+    {
+        text: '<i class="fas fa-check-square"></i> Multiples Qr',
+        className: 'btn-success',
+        attr: {
+            id: 'btn_obtener_datos'
+        },
+        action: function(e, dt, node, config) {
+            var qr_seleccionados = [];
+            $('.row-checkbox:checked').each(function() {
+                qr_seleccionados.push($(this).data('product_id'));
+            });
+
+            if (qr_seleccionados.length === 0) {
+                alert('Debe seleccionar al menos un valor');
+                return;
+            }
+
+            impresion_multiple(qr_seleccionados);
+        }
+    },
+    {
+        text: 'Filtrar por: ' +
+              '<select id="filtrado_activo" name="filtrado_activo" class="form-control-sm">' +
+              '<option value="pendiente" selected>Pendiente</option>' +
+              '<option value="completado">Completado</option>' +
+              '<option value="anulada">Cancelado</option>' +
+              '</select>',
+        className: 'botones-custom',
+        init: function(dt, node, config) {
+            $(node).find('#filtrado_activo').on('click', function(e) {
+                e.stopPropagation();
+            });
+        },
+        action: function(e, dt, node, config) {
+            e.preventDefault();
+        }
+    }
+],
                 columns: (function() {
                     var columns = [{
                         data: null,
@@ -1074,7 +1162,8 @@ function impresion_multiple(ids){
 									alert('Debe seleccionar un valor');
 								 return;
 								}
-
+				
+				$('.alert-danger, .alert-secondary').empty().addClass('d-none');
 				var formData = new FormData();
 					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
                     formData.append('idsSeleccionados', ids);
