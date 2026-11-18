@@ -124,7 +124,43 @@
     }
 ],
 					
-					customButtons: [
+					/*customButtons: [
+					{
+                    text: 'Confirmacion de desarme',
+			        className: 'btn btn-xs ajax-modal',
+					titleAttr: 'Confirmacion de desarme',
+					//enabled: false,
+					 attr: {
+						title: "Confirmación de desarme",
+						id: "desarme-button",
+						"data-reload": "false" 
+					},
+					init: function (dt, node, config) {
+						},
+					  action: function (e, dt, node, config) {
+							e.preventDefault();
+							
+							var selectedIds = [];
+							$('.row-checkbox:checked').each(function() {
+								selectedIds.push($(this).data('product_id'));
+							});
+
+							if (selectedIds.length === 0) {
+								alert('Seleccione al menos una orden.');
+								$(node).attr('href', '#');
+								e.stopImmediatePropagation(); 
+								return false;
+							}
+
+							var baseUrl = "{{ url('orden-desarme/generar-ordenesdesarme') }}";
+							var finalUrl = baseUrl + '/' + selectedIds.join(',');
+							console.log(finalUrl);
+							$(node).attr('href', finalUrl);
+							if ($(node).hasClass('ajax-modal') && typeof $.fn.modal !== 'undefined') {
+									$(node).trigger('click'); 
+							}
+						}
+				}, 
 					{
                 text: '<i class="fas fa-check-square"></i> Multiples Qr',
                 className: 'btn-success', 
@@ -150,6 +186,7 @@
 						impresion_multiple(qr_seleccionados);
 			  }
 			},
+			
 					{
 							text: 'Filtrar por: ' +
 							'<select id="filtrado_activo" name="filtrado_activo"  class="form-control-sm">' +
@@ -161,7 +198,89 @@
 					action: function ( e, dt, node, config ) {
 						}
 					}
-					],
+					],*/
+	customButtons: [
+    {
+        text: 'Confirmacion de desarme',
+        className: 'btn btn-xs',
+        titleAttr: 'Confirmacion de desarme',
+        attr: {
+            title: "Confirmación de desarme",
+            id: "desarme-button",
+            "data-reload": "false"
+        },
+        action: function (e, dt, node, config) {
+            e.preventDefault();
+            
+  /*          var selectedIds = [];
+            $('.row-checkbox:checked').each(function() {
+                selectedIds.push($(this).data('id'));
+            });*/
+			
+			var selectedIds = $('.row-checkbox:checked').map(function() {
+				return $(this).val();
+			}).get();
+
+            if (selectedIds.length === 0) {
+                alert('Seleccione al menos una orden.');
+                return false;
+            }
+
+            var baseUrl = "{{ url('orden-desarme/generar-ordenesdesarme') }}";
+            var finalUrl = baseUrl + '/' + selectedIds.join(',');
+            
+            
+            var tempLink = $('<a>', {
+                href: finalUrl,
+                class: 'ajax-modal d-none',
+                title: 'Confirmación de desarme',
+                'data-reload': 'false'
+            });
+
+            $('body').append(tempLink);
+            tempLink.trigger('click');
+            tempLink.remove();
+        }
+    },
+    {
+        text: '<i class="fas fa-check-square"></i> Multiples Qr',
+        className: 'btn-success',
+        attr: {
+            id: 'btn_obtener_datos'
+        },
+        action: function (e, dt, node, config) {
+            var qr_seleccionados = [];
+            $('.row-checkbox:checked').each(function() {
+                qr_seleccionados.push($(this).data('product_id'));
+            });
+
+            if (qr_seleccionados.length === 0) {
+                alert('Debe seleccionar al menos un valor');
+                return;
+            }
+
+            impresion_multiple(qr_seleccionados);
+        }
+    },
+    {
+        text: 'Filtrar por: ' +
+              '<select id="filtrado_activo" name="filtrado_activo" class="form-control-sm">' +
+              '<option value="pendiente" selected>Pendiente</option>' +
+              '<option value="completado">Completado</option>' +
+              '<option value="anulada">Cancelado</option>' +
+              '</select>',
+        className: 'botones-custom',
+        init: function (dt, node, config) {
+            // Evita que hacer clic en el select active el evento del botón contenedor
+            $(node).find('#filtrado_activo').on('click', function(e) {
+                e.stopPropagation();
+            });
+        },
+        action: function (e, dt, node, config) {
+            e.preventDefault();
+        }
+    }
+],
 				   columns: [
 				   { data: 'action', name: 'action', orderable: false, searchable: false },
 				     { data : "fecha_venta", name : "fecha_venta" },
@@ -224,7 +343,7 @@
 									alert('Debe seleccionar un valor');
 								 return;
 								}
-
+				$('.alert-danger, .alert-secondary').empty().addClass('d-none');
 				var formData = new FormData();
 					formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
                     formData.append('idsSeleccionados', ids);
@@ -252,57 +371,7 @@
                 }
 
 				});								
-								
-			//alert(ids)
 		}
-		
-/*function newexportaction(e, dt, button, config) {
-
-this.processing( true );
-var self = this;
-var oldStart = dt.settings()[0]._iDisplayStart;
-dt.one('preXhr', function (e, s, data) {
-  // Just this once, load all data from the server...
-  data.start = 0;
-  //data.length = 2147483647;
-  data.length = -1;
-  dt.one('preDraw', function (e, settings) {
-      // Call the original action function
-      if (button[0].className.indexOf('buttons-copy') >= 0) {
-          $.fn.dataTable.ext.buttons.copyHtml5.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-excel') >= 0) {
-          $.fn.dataTable.ext.buttons.excelHtml5.available(dt, config) ?
-              $.fn.dataTable.ext.buttons.excelHtml5.action.call(self, e, dt, button, config) :
-              $.fn.dataTable.ext.buttons.excelFlash.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-csv') >= 0) {
-          $.fn.dataTable.ext.buttons.csvHtml5.available(dt, config) ?
-              $.fn.dataTable.ext.buttons.csvHtml5.action.call(self, e, dt, button, config) :
-              $.fn.dataTable.ext.buttons.csvFlash.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-pdf') >= 0) {
-          $.fn.dataTable.ext.buttons.pdfHtml5.available(dt, config) ?
-              $.fn.dataTable.ext.buttons.pdfHtml5.action.call(self, e, dt, button, config) :
-              $.fn.dataTable.ext.buttons.pdfFlash.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-print') >= 0) {
-          $.fn.dataTable.ext.buttons.print.action(e, dt, button, config);
-      }
-      dt.one('preXhr', function (e, s, data) {
-          // DataTables thinks the first item displayed is index 0, but we're not drawing that.
-          // Set the property to what it was before exporting.
-          settings._iDisplayStart = oldStart;
-          data.start = oldStart;
-      });
-      // Reload the grid with the original page. Otherwise, API functions like table.cell(this) don't work properly.
-      setTimeout(dt.ajax.reload, 0);
-      // Prevent rendering of the full data to the DOM
-      return false;
-  });
-});
-// Requery the server with the new one-time export settings
-dt.ajax.reload();
-this.processing( false );
-}
-*/
-
 	</script>
 @endsection
 

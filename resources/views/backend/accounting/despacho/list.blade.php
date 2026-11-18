@@ -40,6 +40,8 @@
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Nro.') }}
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha de venta') }}
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Cotización') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Fecha Entrega') }}</th>
+								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Datos') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Interno') }}</th>
 								<th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Deposito pieza') }}</th>
                                 <th style="width: 100px;min-width: 100px" class="text-right">{{ _lang('Ubicación') }}</th>
@@ -178,6 +180,14 @@
                         data: 'cotizacion',
                         name: 'cotizacion'
                     }, // Cotización
+					{
+                        data: "fecha_entrega_posible",
+                        name: "fecha_entrega_posible"
+                    },
+					{
+                        data: "datos",
+                        name: "datos"
+                    },
                     {
                         data: 'interno',
                         name: 'interno'
@@ -400,8 +410,9 @@
                 initComplete: function() {
                     var api = this.api();
 
-                    var columnasFecha = [3, 15, 17, 18,19];
-                    var columnaFormaEntrega = 20;
+                    //var columnasFecha = [3, 15, 17, 18,19];
+                    var columnasFecha = [3, 17, 19, 20,21];
+                    var columnaFormaEntrega = 22;
 
                     api.columns().eq(0).each(function(colIdx) {
 
@@ -419,53 +430,9 @@
 									 table.column( colIdx ).search(val ? val : '', false, false).draw();
 									//table.column(colIdx).search(val ? '^' + val + '$' : '', true, false).draw();
 								});
-                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 23) {
-							
-							/* if (colIdx == 6) { 
-									
-								var select = $('<select id="' + slug_title + '" name="' + slug_title + '" multiple="true" class="form-control select2"></select>')
-								.appendTo(cell.empty())
-								.on( 'change', function () {
-											var val = $(this).val();
-											table.column( colIdx ).search(val ? val : '', false, false).draw();
-								} );
-								
-								
-							select.append( '<option value="-1">VACIOS</option>' );
-							for (const row_xx of lugarentregas_tables) {
-									select.append( '<option value="'+row_xx.id+'">'+row_xx.nombre+'</option>' )
-							}
-							
-								select.select2({
-									multiple: true,
-									closeOnSelect: false
-								}); 
-							
-							
-							}if (colIdx == 13) {
-								
-								var select = $('<select id="' + slug_title + '" multiple="true" class="form-control select2"></select>')
-								.appendTo(cell.empty())
-								.on( 'change', function () {
-											var val = $(this).val();
-											table.column( colIdx ).search(val ? val : '', false, false).draw();
-								} );
-								
-							select.append( '<option value="-1">VACIOS</option>' );	
-							for (const row_a of acciones) {
-									select.append( '<option value="'+row_a+'">'+row_a+'</option>' )
-							}
-							
-								select.select2({
-									multiple: true,
-									closeOnSelect: false
-								}); 
-							
-							
-							} */
-							
-							if ([6, 13].includes(colIdx)) {
-								var opciones = (colIdx === 6) ? lugarentregas_tables : acciones;
+                        } else if (colIdx != 0 && colIdx != 1 && colIdx != 25) {
+							if ([8, 15].includes(colIdx)) {
+								var opciones = (colIdx === 8) ? lugarentregas_tables : acciones;
 								
 								var select = $('<select id="' + slug_title + '" name="' + slug_title + '" multiple="multiple" class="form-control select2"></select>')
 									.appendTo(cell.empty())
@@ -477,8 +444,8 @@
 								//select.append('<option value="-1">VACIOS</option>');
 								
 								for (const item of opciones) {
-									let id = (colIdx === 6) ? item.id : item;
-									let nombre = (colIdx === 6) ? item.nombre : item;
+									let id = (colIdx === 8) ? item.id : item;
+									let nombre = (colIdx === 8) ? item.nombre : item;
 									
 									select.append('<option value="' + id + '">' + nombre + '</option>');
 								}
@@ -527,7 +494,45 @@
 									e.preventDefault();
 								});
 									
-								}else{
+								}
+								else if (colIdx == 5) {
+								$(cell).html('<input type="text" id="fecha_entrega" name="fecha_entrega" class="form-control filtrov" placeholder="Rango de fechas..." autocomplete="off" />');
+
+								var $inputFecha = $('#fecha_entrega', cell);
+
+								$inputFecha.daterangepicker({
+									autoUpdateInput: false,
+									opens: 'left',
+									locale: {
+										format: 'YYYY-MM-DD',
+										cancelLabel: 'Limpiar',
+										applyLabel: 'Aplicar',
+										fromLabel: 'Desde',
+										toLabel: 'Hasta',
+										customRangeLabel: 'Personalizado',
+										daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+										monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+									}
+								});
+							   $inputFecha.on('apply.daterangepicker', function(ev, picker) {
+									let dateRango = picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD');
+									$(this).val(dateRango);
+									api.column(colIdx).search(dateRango).draw();
+								});
+
+								$inputFecha.on('cancel.daterangepicker', function(ev, picker) {
+									$(this).val('');
+									api.column(colIdx).search('').draw();
+								});
+
+								$inputFecha.on('keydown', function(e) {
+									e.preventDefault();
+								});
+
+								}  else if (colIdx == 6) {
+																 $(cell).html('<span class="text-muted small">N/A</span>');
+								}
+								else{
 									$(cell).html(
                                 '<input class="filtros" style="width:100%" type="' + tipoInput +
                                 '" placeholder="' + title + '" />'

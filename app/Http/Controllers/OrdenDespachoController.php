@@ -337,6 +337,37 @@ $ordenes = OrdenDespacho::select('ordenes_despacho.*')
 				//return $orden->itemInvoice->product->vehiculo->lugar_entrega->nombre ?? ''; 
 				return $orden->itemInvoice->product->deposito->nombre ?? ''; 
 			})
+			->editColumn('fecha_entrega_posible', function ($orden) {
+				return formatDate($orden->cotizacion->fecha_entrega_posible ?? '');
+				
+            })->addColumn('datos', function ($orden) {
+					//return $orden?->venta?->acciones;
+					$html = '';
+					if ($orden?->cotizacion?->acciones ?? ''){
+						$html .= "<strong>Acciones:</strong> {$orden?->cotizacion?->acciones}<br>";
+					}	
+					if ($orden?->cotizacion?->ubicacion ?? ''){
+						$html .= "<strong>Ubicación:</strong> {$orden?->cotizacion?->ubicacion}<br>";
+                   
+                    }
+					if ($orden?->cotizacion?->note ?? ''){
+						 $html .= "<strong>Observaciones:</strong> {$orden?->cotizacion?->note}<br>";
+					}
+					if ($orden?->itemInvoice?->product?->description ?? ''){
+						 $html .= "<strong>Descripcion item:</strong> {$orden?->itemInvoice?->product?->description}<br>";
+					}	
+				
+                return $html;
+                })
+				->filterColumn('fecha_entrega_posible', function ($query, $keyword) {
+                    $date_range = ($keyword != '') ? explode(" - ", $keyword) : array();
+                    if (count($date_range) == 2) {
+						 $query->whereHas('cotizacion', function ($str) use ($keyword,$date_range) {
+							 $str->whereDate('fecha_entrega_posible', '>=', $date_range[0])
+                            ->whereDate('fecha_entrega_posible', '<=', $date_range[1]);
+						});
+                    }
+                })
 /*			->filterColumn('deposito', function ($query, $keyword) {
 				 if ($keyword != "") {
 				//$query->whereHas('itemInvoice.product.vehiculo.lugar_entrega', function ($q) use ($keyword) {
@@ -521,7 +552,7 @@ $ordenes = OrdenDespacho::select('ordenes_despacho.*')
 					}
 				})				
 				
-		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente', 'acciones_cotizacion'])
+		 ->rawColumns(['cotizacion', 'interno','checkbox', 'guia','pieza', 'actions','cliente', 'acciones_cotizacion','prioridad','datos'])
          ->make(true);
 		
     }
