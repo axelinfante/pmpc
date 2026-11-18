@@ -193,7 +193,7 @@ class TransferenciaProductoController extends Controller
            
 		   
 					$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
-					$fechaLimite = Carbon::now()->subDays(20);
+					$fechaLimite = Carbon::now()->subDays(180);
 
 					$productsQuery = Product::query()
 						->leftJoin('cars', 'cars.id', '=', 'products.nro_interno')
@@ -611,7 +611,7 @@ class TransferenciaProductoController extends Controller
 			
 				$company_id = empty(session('cia')) ? company_id_arr() : company_id_arr();
 				
-				$fechaLimite = Carbon::now()->subDays(20);
+				$fechaLimite = Carbon::now()->subDays(180);
 				$products = Product::query()
 					->select([
 						'products.id',
