@@ -4764,9 +4764,22 @@ return Datatables::eloquent($comisiones)
 						// se calcula comisiones
 						
 						$comision = Comision::where('id_venta', $invoice->id)->where('id_vendedor', $invoice->user_id)->first();
-						$total_comision=((($grand_total-$grand_total_dev) * $comision->porcentaje)/100);
-						$comision->monto=$total_comision;
-						$comision->save();
+						//$porcentaje = $comision?->porcentaje ?? 0;
+						//$total_comision = (($grand_total - $grand_total_dev) * $porcentaje) / 100;
+						//$total_comision=((($grand_total-$grand_total_dev) * $comision->porcentaje)/100);
+						//$comision->monto=$total_comision;
+						//$comision->save();
+						
+												
+					if ($comision) {
+							$total_comision = (($grand_total - $grand_total_dev) * $comision->porcentaje) / 100;
+							$comision->monto = $total_comision;
+							$comision->save();
+						} else {
+							$total_comision = 0; 
+						}
+						
+						
 						
 						if ($anular_cotizacion=='si') {
 								$invoice->status = 'Canceled';	
