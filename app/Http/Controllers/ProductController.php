@@ -2082,6 +2082,9 @@ if ($request->ajax()) {
 		}
 //		$nombreEstado = ($car && $car->estado->estado) ? $car->estado->estado : '';
 		$nombreEstado = $car?->estado?->estado ?? 'Sin Estado';
+		if (isset($car->properties['estado_del_motor']) && $car->properties['estado_del_motor'] !== '') {
+			$nombreEstado .= ' / ' . $car->properties['estado_del_motor'];
+		}
 
 			
 				

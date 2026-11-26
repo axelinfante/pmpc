@@ -578,10 +578,32 @@
             </div></div>-->
 
          <div class="col-md-4">
-            <label class="control-label">Piezas en mal estado</label>
+            <!--<label class="control-label">Piezas en mal estado</label>
             <textarea name="piezas_defectuosa" id="piezas_defectuosa" class="form-control" cols="30" rows="10" >
                  {!! old('piezas_defectuosa', trim($car->piezas_defectuosas)) !!}
-            </textarea>
+            </textarea>-->
+			
+			
+		 <label class="control-label">Piezas en mal estado</label>
+            @php
+                $piezasGuardadas = isset($car->properties['piezas_defectuosas']) && $car->properties['piezas_defectuosas'] !== ''
+				? explode(', ', $car->properties['piezas_defectuosas'])
+				: [];
+            @endphp
+
+            <div>
+                <select @if (!$receptor) {{ $option }} @endif class="select2 form-control"
+                    multiple name="piezasDef[]">
+                    @forelse ($items as $item_def)
+                         <option value="{{ $item_def->id }}" {{ in_array($item_def->id, $piezasGuardadas) ? 'selected' : '' }}>
+							{{ $item_def->item_name }}
+						</option>
+                    @empty
+                    @endforelse
+                </select>
+            </div>
+			
+			
         </div>
   <div class="col-md-4">
             <div class="form-group">
@@ -589,6 +611,22 @@
                         type="checkbox" name="motor_en_marcha" value="1"></label>
 
             </div>
+			
+				@php
+					$estadoActual = old('estado_del_motor',(isset($car->properties['estado_del_motor']) && $car->properties['estado_del_motor'] !== '') ? $car->properties['estado_del_motor']  : '');
+				@endphp
+			<div class="form-group">
+				<label for="estado_del_motor" class="control-label">Estado del motor</label>
+				<select name="estado_del_motor" id="estado_del_motor" class="form-control">
+					<option value="Motor apto" {{ $estadoActual == 'Motor apto' ? 'selected' : '' }}>
+						Motor apto
+					</option>
+					<option value="Motor a baja definitiva" {{ $estadoActual == 'Motor a baja definitiva' ? 'selected' : '' }}>
+						Motor a baja definitiva
+					</option>
+				</select>
+			</div>	
+
         </div>
 
         <div class="col-md-4">

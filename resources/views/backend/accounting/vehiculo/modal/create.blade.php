@@ -466,45 +466,13 @@
             </div>
         </div>
 
-        <div class="col-md-8">
+        <!--<div class="col-md-8">
             <div class="form-group">
                 <label class="control-label">{{ _lang('') }} </label>
             </div>
-        </div> 
-
-        <div class="col-md-4">
-            <div class="form-group">
-                <label class="control-label">{{ _lang('Piezas ausentes') }} </label>
-                <select class="select2 form-control" multiple name="piezasAu[]">
-                    @forelse ($items as $item)
-                        <option value="{{ $item->id }}">{{ $item->item_name }}</option>
-                    @empty
-                    @endforelse
-                </select>
-            </div>
-        </div>    
-
-        <!--<div class="col-md-4">
-            <div class="form-group">
-                <label for="">Otra pieza</label>
-                <input type="hidden" class="form-control" name="otraPieza" value="" />
-            </div>
-        </div>-->
-        <div class="col-md-4">
-            <label for="">Piezas en mal estado</label>
-            <textarea name="piezas_defectuosa" id="piezas_defectuosa" class="form-control" cols="30" rows="10">
-                 {!! old('piezas_defectuosa') !!}
-            </textarea>
-        </div>
-
-        <div class="col-md-4">
-            <div class="form-group">
-                <label class="control-label">Motor en marcha <input type="checkbox" name="motor_en_marcha"
-                        value="1"></label>
-
-            </div>
-        </div>
-        <div class="col-md-4">
+        </div> -->
+		
+		 <div class="col-md-4">
             <div class="form-group">
                 <label class="control-label">{{ _lang('Kilometraje') }} </label>
                 <input type="number" class="form-control" name="kilometraje" value="{{ old('kilometraje') }}">
@@ -516,6 +484,81 @@
                 <input type="text" class="form-control" name="crp_nro" value="{{ old('crp_nro') }}">
             </div>
         </div>
+
+        <div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">{{ _lang('Piezas ausentes') }} </label>
+                <select class="select2 form-control" multiple name="piezasAu[]">
+                    @forelse ($items as $item)
+                        <option value="{{ $item->id }}">{{ $item->item_name }}</option>
+                    @empty
+                    @endforelse
+                </select>
+            </div>
+         </div>    
+
+        <!--<div class="col-md-4">
+            <div class="form-group">
+                <label for="">Otra pieza</label>
+                <input type="hidden" class="form-control" name="otraPieza" value="" />
+            </div>
+        </div>-->
+		
+		
+		
+        <!--<div class="col-md-4">
+            <label for="">Piezas en mal estado</label>
+            <textarea name="piezas_defectuosa" id="piezas_defectuosa" class="form-control" cols="30" rows="10">
+                 {!! old('piezas_defectuosa') !!}
+            </textarea>
+        </div>-->
+		
+		<div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">{{ _lang('Piezas ausentes') }} </label>
+                <select class="select2 form-control" multiple name="piezasDef[]">
+                    @forelse ($items as $item)
+                        <option value="{{ $item->id }}">{{ $item->item_name }}</option>
+                    @empty
+                    @endforelse
+                </select>
+            </div>
+         </div>   
+
+        <div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">Motor en marcha <input type="checkbox" name="motor_en_marcha"
+                        value="1"></label>
+
+			</div>
+				@php
+					$estadoActual = old('estado_del_motor', data_get($project ?? null, 'properties.estado_del_motor'));
+				@endphp
+			<div class="form-group">
+				<label for="estado_del_motor" class="control-label">Estado del motor</label>
+				<select name="estado_del_motor" id="estado_del_motor" class="form-control">
+					<option value="Motor apto" {{ $estadoActual == 'Motor apto' ? 'selected' : '' }}>
+						Motor apto
+					</option>
+					<option value="Motor a baja definitiva" {{ $estadoActual == 'Motor a baja definitiva' ? 'selected' : '' }}>
+						Motor a baja definitiva
+					</option>
+				</select>
+			</div>				
+				
+				
+				
+        </div>
+		
+		<div class="col-md-4">
+            <div class="form-group">
+		 <select class="form-control" data-value="id" data-display="item_name" 
+                data-table="items" data-where="100" data-option = '' name="product" id="product">
+            <option value="">{{ _lang('Select Product') }}</option>
+        </select>
+		</div>
+		</div>
+       
        <!-- <div class="col-md-12">
             <div class="form-group">
                 <label class="control-label">{{ _lang('Video') }}</label>
@@ -606,6 +649,7 @@
         });
     });
 	
+	let product1 = $('#product1');
 	
 	$('#myForm').on('submit', function(e) {			  
     e.preventDefault();

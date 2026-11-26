@@ -123,19 +123,14 @@ class VehiculoController extends Controller
         if (strtolower(auth()->user()->role->name) == 'gerente de operarios' || strtolower(auth()->user()->role->name) == 'operario') {
             return view('backend.accounting.vehiculo.list_gerente_operario', $datos);
         }
-        // if (strtolower(auth()->user()->role->name) == 'tramitador') {
-        //     return view('backend.accounting.vehiculo.list_tramitador', $datos);
-        // }
 
-        //dd($datos['responsable_entregas'][1]);
         return view('backend.accounting.vehiculo.list', $datos);
     }
-
+	
+	
     public function historial(Request $request)
     {
         $id = $request->id;
-
-
 
         if (request()->ajax()) {
 
@@ -1086,8 +1081,6 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
     public function store(Request $request)
     {
 
-
-
         $validator = Validator::make($request->all(), [
 			'dominio' => 'nullable|unique:cars',
 			'siniestro' => 'nullable|unique:cars',
@@ -1209,7 +1202,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             $project->motor_en_marcha = $request->input('motor_en_marcha');
             $project->color = $request->input('color');
             $project->no_drnpa = $request->input('no_drnpa') ? $request->input('no_drnpa') : 0;
-            $project->piezas_defectuosas = $request->input('piezas_defectuosa');
+           // $project->piezas_defectuosas = $request->input('piezas_defectuosa');
 
             $project->tipo = $request->input('tipo') ? $request->input('tipo') : '';
             $project->marca_motor = $request->input('marca_motor') ? $request->input('marca_motor') : '';
@@ -1233,8 +1226,34 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $nombre = $this->uploadVideo($request);
                 $project->video = $nombre;
             }
+			
+			$piezasString = $request->has('piezasDef') 
+				? implode(', ', $request->piezasDef) 
+				: '';
+			$piezas_defectuosa_name="";
+			$regitro_attributes = [
+                   'estado_del_motor' =>  $request->estado_del_motor ?? '',
+				   'piezas_defectuosas' => $piezasString
+			];
+			$project->properties = array_merge((array) $project->properties, $regitro_attributes);
+		
+			$piezasDefIds = array_unique(array_filter((array) $request->input('piezasDef', [])));
 
-
+				if (!empty($piezasDefIds)) {
+					$piezas_defectuosa_name = Item::whereIn('id', $piezasDefIds)
+					->whereNotNull('item_name')
+					->where('item_name', '!=', '')
+					->distinct()
+					->pluck('item_name')
+					->map(fn ($name) => trim($name))
+					->filter()
+					->unique()
+					->implode(',');
+				}
+			
+				
+			$project->properties = $regitro_attributes;
+			$project->piezas_defectuosas = trim($piezas_defectuosa_name);
             $project->save();
 
             $this->crearCheckPoint($project);
@@ -1272,20 +1291,36 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 			
 			
 
-            $piezasAusentes = $request->input('piezasAu', false);
+            // $piezasAusentes = $request->input('piezasAu', false);
 
-            if (!empty($piezasAusentes[0])) {
+            // if (!empty($piezasAusentes[0])) {
 
-                foreach ($piezasAusentes as $pieza) {
-                    $piezaAu = new Pieza_ausente();
-                    $piezaAu->id_car = $project->id;
+                // foreach ($piezasAusentes as $pieza) {
+                    // $piezaAu = new Pieza_ausente();
+                    // $piezaAu->id_car = $project->id;
 
-                    $item = Item::find($pieza);
+                    // $item = Item::find($pieza);
 
-                    $piezaAu->name = $item->item_name;
-                    $piezaAu->save();
-                }
-            }
+                    // $piezaAu->name = $item->item_name;
+                    // $piezaAu->save();
+                // }
+            // }
+			
+			$piezasAusentes = $request->input('piezasAu', []);
+
+				if (!empty($piezasAusentes) && is_array($piezasAusentes)) {
+					foreach ($piezasAusentes as $piezaId) {
+						$item = Item::find($piezaId);
+
+						if ($item) {
+							$piezaAu = new Pieza_ausente();
+							$piezaAu->id_car   = $project->id;
+							$piezaAu->id_items = $item->id;        
+							$piezaAu->name     = $item->item_name; 
+							$piezaAu->save();
+						}
+					}
+				}
 
             if ($request->input('otraPieza', false)) {
                 $piezaAu = new Pieza_ausente();
@@ -1675,17 +1710,40 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
         }
 
         $project = Cars::where('id', $id)->first();
+		
+		$piezasString = $request->has('piezasDef') 
+				? implode(', ', $request->piezasDef) 
+				: '';
+		$piezas_defectuosa_name="";
+		$regitro_attributes = [
+                   'estado_del_motor' =>  $request->estado_del_motor ?? '',
+				   'fecha_pago_cia' => $request->filled('fecha_pago_cia') ? Carbon::parse($request->input('fecha_pago_cia'))->format('Y-m-d') : null,
+				   'piezas_defectuosas' => $piezasString
+        ];
+		$project->properties = array_merge((array) $project->properties, $regitro_attributes);
+		
+		$piezasDefIds = array_unique(array_filter((array) $request->input('piezasDef', [])));
+
+				if (!empty($piezasDefIds)) {
+					$piezas_defectuosa_name = Item::whereIn('id', $piezasDefIds)
+					->whereNotNull('item_name')
+					->where('item_name', '!=', '')
+					->distinct()
+					->pluck('item_name')
+					->map(fn ($name) => trim($name))
+					->filter()
+					->unique()
+					->implode(',');
+				}
 
 
-
-
-        if ($request->filled('fecha_pago_cia')) {
+        /*if ($request->filled('fecha_pago_cia')) {
 
             $regitro_attributes = [
                 'fecha_pago_cia' =>  Carbon::parse($request->input('fecha_pago_cia'))
             ];
             $project->properties = $regitro_attributes;
-        }
+        }*/
 
         $estadoInicial = $project->idEstado;
 
@@ -1755,9 +1813,13 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 				}
 			}
 			$project->video = !empty($videosActuales) ? implode(';', array_unique($videosActuales)) : null;
+			/***********/
 			
-			$project->piezas_defectuosas = trim($request->input('piezas_defectuosa'));
+			
 
+			//$project->piezas_defectuosas = trim($request->input('piezas_defectuosa'));
+			$project->piezas_defectuosas = trim($piezas_defectuosa_name);
+			/**********************/
             $project->save();
 
 
@@ -1774,23 +1836,54 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
 			 if (!empty($request->file('imagen'))) {
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
+			
 
-            $piezasAusentes = $request->input('piezasAu', false);
-            Pieza_ausente::where('id_car', $id)->delete();
-            if (!empty($piezasAusentes[0])) {
+            // $piezasAusentes = $request->input('piezasAu', false);
+            // Pieza_ausente::where('id_car', $id)->delete();
+            // if (!empty($piezasAusentes[0])) {
 
-                foreach ($piezasAusentes as $pieza) {
-                    if ($pieza) {
-                        $piezaAu = new Pieza_ausente();
-                        $piezaAu->id_car = $project->id;
+                // foreach ($piezasAusentes as $pieza) {
+                    // if ($pieza) {
+                        // $piezaAu = new Pieza_ausente();
+                        // $piezaAu->id_car = $project->id;
 
-                        $item = Item::find($pieza);
+                        // $item = Item::find($pieza);
 
-                        $piezaAu->name = $item->item_name;
-                        $piezaAu->save();
-                    }
-                }
-            }
+                        // $piezaAu->name = $item->item_name;
+                        // $piezaAu->save();
+                    // }
+                // }
+            // }
+			
+				// 1. Filtra IDs válidos y evita duplicados
+				$piezasIds = array_unique(array_filter((array) $request->input('piezasAu', [])));
+
+				if (!empty($piezasIds)) {
+					// 2. Obtiene los ítems del catálogo en una sola consulta
+					$items = Item::whereIn('id', $piezasIds)->get();
+
+					// 3. Elimina de piezas_ausentes únicamente las piezas que el usuario desmarcó
+					Pieza_ausente::where('id_car', $project->id)
+						->whereNotIn('name', $items->pluck('item_name'))
+						->delete();
+
+					// 4. Actualiza las piezas que ya existían o crea las nuevas sin duplicar
+					   foreach ($items as $item) {
+							Pieza_ausente::updateOrCreate(
+								[
+									'id_car' => $project->id,
+									'name'   => $item->item_name, // Búsqueda principal por nombre
+								],
+								[
+									'id_items' => $item->id,      // Rellena o actualiza id_items (incluso si antes era null)
+								]
+							);
+						}
+				} else {
+					// Si el usuario dejó el campo vacío, elimina todas las piezas asociadas
+					Pieza_ausente::where('id_car', $project->id)->delete();
+				}
+
 
             if ($request->input('otraPieza', false)) {
                 $piezaAu = new Pieza_ausente();
@@ -1854,7 +1947,8 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
             $project->motor_en_marcha = $request->input('motor_en_marcha');
             $project->color = $request->input('color');
             $project->no_drnpa = $request->input('no_drnpa') ? $request->input('no_drnpa') : 0;
-            $project->piezas_defectuosas = trim($request->input('piezas_defectuosa'));
+            //$project->piezas_defectuosas = trim($request->input('piezas_defectuosa'));
+            $project->piezas_defectuosas = trim($piezas_defectuosa_name);
             //   $project->titular = $request->input('datos-titular');
             $project->fecha_envio_drnpa = $request->input('fecha_envio_drnpa');
             $project->fecha_finalizacion = $request->input('fecha_finalizacion');
@@ -1974,7 +2068,7 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                 $this->uploadImg($request, ['dir' => 'vehiculos', 'idCar' => $project->id]);
             }
 
-            $piezasAusentes = $request->input('piezasAu', false);
+            /*$piezasAusentes = $request->input('piezasAu', false);
             Pieza_ausente::where('id_car', $id)->delete();
             if (!empty($piezasAusentes[0])) {
 
@@ -1989,7 +2083,37 @@ class="btn btn-danger btn-xs btn-remove" type="submit"><i class="ti-eraser"></i>
                         $piezaAu->save();
                     }
                 }
-            }
+            }*/
+			
+			// 1. Filtra IDs válidos y evita duplicados
+				$piezasIds = array_unique(array_filter((array) $request->input('piezasAu', [])));
+
+				if (!empty($piezasIds)) {
+					// 2. Obtiene los ítems del catálogo en una sola consulta
+					$items = Item::whereIn('id', $piezasIds)->get();
+
+					// 3. Elimina de piezas_ausentes únicamente las piezas que el usuario desmarcó
+					Pieza_ausente::where('id_car', $project->id)
+						->whereNotIn('name', $items->pluck('item_name'))
+						->delete();
+
+					// 4. Actualiza las piezas que ya existían o crea las nuevas sin duplicar
+				   foreach ($items as $item) {
+							Pieza_ausente::updateOrCreate(
+								[
+									'id_car' => $project->id,
+									'name'   => $item->item_name, // Búsqueda principal por nombre
+								],
+								[
+									'id_items' => $item->id,      // Rellena o actualiza id_items (incluso si antes era null)
+								]
+							);
+						}
+				} else {
+					// Si el usuario dejó el campo vacío, elimina todas las piezas asociadas
+					Pieza_ausente::where('id_car', $project->id)->delete();
+				}
+
 
             if ($request->input('otraPieza', false)) {
                 $piezaAu = new Pieza_ausente();
@@ -4290,4 +4414,27 @@ data-title="' . _lang('Historial') . '" data-fullscreen="true" class="btn btn-wa
         $data['pieza_listas'] = Product::select(DB::raw('GROUP_CONCAT(DISTINCT item_id) AS seleccionados'))->where('nro_interno', $nro_interno)->whereNull('car_id')->get();
         return response()->json($data, 200);
     }
+	
+	/* no utilizado inicio */
+	
+	 public function index_old()
+    {
+        $datos = $this->datos();
+        $comp = Company::all();
+        $datos['cias'] = $comp;
+        if (strtolower(auth()->user()->role->name) == 'receptor') {
+            return view('backend.accounting.vehiculo.list_receptor', $datos);
+        }
+        if (strtolower(auth()->user()->role->name) == 'gerente de operarios' || strtolower(auth()->user()->role->name) == 'operario') {
+            return view('backend.accounting.vehiculo.list_gerente_operario', $datos);
+        }
+        // if (strtolower(auth()->user()->role->name) == 'tramitador') {
+        //     return view('backend.accounting.vehiculo.list_tramitador', $datos);
+        // }
+
+        //dd($datos['responsable_entregas'][1]);
+        return view('backend.accounting.vehiculo.list', $datos);
+    }
+	
+	/* no utilizado final */
 }

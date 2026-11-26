@@ -9,4 +9,11 @@ class Pieza_ausente extends Model
 {
     use HasFactory;
     protected $table = 'piezas_ausentes';
+	
+	protected $fillable = [
+        'id_car',
+        'id_items',
+        'name',
+    ];
+	
 }
