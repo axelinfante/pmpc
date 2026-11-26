@@ -316,8 +316,10 @@ class Select2Controller extends Controller
 	private function SearchProducts(Request $request)
 {
 $search = $request->input('q');
-$company = company_id(); 
 $companias_global = company_id_arr(); 
+//$company = company_id(); 
+$company = count($companias_global) === 1 ? $companias_global[0] : company_id();
+
 
 // Se actualiza el string SQL dinámico ya que ahora nro_interno puede ser 0
 $rawText = "
