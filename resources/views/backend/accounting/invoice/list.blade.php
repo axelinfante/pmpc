@@ -47,7 +47,7 @@
                             </select>
                         </div>
 
-                        <div class="col-lg-3 mb-2">
+                       <!--<div class="col-lg-3 mb-2">
                             <label>{{ _lang('Status') }}</label>
                             <select class="form-control select2 select-filter"
                                 data-placeholder="{{ _lang('Invoice Status') }}" name="status" multiple="true">
@@ -56,7 +56,20 @@
                                 <option value="Partially_Paid">{{ _lang('Partially Paid') }}</option>
                                 <option value="Canceled">{{ _lang('Canceled') }}</option>
                             </select>
-                        </div>
+                        </div>-->
+						
+							<div class="col-lg-3 mb-2">
+								<label>{{ _lang('Status') }}</label>
+								<select id="filtro_status" class="form-control select2"
+									data-placeholder="{{ _lang('Invoice Status') }}" 
+									data-close-on-select="false"
+									name="status[]" multiple="multiple">
+									<option value="Unpaid">{{ _lang('Unpaid') }}</option>
+									<option value="Paid">{{ _lang('Paid') }}</option>
+									<option value="Partially_Paid">{{ _lang('Partially Paid') }}</option>
+									<option value="Canceled">{{ _lang('Canceled') }}</option>
+								</select>
+							</div>
 
                         <div class="col-lg-3">
                             <label>{{ _lang('Date Range') }}</label>
@@ -96,6 +109,8 @@
 									<th>{{ _lang('Comision') }}</th> --}}
                                     <th class="text-right">{{ _lang('Grand Total') }}</th>
 									<th>{{ _lang('Monto Cobrado') }}</th>
+									<th>{{ _lang('Saldo') }}</th>
+									<th>{{ _lang('Entregado') }}</th>
                                     <th class="text-center">{{ _lang('Status') }}</th>
                                     <th class="text-center">{{ _lang('Observacion') }}</th>
                                     <th class="text-center act">{{ _lang('Action') }}</th>
@@ -115,7 +130,6 @@
                                     <th></th>
                                     <th></th>
                                     <th></th>
-                                    <!--<th></th>-->
                                     <th></th>
                                     <th></th>
                                     <th></th>
@@ -168,358 +182,297 @@
 
 
 @section('js-script')
-    <script>
-        (function($) {
 
-            $('#invoice-table thead tr').clone(true).appendTo('#invoice-table thead');
-            $('#invoice-table thead tr:eq(1) th').each(function(i) {
-                var title = $(this).text(); //es el nombre de la columna
-                if (i != 0 && i != 14 && i != 3 && i != 4 && i != 5 && i != 7) {
-                    $(this).html(
-                        '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' +
-                        title + '" />');
+<script>
+(function($) {
+    // 1. Clonar cabecera SIN clonar eventos previos (clone(false))
+    $('#invoice-table thead tr').clone(false).appendTo('#invoice-table thead');
+    
+    $('#invoice-table thead tr:eq(1) th').each(function(i) {
+        var title = $.trim($(this).text());
 
-                    $('.filtros', this).on('change', function() {
-                        if (invoice_table.column(i).search() !== this.value) {
+        if (i != 0 && i != 16 && i != 3 && i != 4 && i != 5 && i != 7 && i != 13) {
+            $(this).html(
+                '<input style="width:80px;" type="text" value="" class="form-control filtros" placeholder="Search...' + title + '" />'
+            );
 
-                            invoice_table
-                                .column(i)
-                                .search(this.value)
-                                .draw();
-                        }
-
-                    });
-                } else if(i == 3) {
-					
-					$(this).html( '<input style="width:100%;" type="date" id="fecha_invoice_date" name="fecha_invoice_date" value="" class="form-control select-filter" />' );
-						$('#fecha_invoice_date').on('change', function () {
-							let val = $(this).val();
-							invoice_table.column(i).search(val ? val : '', true, false).draw();
-						});
-				}else if(i == 4) {
-					
-					$(this).html( '<input style="width:100%;" type="date" id="fecha_entrega_date" name="fecha_entrega_date" value="" class="form-control select-filter" />' );
-						$('#fecha_entrega_date').on('change', function () {
-							let val = $(this).val();
-							invoice_table.column(i).search(val ? val : '', true, false).draw();
-						});
-				}else if(i == 5) {
-					$(this).html( '<input style="width:100%;" type="date" id="fecha_pago_date" name="fecha_pago_date" value="" class="form-control select-filter" />' );
-						$('#fecha_pago_date').on('change', function () {
-							let val = $(this).val();
-							invoice_table.column(i).search(val ? val : '', true, false).draw();
-						});
-				}else {
-                    $(this).html('');
-                }
-			
-            });
-
-            var invoice_table = $('#invoice-table').DataTable({
-                processing: true,
-                serverSide: true,
-                //scrollX: true,
-                orderCellsTop: true,
-                fixedHeader: true,
-                ajax: ({
-                    url: '{{ url('invoices/get_table_data') }}',
-                    method: "POST",
-                    data: function(d) {
-
-                        d._token = $('meta[name="csrf-token"]').attr('content');
-
-                        if ($('input[name=invoice_number]').val() != '') {
-                            d.invoice_number = $('input[name=invoice_number]').val();
-                        }
-
-                        if ($('select[name=vendedor]').val() != '') {
-                            d.vendedor = $('select[name=vendedor]').val();
-                        }
-                        if ($('select[name=revendedor]').val() != '') {
-                            d.revendedor = $('select[name=revendedor]').val();
-                        }
-
-                        if ($('select[name=company_id]').val() != '') {
-                            d.company_id = $('select[name=company_id]').val();
-                        }
-
-                        if ($('select[name=status]').val() != null) {
-                            d.status = JSON.stringify($('select[name=status]').val());
-                        }
-
-                        if ($('input[name=date_range]').val() != '') {
-                            d.date_range = $('input[name=date_range]').val();
-                        }
-                    },
-                    error: function(request, status, error) {
-                        console.log(request.responseText);
-                    }
-                }),
-            
-                    "columns": [{
-                            data: "checkbox",
-                            name: "checkbox"
-                        },
-                        {
-                            data: "invoice_number",
-                            name: "invoice_number"
-                        },
-                        {
-                            data: "contact_name",
-                            name: "contact_name"
-                        },
-                        {
-                            data: "invoice_date",
-                            name: "invoice_date"
-                        },
-                        {
-                            data: "fecha_entrega",
-                            name: "fecha_entrega"
-                        },
-                        {
-                            data: "fecha_pago",
-                            name: "fecha_pago"
-                        },
-                         {
-                                data: "nro_interno",
-                                name: "nro_interno"
-                            },
-                        {
-                            data: "marca_modelo",
-                            name: "marca_modelo"
-                        },
-						/*{
-                            data: "idproducto",
-                            name: "idproducto"
-                        },*/
-						{
-                        data: 'pieza',
-                        name: 'pieza',
-						}, // Pieza
-                        {
-                            data: "vendedor",
-                            name: "vendedor"
-                        },
-					/*	{
-                                data: "porcentajeComision",
-                                name: "porcentajeComision"
-                         },
-						 {
-                            data: "comision",
-                            name: "comision"
-                        },*/
-                        {
-                            data: "grand_total",
-                            name: "grand_total"
-                        },
-						{
-                            data: "paid",
-                            name: "paid"
-                        },
-                        {
-                            data: "status",
-                            name: "status",
-                            "visible": false
-                        },
-                        {
-                            data: "note",
-                            name: "note"
-                        },
-                        {
-                            data: "action",
-                            name: "action"
-                        },
-                    ],
-
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
-                },
-                dom: 'Bfrtip',
-                buttons: [
-				{
-                    text: 'Reset Filter',
-                    action: function(e, dt, node, config) {
-                        $('.filtros').val('');
-						//$('.select-filter').val(null).trigger('change');
-						invoice_table.search('').columns().search('').draw();
-                      }
-                    },
-				{
-                        extend: 'excel',
-                        text : "<i class='fa fa-file-export'></i> Exportar a Excel",
-						title: "invoices",
-						filename: "invoices",
-                        exportOptions: {
-                            columns: [ ':not(.act):visible' ],	
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                                page: 'all'
-                            }
-						}, action: newexportaction, 
-                    },
-                    {
-                        extend: 'pdf',
-                        text: 'Exportar a PDF',
-						title: 'Lista de Invoices', // Título del archivo PDF
-						orientation: 'landscape', // Orientación horizontal
-						pageSize: 'A4', // Tamaño del papel
-                        exportOptions: {
-                            columns: [ ':not(.act):visible' ],	
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                                page: 'all'
-                            }
-						}, action: newexportaction, 
-                    },
-
-                ],
-
-                //responsive: true,
-                bStateSave: true,
-                bAutoWidth: false,
-                ordering: false,
-                searching: true,
-                "language": {
-                    "decimal": "",
-                    "emptyTable": "{{ _lang('No Data Found') }}",
-                    "info": "{{ _lang('Showing') }} _START_ {{ _lang('to') }} _END_ {{ _lang('of') }} _TOTAL_ {{ _lang('Entries') }}",
-                    "infoEmpty": "{{ _lang('Showing 0 To 0 Of 0 Entries') }}",
-                    "infoFiltered": "(filtered from _MAX_ total entries)",
-                    "infoPostFix": "",
-                    "thousands": ",",
-                    "lengthMenu": "{{ _lang('Show') }} _MENU_ {{ _lang('Entries') }}",
-                    "loadingRecords": "{{ _lang('Loading...') }}",
-                    "processing": "{{ _lang('Processing...') }}",
-                    "search": "{{ _lang('Search') }}",
-                    "zeroRecords": "{{ _lang('No matching records found') }}",
-                    "paginate": {
-                        "first": "{{ _lang('First') }}",
-                        "last": "{{ _lang('Last') }}",
-                        "next": "{{ _lang('Next') }}",
-                        "previous": "{{ _lang('Previous') }}"
-                    }
+            $(this).find('input').off('change').on('change', function() {
+                if (invoice_table.column(i).search() !== this.value) {
+                    invoice_table.column(i).search(this.value).draw();
                 }
             });
 
+        } else if (i == 3 || i == 4 || i == 5) {
+            // Inputs de fecha (3: invoice_date, 4: fecha_entrega, 5: fecha_pago)
+            $(this).html('<input style="width:100%;" type="date" value="" class="form-control filtro-fecha" />');
 
-$('#invoice-table').on('processing.dt', function (e, settings, processing) {
-    if (processing) {
-       	inicioLoading();
-    } else {
+            $(this).find('input').off('change').on('change', function() {
+                let val = $(this).val();
+                if (invoice_table.column(i).search() !== val) {
+                    invoice_table.column(i).search(val ? val : '', true, false).draw();
+                }
+            });
+
+        } else if (i == 13) {
+            // Filtro Entregado
+            $(this).html(
+                '<select style="width:100%;" class="form-control filtro-entregado">' +
+                    '<option value="">{{ _lang("All") }}</option>' +
+                    '<option value="entregado">{{ _lang("Entregado") }}</option>' +
+                    '<option value="pendiente">{{ _lang("Pendiente") }}</option>' +
+                '</select>'
+            );
+
+            $(this).find('select')
+                .off('click change')
+                .on('click', function(e) {
+                    e.stopPropagation();
+                })
+                .on('change', function(e) {
+                    e.stopPropagation();
+                    let val = $(this).val();
+                    if (invoice_table.column(i).search() !== val) {
+                        invoice_table.column(i).search(val ? val : '', false, false).draw();
+                    }
+                });
+        } else {
+            $(this).html('');
+        }
+    });
+
+    var xhrInvoice     = null;
+	var idsExportar    = [];
+	var exportandoTodo = false;
+
+   var invoice_table = $('#invoice-table').DataTable({
+    processing: true,
+    serverSide: true,
+    orderCellsTop: true,
+    fixedHeader: false,
+    lengthChange: true,
+    lengthMenu: [[10, 25, 50, 200], [10, 25, 50, 200]],
+    dom: '<"row mb-2"<"col-sm-12 col-md-4"l><"col-sm-12 col-md-4 text-center"B><"col-sm-12 col-md-4"f>>rtip',
+    language: {
+        "processing": "Procesando...",
+        "lengthMenu": "Mostrar _MENU_ registros",
+        "zeroRecords": "No se encontraron resultados",
+        "emptyTable": "Ningún dato disponible en esta tabla",
+        "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+        "infoEmpty": "Mostrando registros del 0 al 0 de un total de 0 registros",
+        "infoFiltered": "(filtrado de un total de _MAX_ registros)",
+        "search": "Buscar:",
+        "loadingRecords": "Cargando...",
+        "paginate": {
+            "first": "Primero",
+            "last": "Último",
+            "next": "Siguiente",
+            "previous": "Anterior"
+        }
+    },
+    ajax: {
+        url: '{{ url("invoices/get_table_data") }}',
+        method: "POST",
+        beforeSend: function(jqXHR) {
+            if (!exportandoTodo && xhrInvoice && xhrInvoice.readyState !== 4) {
+                xhrInvoice.abort();
+            }
+            xhrInvoice = jqXHR;
+        },
+        data: function(d) {
+            d._token = $('meta[name="csrf-token"]').attr('content');
+
+            if (exportandoTodo) {
+                d.exportar = 1;
+                d.start = 0;
+                d.length = -1;
+                if (idsExportar.length > 0) {
+                    d.ids_seleccionados = idsExportar;
+                }
+            }
+
+            if ($('input[name=invoice_number]').val() != '') {
+                d.invoice_number = $('input[name=invoice_number]').val();
+            }
+            if ($('select[name=vendedor]').val() != '') {
+                d.vendedor = $('select[name=vendedor]').val();
+            }
+            if ($('select[name=revendedor]').val() != '') {
+                d.revendedor = $('select[name=revendedor]').val();
+            }
+            if ($('select[name=company_id]').val() != '') {
+                d.company_id = $('select[name=company_id]').val();
+            }
+
+            let statusSeleccionados = $('#filtro_status').val();
+            if (statusSeleccionados && statusSeleccionados.length > 0) {
+                d.status = JSON.stringify(statusSeleccionados);
+            }
+
+            if ($('input[name=date_range]').val() != '') {
+                d.date_range = $('input[name=date_range]').val();
+            }
+        },
+        error: function(request, status, error) {
+            if (status !== 'abort') {
+                console.log(request.responseText);
+            }
+        }
+    },
+    columns: [
+        { data: "checkbox", name: "checkbox", orderable: false, searchable: false },
+        { data: "invoice_number", name: "invoice_number" },
+        { data: "contact_name", name: "contact_name" },
+        { data: "invoice_date", name: "invoice_date" },
+        { data: "fecha_entrega", name: "fecha_entrega" },
+        { data: "fecha_pago", name: "fecha_pago" },
+        { data: "nro_interno", name: "nro_interno" },
+        { data: "marca_modelo", name: "marca_modelo", orderable: false, searchable: false },
+        { data: "pieza", name: "pieza" },
+        { data: "vendedor", name: "vendedor" },
+        { data: "grand_total", name: "grand_total" },
+        { data: "paid", name: "paid" },
+        { data: "monto_adeudado", name: "monto_adeudado", orderable: false, searchable: false },
+        { data: "entregado", name: "entregado", orderable: false, searchable: true },
+        { data: "status", name: "status", visible: false },
+        { data: "note", name: "note" },
+        { data: "action", name: "action", orderable: false, searchable: false }
+    ],
+    buttons: [
+        {
+            text: 'Reset Filter',
+            className: 'btn btn-secondary btn-sm',
+            action: function(e, dt, node, config) {
+                $('.filtros, .filtro-fecha, .filtro-entregado').val('');
+                $('#filtro_status').val(null).trigger('change');
+                statusAnterior = '[]';
+                idsExportar = [];
+                exportandoTodo = false;
+                invoice_table.search('').columns().search('').draw();
+            }
+        },
+        {
+            extend: 'excelHtml5',
+            name: 'excelNativo',
+            className: 'd-none',
+            title: 'Cotizaciones_' + new Date().toISOString().slice(0, 10),
+            exportOptions: {
+                columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+            }
+        },
+        {
+            text: '<i class="fa fa-file-excel"></i> Exportar Excel',
+            className: 'btn btn-success btn-sm',
+            action: function(e, dt, node, config) {
+                idsExportar = [];
+                $('#invoice-table tbody input[name="paidComi[]"]:checked').each(function() {
+                    idsExportar.push($(this).val());
+                });
+
+                exportandoTodo = true;
+
+                dt.one('draw.dt', function() {
+                    dt.button('excelNativo:name').trigger();
+
+                    setTimeout(function() {
+                        idsExportar = [];
+                        exportandoTodo = false;
+                        dt.ajax.reload(null, false);
+                    }, 150);
+                });
+
+                dt.ajax.reload();
+            }
+        }
+    ]
+});
+
+	
+	$('#invoice-table')
+    .on('preXhr.dt', function () {
+         	inicioLoading();
+    })
+    .on('xhr.dt', function () {
         closeLoading();
+    });
+	
+	$('#invoice-number').off('change').on('change', function(e) {
+    invoice_table.draw();
+});
+
+$('.select-filter').off('change').on('change', function(e) {
+    invoice_table.draw();
+});
+
+$('#date_range').daterangepicker({
+    autoUpdateInput: false,
+    locale: {
+        format: 'DD-MM-YYYY',
+        cancelLabel: 'Clear'
     }
 });
 
- $('.dataTables_filter input')
-    .unbind('keypress keyup input')
-    .bind('keyup input', function (e) {
-		 var code = e.keyCode || e.which;
-		 if ($(this).val().length >= 2 && code === 13) {
-			invoice_table.search(this.value).draw();
-		}
-		
+$('#date_range').off('apply.daterangepicker cancel.daterangepicker')
+    .on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+        invoice_table.draw();
+    })
+    .on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+        invoice_table.draw();
     });
-
-
-            $('#invoice-number').on('change', function(e) {
-				//var code = e.keyCode || e.which;
-				//if ($(this).val().length >= 2 && code === 13) {
-					invoice_table.draw();
-				//}
-                
-            });
-
-            $('.select-filter').on('change', function(e) {
-				//var code = e.keyCode || e.which;
-				//if ($(this).val().length >= 2 && code === 13) {
-					invoice_table.draw();
-				//}	
-            });
-
-            $('#date_range').daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    format: 'DD-MM-YYYY',
-                    cancelLabel: 'Clear'
-                }
-            });
-
-            $('#date_range').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format(
-                    'DD-MM-YYYY'));
-                invoice_table.draw();
-            });
-
-            $('#date_range').on('cancel.daterangepicker', function(ev, picker) {
-                $(this).val('');
-                invoice_table.draw();
-            });
-          //  invoice_table.search('').columns().search('').draw();
-
-        })(jQuery);
-
-        $(document).ready(function() {
-            $('#allComi').click(function(e) {
-                let isCheked = $(this).is(':checked');
-                if (isCheked) {
-                    $('input[type="checkbox"]').prop('checked', 'true');
-                } else {
-                    $('input[type="checkbox"]').removeAttr('checked');
-
-                }
-                // console.log(isCheked);
-            });
-        })
-		
-		function newexportaction(e, dt, button, config) {
-
-this.processing( true );
-var self = this;
-var oldStart = dt.settings()[0]._iDisplayStart;
-dt.one('preXhr', function (e, s, data) {
-  // Just this once, load all data from the server...
-  data.start = 0;
-  //data.length = 2147483647;
-  data.length = -1;
-  dt.one('preDraw', function (e, settings) {
-      // Call the original action function
-      if (button[0].className.indexOf('buttons-copy') >= 0) {
-          $.fn.dataTable.ext.buttons.copyHtml5.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-excel') >= 0) {
-          $.fn.dataTable.ext.buttons.excelHtml5.available(dt, config) ?
-              $.fn.dataTable.ext.buttons.excelHtml5.action.call(self, e, dt, button, config) :
-              $.fn.dataTable.ext.buttons.excelFlash.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-csv') >= 0) {
-          $.fn.dataTable.ext.buttons.csvHtml5.available(dt, config) ?
-              $.fn.dataTable.ext.buttons.csvHtml5.action.call(self, e, dt, button, config) :
-              $.fn.dataTable.ext.buttons.csvFlash.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-pdf') >= 0) {
-          $.fn.dataTable.ext.buttons.pdfHtml5.available(dt, config) ?
-              $.fn.dataTable.ext.buttons.pdfHtml5.action.call(self, e, dt, button, config) :
-              $.fn.dataTable.ext.buttons.pdfFlash.action.call(self, e, dt, button, config);
-      } else if (button[0].className.indexOf('buttons-print') >= 0) {
-          $.fn.dataTable.ext.buttons.print.action(e, dt, button, config);
-      }
-      dt.one('preXhr', function (e, s, data) {
-          // DataTables thinks the first item displayed is index 0, but we're not drawing that.
-          // Set the property to what it was before exporting.
-          settings._iDisplayStart = oldStart;
-          data.start = oldStart;
-      });
-      // Reload the grid with the original page. Otherwise, API functions like table.cell(this) don't work properly.
-      setTimeout(dt.ajax.reload, 0);
-      // Prevent rendering of the full data to the DOM
-      return false;
-  });
+	
+// Marcar / desmarcar solo los checkboxes habilitados de comisión dentro de la tabla
+$('#allComi').off('change').on('change', function() {
+    let isChecked = $(this).is(':checked');
+    $('#invoice-table tbody input[name="paidComi[]"]:not(:disabled)').prop('checked', isChecked);
 });
-// Requery the server with the new one-time export settings
-dt.ajax.reload();
-this.processing( false );
-}
+
+// Sincronizar #allComi si se desmarca una fila individual o si cambia la página de DataTables
+$('#invoice-table').on('change', 'tbody input[name="paidComi[]"]', function() {
+    let totalHabilitados = $('#invoice-table tbody input[name="paidComi[]"]:not(:disabled)').length;
+    let totalMarcados    = $('#invoice-table tbody input[name="paidComi[]"]:not(:disabled):checked').length;
+
+    $('#allComi').prop('checked', totalHabilitados > 0 && totalHabilitados === totalMarcados);
+});
+
+$('#invoice-table').on('draw.dt', function() {
+    $('#allComi').prop('checked', false);
+});	
 
 
+$('#filtro_status').select2({
+    placeholder: "{{ _lang('Invoice Status') }}",
+    closeOnSelect: false,
+    allowClear: true
+});
 
+let statusAnterior = JSON.stringify($('#filtro_status').val() || []);
+
+// 1. Ejecutar búsqueda UNA SOLA VEZ al cerrar el desplegable (si hubo cambios)
+$('#filtro_status').on('select2:close', function () {
+    let statusActual = JSON.stringify($(this).val() || []);
+    if (statusActual !== statusAnterior) {
+        statusAnterior = statusActual;
+        invoice_table.draw();
+    }
+});
+
+// 2. Si el usuario elimina una etiqueta (chip) con la "x" o limpia todo con "clear"
+$('#filtro_status').on('select2:unselect select2:clear', function () {
+    // Si el menú desplegable NO está abierto, filtrar de inmediato; si está abierto, esperará a select2:close
+    if (!$('.select2-container--open').length) {
+        setTimeout(function () {
+            let statusActual = JSON.stringify($('#filtro_status').val() || []);
+            if (statusActual !== statusAnterior) {
+                statusAnterior = statusActual;
+                invoice_table.draw();
+            }
+        }, 50);
+    }
+});
+	
+})(jQuery);
+
+  
     </script>
 @endsection

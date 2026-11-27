@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log; 
 use App\Lugar_entregas;
 use App\Cars;
 use App\Comision;
@@ -114,6 +115,7 @@ class InvoiceController extends Controller
         $rol_revendedor = Role::where('name', 'Revendedor')->first()->id ?? null;
         $data['rol'] = $rol;
         $data['rol_revendedor'] = $rol_revendedor;
+		$this->actualizarEstatusFacturas();
         return view('backend.accounting.invoice.list', $data);
     }
 
@@ -6607,8 +6609,373 @@ public function guardarComision($request, $invoice)
 	
 	//---------------
 	
-	
 	public function get_table_data(Request $request)
+{
+    $currency   = currency();
+    $company_id = (array) company_id_arr();
+    $aFacturar  = $request->get('facturar', false);
+
+    $projects = DB::table('projects')
+        ->select('id', 'name as contact_name', DB::raw('"projects" as type'))
+        ->whereIn('company_id', $company_id);
+
+    $all_contacts = DB::table('contacts')
+        ->select('id', 'contact_name', DB::raw('"contacts" as type'))
+        ->union($projects);
+
+    $invoices = Invoice::with([
+            'retiros_cliente_origen',
+            'vendedor',
+            'comision',
+            'client',
+            'invoice_items.ordenDespacho',
+            'invoice_items.product' => function ($query) {
+                $query->withTrashed()->with([
+                    'item',
+                    'marcaModelo.marca',
+                    'marcaModelo.modelo',
+                ]);
+            },
+        ])
+        ->joinSub($all_contacts, 'all_contacts', function ($join) {
+            $join->on('invoices.related_id', '=', 'all_contacts.id')
+                 ->on('invoices.related_to', '=', 'all_contacts.type');
+        })
+        ->select('invoices.*', 'all_contacts.contact_name', 'all_contacts.id as contact_id')
+        ->addSelect([
+            'ultima_fecha_pago' => Transaction::select('trans_date')
+                ->whereColumn('invoice_id', 'invoices.id')
+                ->orderBy('id', 'desc')
+                ->limit(1)
+        ])
+        ->withSum('salesReturns as total_returns', 'grand_total')
+        ->withSum('payments as total_paid', 'base_amount')
+        ->withSum('retiros_cliente as total_retiro', 'amount')
+        ->withSum('retiros_cliente_origen as total_retiro_origen', 'base_amount')
+        ->whereIn('invoices.company_id', $company_id)
+        ->orderBy('invoices.id', 'desc');
+
+    if (strtolower(auth()->user()->role->name ?? '') === 'vendedor') {
+        $invoices->where('invoices.user_id', auth()->id());
+    }
+
+    if ($aFacturar) {
+        $invoices->where('invoices.facturar', 1)
+                 ->whereNull('invoices.facturado');
+    }
+
+    $invoices->when($request, function ($query) use ($request) {
+        $query->when($request->filled('invoice_number'), function ($q) use ($request) {
+            $invoices = array_map('trim', explode(',', $request->input('invoice_number')));
+            count($invoices) > 1
+                ? $q->whereIn('invoices.invoice_number', $invoices)
+                : $q->where('invoices.invoice_number', 'like', "%{$invoices[0]}%");
+        });
+
+        if ($request->filled('vendedor')) {
+            $query->where('invoices.user_id', $request->get('vendedor'));
+        }
+
+        if ($request->filled('revendedor')) {
+            $query->where('invoices.revendedor', $request->get('revendedor'));
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('invoices.company_id', $request->get('company_id'));
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->get('status');
+            $statusArray = is_array($status) ? $status : json_decode($status, true);
+            if ($statusArray) {
+                $query->whereIn('invoices.status', $statusArray);
+            }
+        }
+
+        if ($request->filled('date_range')) {
+            $date_range = explode(" - ", $request->get('date_range'));
+            if (count($date_range) === 2) {
+                $query->whereRaw("DATE(invoices.invoice_date) BETWEEN STR_TO_DATE(?, '%d-%m-%Y') AND STR_TO_DATE(?, '%d-%m-%Y')", [
+                    trim($date_range[0]),
+                    trim($date_range[1])
+                ]);
+            }
+        }
+    });
+	
+	
+		if ($request->filled('ids_seleccionados')) {
+				$invoices->whereIn('invoices.id', (array) $request->input('ids_seleccionados'));
+		}
+
+    return Datatables::eloquent($invoices)
+        ->addColumn('checkbox', function ($invoice) {
+            $d = isset($invoice->comision->isPaid) ? 'disabled' : '';
+            if (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) {
+                return "<input $d class='form-check' name='paidComi[]' type='checkbox' value='" . $invoice->id . "' >";
+            }
+            return "x";
+        })
+        ->addColumn('invoice_number', function ($invoice) {
+            $in = 'VEN-';
+            if ($invoice->company_id == 1) {
+                $in .= 'PM-';
+            } elseif ($invoice->company_id == 2) {
+                $in .= 'PC-';
+            }
+            return '<a href="' . action('InvoiceController@show', $invoice->id) . '">' . $in . $invoice->invoice_number . '</a>';
+        })
+        ->addColumn('contact_name', function ($invoice) {
+            if ($invoice->related_to == 'contacts') {
+                return '<a href="' . action('ContactController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Customer') . ')</span></a>';
+            }
+            return '<a href="' . action('ProjectController@show', $invoice->related_id) . '">' . $invoice->contact_name . ' <span class="text-muted small">(' . _lang('Project') . ')</span></a>';
+        })
+        ->addColumn('marca_modelo', function ($invoice) use ($request) {
+            $datos = $this->procesarItemsFactura($invoice);
+
+            if ($datos['es_unico_agrupado'] || isset($request->exportar)) {
+                return $datos['marca_modelo_html'];
+            }
+
+            return '<a class="view-details" href="javascript:void(0)" 
+                data-title="Nros Internos Factura : ' . ($invoice->invoice_number ?? '') . '"
+                data-body=\'' . htmlspecialchars($datos['marca_modelo_html'], ENT_QUOTES, 'UTF-8') . '\' 
+                data-toggle="modal" 
+                data-target="#detailsModal">
+                <i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+            </a>';
+        })
+        ->addColumn('pieza', function ($invoice) use ($request) {
+            $datos = $this->procesarItemsFactura($invoice);
+
+            if ($datos['es_unico_pieza'] || isset($request->exportar)) {
+                return $datos['pieza_html'];
+            }
+
+            return '<a class="view-details" href="javascript:void(0)" 
+                data-title="Detalles de Factura : ' . ($invoice->invoice_number ?? '') . '"
+                data-body=\'' . htmlspecialchars($datos['pieza_html'], ENT_QUOTES, 'UTF-8') . '\' 
+                data-toggle="modal" 
+                data-target="#detailsModal">
+                <i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+            </a>';
+        })
+        ->addColumn('nro_interno', function ($invoice) use ($request) {
+            $datos = $this->procesarItemsFactura($invoice);
+
+            if ($datos['es_unico_agrupado'] || isset($request->exportar)) {
+                return $datos['nro_html'];
+            }
+
+            return '<a class="view-details" href="javascript:void(0)" 
+                data-title="Nros Internos Factura : ' . ($invoice->invoice_number ?? '') . '"
+                data-body=\'' . htmlspecialchars($datos['nro_html'], ENT_QUOTES, 'UTF-8') . '\' 
+                data-toggle="modal" 
+                data-target="#detailsModal">
+                <i class="fa fa-list-alt text-primary" aria-hidden="true"></i> Detalle
+            </a>';
+        })
+        ->addColumn('entregado', function ($invoice) use ($request) {
+            $datos = $this->procesarItemsFactura($invoice);
+
+            if (isset($request->exportar)) {
+                if ($datos['entregado']) {
+                    return "Entregado ({$datos['total_entregados']}/{$datos['total_entregados']})";
+                }
+                return "Entregados: {$datos['total_entregados']} | Faltantes: {$datos['total_faltantes']}";
+            }
+
+            return $datos['entrega_html'];
+        })
+        ->addColumn('action', function ($invoice) use ($aFacturar) {
+            $balance_due = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0)) - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+
+            if ($invoice->status == 'Canceled') {
+                return '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
+                     . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>';
+            }
+
+            if (!$aFacturar) {
+                $class = (auth()->user()->role->name == 'Gerencial' || auth()->user()->role->name == null) ? '' : 'd-none';
+
+                $html = '<div class="dropdown text-center">'
+                    . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
+                    . _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+                    . '<div class="dropdown-menu">'
+                    . '<a class="dropdown-item" href="' . action('InvoiceController@edit', $invoice->id) . '"><i class="fas fa-edit"></i> ' . _lang('Edit') . '</a>'
+                    . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_comision', $invoice->id) . '"><i class="fas fa-usd"></i> ' . _lang('Comisión') . '</a>'
+                    . '<a class="dropdown-item ajax-modal ' . $class . '" href="' . action('InvoiceController@create_observaciones', $invoice->id) . '"><i class="fas fa-usd"></i> ' . _lang('Observaciones') . '</a>'
+                    . '<a class="dropdown-item" href="' . action('InvoiceController@show', $invoice->id) . '" data-title="' . _lang('View Invoice') . '" data-fullscreen="true"><i class="fas fa-eye"></i> ' . _lang('View') . '</a>';
+
+                if ($balance_due > 0) {
+                    $html .= '<a href="' . url('invoices/create_payment/' . $invoice->id) . '" data-title="' . _lang('Make Payment') . '" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('Make Payment') . '</a>';
+                }
+
+                $html .= '<a href="' . route('auditoriaInvHistorial', $invoice->id) . '" data-title="' . _lang('Historial de Invoices') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="ti-list"></i> ' . _lang('Historial') . '</a>'
+                    . '<a href="' . url('invoices/view_payment/' . $invoice->id) . '" data-title="' . _lang('View Payment') . '" data-fullscreen="true" class="dropdown-item ajax-modal"><i class="fas fa-credit-card"></i> ' . _lang('View Payment') . '</a>'
+                    . '<form action="' . action('InvoiceController@destroy', $invoice['id']) . '" method="post">'
+                    . csrf_field()
+                    . '<input name="_method" type="hidden" value="DELETE">'
+                    . '<button class="button-link btn-remove-invoice" type="submit"><i class="fas fa-recycle"></i> ' . _lang('Anular') . '</button>'
+                    . '</form></div></div>';
+
+                return $html;
+            }
+
+            return '<div class="dropdown text-center">'
+                . '<button class="btn btn-primary btn-xs dropdown-toggle" type="button" data-toggle="dropdown">'
+                . _lang('Action') . '&nbsp;<i class="fas fa-angle-down"></i></button>'
+                . '<div class="dropdown-menu">'
+                . '<a class="dropdown-item" href="#"><i class="fas fa-money-bill"></i> ' . _lang('Facturar') . '</a>'
+                . '</div></div>';
+        })
+        ->editColumn('invoice_date', function ($invoice) {
+            return formatDate($invoice->invoice_date);
+        })
+        ->editColumn('fecha_entrega', function ($invoice) {
+            return formatDate($invoice->fecha_entrega);
+        })
+        ->editColumn('fecha_pago', function ($invoice) {
+            return $invoice->ultima_fecha_pago ? formatDate($invoice->ultima_fecha_pago) : '';
+        })
+        ->editColumn('monto_adeudado', function ($invoice) {
+            $t = ((($invoice->grand_total ?? 0) + ($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0)) - (($invoice->total_returns ?? 0) + ($invoice->total_paid ?? 0)));
+            $acc_currency = $invoice->usd ? 'USD' : currency(optional($invoice->client)->currency);
+            return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
+        })
+        ->editColumn('paid', function ($invoice) {
+            $t = (($invoice->total_paid ?? 0) - (($invoice->total_retiro ?? 0) + ($invoice->total_retiro_origen ?? 0)));
+            $acc_currency = $invoice->usd ? 'USD' : currency(optional($invoice->client)->currency);
+            return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
+        })
+        ->editColumn('status', function ($invoice) {
+            return invoice_status($invoice->status);
+        })
+        ->editColumn('vendedor', function ($invoice) {
+            return optional($invoice->vendedor)->name ?? '';
+        })
+        ->editColumn('porcentajeComision', function ($invoice) {
+            return optional($invoice->comision)->porcentaje ?? '';
+        })
+        ->editColumn('comision', function ($invoice) {
+            return optional($invoice->comision)->monto ?? '';
+        })
+        ->editColumn('grand_total', function ($invoice) {
+            $salesReturnstotal = ($invoice->total_returns ?? 0);
+            $acc_currency = $invoice->is_usd ? 'USD' : currency(optional($invoice->client)->currency);
+            return "<span class='float-right'>" . decimalPlace(($invoice->grand_total - $salesReturnstotal), $acc_currency) . "</span>";
+        })
+        ->filterColumn('entregado', function ($query, $keyword) {
+            $keyword = strtolower(trim($keyword));
+
+            $tieneItemsSinEntregar = function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('invoice_items as ii')
+                    ->leftJoin('ordenes_despacho as od', function ($join) {
+                        $join->on('od.invoiceitem_id', '=', 'ii.id')
+                             ->where(function ($q) {
+                                 $q->whereNotNull('od.f_entrega')
+                                   ->orWhere('od.estatus', 'despachado');
+                             });
+                    })
+                    ->whereColumn('ii.invoice_id', 'invoices.id')
+                    ->whereNull('od.id');
+            };
+
+            if ($keyword === 'entregado') {
+                $query->whereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('invoice_items as ii2')
+                            ->whereColumn('ii2.invoice_id', 'invoices.id');
+                    })
+                    ->whereNotExists($tieneItemsSinEntregar);
+
+            } elseif ($keyword === 'pendiente' || $keyword === 'faltantes') {
+                $query->whereExists($tieneItemsSinEntregar);
+            }
+        })
+        ->filterColumn('nro_interno', function ($query, $keyword) {
+            $query->whereHas('invoice_items.product', function ($str) use ($keyword) {
+                $str->where('products.nro_interno', 'like', "%{$keyword}");
+            });
+        })
+        ->filterColumn('vendedor', function ($query, $keyword) {
+            $query->whereHas('vendedor', function ($str) use ($keyword) {
+                $str->where('name', 'like', "%{$keyword}%");
+            });
+        })
+        ->filterColumn('invoice_number', function ($query, $keyword) {
+            $query->where('invoices.invoice_number', 'like', "%{$keyword}%");
+        })
+        ->filterColumn('contact_name', function ($query, $keyword) {
+            $query->whereRaw("all_contacts.contact_name like ?", ["%{$keyword}%"]);
+        })
+        ->filterColumn('monto_adeudado', function ($query, $keyword) {})
+        ->filterColumn('invoice_date', function ($query, $keyword) {
+            if ($keyword != '') {
+                $date_range = explode(' - ', $keyword);
+                if (count($date_range) == 2) {
+                    $query->whereDate('invoices.invoice_date', '>=', $date_range[0])
+                          ->whereDate('invoices.invoice_date', '<=', $date_range[1]);
+                } else {
+                    $query->whereDate('invoices.invoice_date', '=', $keyword);
+                }
+            }
+        })
+        ->filterColumn('fecha_entrega', function ($query, $keyword) {
+            if ($keyword == "todos") {
+                $query->where(function ($q) {
+                    $q->where('invoices.fecha_entrega', '=', "")
+                      ->orWhereNull('invoices.fecha_entrega');
+                });
+            } elseif ($keyword != "") {
+                $date_range = explode(' - ', $keyword);
+                if (count($date_range) == 2) {
+                    $query->whereDate('invoices.fecha_entrega', '>=', $date_range[0])
+                          ->whereDate('invoices.fecha_entrega', '<=', $date_range[1]);
+                } else {
+                    $query->whereDate('invoices.fecha_entrega', '=', $keyword);
+                }
+            }
+        })
+        ->filterColumn('fecha_pago', function ($query, $keyword) {
+            $query->whereHas('transaction', function ($str) use ($keyword) {
+                if ($keyword === "todos") {
+                    $str->where(function ($q) {
+                        $q->where('transactions.trans_date', '=', "")
+                          ->orWhereNull('transactions.trans_date');
+                    });
+                } elseif ($keyword !== "") {
+                    $date_range = explode(' - ', $keyword);
+                    if (count($date_range) === 2) {
+                        $str->whereDate('transactions.trans_date', '>=', $date_range[0])
+                            ->whereDate('transactions.trans_date', '<=', $date_range[1]);
+                    } else {
+                        $str->whereDate('transactions.trans_date', '=', $keyword);
+                    }
+                }
+            });
+        })
+        ->filterColumn('pieza', function ($query, $keyword) {
+            $query->whereHas('invoice_items', function ($q) use ($keyword) {
+                $q->whereHas('product', function ($q2) use ($keyword) {
+                    $q2->whereRaw('products.id LIKE ?', ['%' . strtolower($keyword) . '%']);
+                })->orWhereHas('item', function ($q2) use ($keyword) {
+                    $q2->whereRaw('LOWER(item_name) LIKE ?', ['%' . strtolower($keyword) . '%']);
+                });
+            });
+        })
+        ->setRowId(function ($invoice) {
+            return "row_" . $invoice->id;
+        })
+        ->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno', 'paid', 'pieza', 'marca_modelo', 'entregado'])
+        ->make(true);
+}
+	
+	
+	//----
+	public function get_table_data_26112026(Request $request)
     {
 
         $currency = currency();
@@ -6875,10 +7242,59 @@ public function guardarComision($request, $invoice)
 						}
 						return "<span class='float-right'>" . decimalPlace($t, $acc_currency) . "</span>";
 					})
+										->editColumn('entregado', function ($invoice) use ($request) {
+						$datos = $this->procesarItemsFactura($invoice);
+
+						// Si es exportación (Excel / PDF / CSV), devolver texto limpio sin etiquetas HTML
+						if (isset($request->exportar)) {
+							if ($datos['entregado']) {
+								return "Entregado ({$datos['total_entregados']}/{$datos['total_entregados']})";
+							}
+
+							return "Entregados: {$datos['total_entregados']} | Faltantes: {$datos['total_faltantes']}";
+						}
+
+						// En la vista web devolver el badge HTML con entregados y faltantes
+						return $datos['entrega_html'];
+					})
 					 ->editColumn('status', function ($invoice) {
 						return invoice_status($invoice->status);
 					})
-				   ->filterColumn('nro_interno', function ($query, $keyword) {
+    ->filterColumn('entregado', function ($query, $keyword) {
+    
+	 $keyword = strtolower(trim($keyword));
+
+    if ($keyword === 'entregado') {
+        $query->whereIn('invoices.id', function ($sub) {
+            $sub->select('ii.invoice_id')
+                ->from('invoice_items as ii')
+                ->leftJoin('ordenes_despacho as od', function ($join) {
+                    $join->on('od.invoiceitem_id', '=', 'ii.id')
+                         ->where(function ($q) {
+                             $q->whereNotNull('od.f_entrega')
+                               ->orWhere('od.estatus', 'despachado');
+                         });
+                })
+                ->groupBy('ii.invoice_id')
+                ->havingRaw('COUNT(ii.id) > 0 AND COUNT(ii.id) = COUNT(od.id)');
+        });
+
+    } elseif ($keyword === 'pendiente' || $keyword === 'faltantes') {
+        $query->whereIn('invoices.id', function ($sub) {
+            $sub->select('ii.invoice_id')
+                ->from('invoice_items as ii')
+                ->leftJoin('ordenes_despacho as od', function ($join) {
+                    $join->on('od.invoiceitem_id', '=', 'ii.id')
+                         ->where(function ($q) {
+                             $q->whereNotNull('od.f_entrega')
+                               ->orWhere('od.estatus', 'despachado');
+                         });
+                })
+                ->whereNull('od.id'); // Directo: si al menos 1 ítem no tiene orden entregada
+        });
+    }
+	
+})->filterColumn('nro_interno', function ($query, $keyword) {
 						$query->orwhereHas('invoice_items', function ($str) use ($keyword) {
 							$str->whereHas('product', function ($str) use ($keyword) {
 								$str->where('products.nro_interno', 'like', "%{$keyword}");
@@ -6986,7 +7402,7 @@ public function guardarComision($request, $invoice)
 						
 						
 					})
-					->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid','pieza','marca_modelo'])
+					->rawColumns(['grand_total', 'status', 'action', 'contact_name', 'producto', 'idproducto', 'checkbox', 'invoice_number', 'monto_adeudado', 'nro_interno','paid','pieza','marca_modelo','entregado'])
 					->make(true);
 			}	
 			
@@ -7096,14 +7512,207 @@ public function guardarComision($request, $invoice)
 				}*/
 
 
-			private function procesarItemsFactura($invoice): array
+private function procesarItemsFactura($invoice): array
+{
+    static $cache = [];
+
+    if (isset($cache[$invoice->id])) {
+        return $cache[$invoice->id];
+    }
+
+    // Cargar relaciones faltantes para evitar consultas N+1
+    $invoice->loadMissing([
+        'invoice_items.ordenDespacho',
+        'invoice_items.product.item',
+        'invoice_items.product.marcaModelo.marca',
+        'invoice_items.product.marcaModelo.modelo',
+    ]);
+
+    $items = $invoice->invoice_items->filter()->sortBy('product.nro_interno');
+
+    $htmlPieza = '';
+    if ($items->count() === 1) {
+        $item = $items->first();
+        $product = $item->product;
+        $orden = $item->ordenDespacho;
+
+        $alias = nroInternoAlias(
+            $product->company_id ?? null,
+            $product->tipo_vehiculo ?? null,
+            $product->nro_interno ?? null
+        ) ?: 'Sin Nro Interno';
+
+        $productoId = $product->id ?? '';
+        $itemNombre = $product->item->item_name ?? '';
+        $estatusTxt = ($product && !empty($product->deleted_at))
+            ? ' <span class="badge badge-warning">No se desarmó</span>'
+            : '';
+
+        // Mostrar estatus y fecha de entrega de ordenDespacho si existe
+        $despachoTxt = '';
+        if ($orden) {
+            $fechaEntrega = !empty($orden->f_entrega)
+                ? ' (' . \Carbon\Carbon::parse($orden->f_entrega)->format('d/m/Y') . ')'
+                : '';
+            $estatusOrden = ucfirst($orden->estatus ?? 'Con orden');
+            $despachoTxt = " <span class=\"badge badge-info\">{$estatusOrden}{$fechaEntrega}</span>";
+        }
+
+        $htmlPieza = "({$productoId}) {$alias} - {$itemNombre}{$estatusTxt}{$despachoTxt}";
+
+    } elseif ($items->isNotEmpty()) {
+        $tabla = '<table class="table table-striped"><thead><tr>'
+            . '<th>ID</th>'
+            . '<th>Nro Interno</th>'
+            . '<th>Ítem</th>'
+            . '<th>Estatus</th>'
+            . '<th>Despacho / Entrega</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($items as $item) {
+            $product = $item->product;
+            $orden = $item->ordenDespacho;
+
+            $alias = nroInternoAlias(
+                $product->company_id ?? null,
+                $product->tipo_vehiculo ?? null,
+                $product->nro_interno ?? null
+            ) ?: 'Sin Nro Interno';
+
+            $esEliminado = ($product && !empty($product->deleted_at));
+            $estatusBadge = $esEliminado
+                ? '<span class="badge badge-warning">No se desarmó</span>'
+                : '<span class="badge badge-success">Activo</span>';
+
+            // Construir celda de orden de despacho si existe
+            if ($orden) {
+                $fechaEntrega = !empty($orden->f_entrega)
+                    ? '<br><small class="text-muted">' . \Carbon\Carbon::parse($orden->f_entrega)->format('d/m/Y') . '</small>'
+                    : '';
+                $estatusOrden = ucfirst($orden->estatus ?? 'Con orden');
+                $despachoCell = '<span class="badge badge-info">' . $estatusOrden . '</span>' . $fechaEntrega;
+            } else {
+                $despachoCell = '<span class="text-muted">-</span>';
+            }
+
+            $tabla .= '<tr>'
+                . '<td>' . ($product->id ?? '') . '</td>'
+                . '<td>' . $alias . '</td>'
+                . '<td>' . ($product->item->item_name ?? '') . '</td>'
+                . '<td>' . $estatusBadge . '</td>'
+                . '<td>' . $despachoCell . '</td>'
+                . '</tr>';
+        }
+        $tabla .= '</tbody></table>';
+        $htmlPieza = $tabla;
+    }
+
+    $itemsAgrupados = $items->groupBy('product.nro_interno')->sortKeys()->map->first();
+    $htmlNroInterno = '';
+    $htmlMarcaModelo = '';
+
+    if ($itemsAgrupados->count() === 1) {
+        $item = $itemsAgrupados->first();
+        $car = $item->product;
+        $esEliminado = ($car && !empty($car->deleted_at));
+        $estatusTxt = $esEliminado ? ' <span class="badge badge-warning">No se desarmó</span>' : '';
+
+        // Nro Interno único
+        $alias = nroInternoAlias(
+            $car->company_id ?? null,
+            $car->tipo_vehiculo ?? null,
+            $car->nro_interno ?? null
+        );
+        $htmlNroInterno = $alias . $estatusTxt;
+
+        // Marca y Modelo único
+        $marca  = $car->marcaModelo->marca->marca ?? '';
+        $modelo = $car->marcaModelo->modelo->modelo ?? '';
+        $htmlMarcaModelo = trim("{$marca} {$modelo}") . $estatusTxt;
+
+    } elseif ($itemsAgrupados->isNotEmpty()) {
+        $tablaNro = '<table class="table table-striped"><thead><tr><th>Nro Interno</th><th>Estatus</th></tr></thead><tbody>';
+        $tablaMarca = '<table class="table table-striped"><thead><tr><th>Nro Interno</th><th>Marca / Modelo</th><th>Estatus</th></tr></thead><tbody>';
+
+        foreach ($itemsAgrupados as $item) {
+            $car = $item->product;
+            $alias = nroInternoAlias(
+                $car->company_id ?? null,
+                $car->tipo_vehiculo ?? null,
+                $car->nro_interno ?? null
+            ) ?: 'Sin Nro Interno';
+
+            $marca  = $car->marcaModelo->marca->marca ?? '';
+            $modelo = $car->marcaModelo->modelo->modelo ?? '';
+            $marcaModeloTxt = trim("{$marca} {$modelo}") ?: 'Sin Marca/Modelo';
+
+            $esEliminado = ($car && !empty($car->deleted_at));
+            $estatusBadge = $esEliminado
+                ? '<span class="badge badge-warning">No se desarmó</span>'
+                : '<span class="badge badge-success">Activo</span>';
+
+            $tablaNro .= '<tr><td>' . $alias . '</td><td>' . $estatusBadge . '</td></tr>';
+            $tablaMarca .= '<tr><td>' . $alias . '</td><td>' . $marcaModeloTxt . '</td><td>' . $estatusBadge . '</td></tr>';
+        }
+
+        $tablaNro .= '</tbody></table>';
+        $tablaMarca .= '</tbody></table>';
+
+        $htmlNroInterno = $tablaNro;
+        $htmlMarcaModelo = $tablaMarca;
+    }
+	
+	 // Separar ítems entregados de los faltantes
+    [$itemsEntregados, $itemsFaltantes] = $items->partition(function ($item) {
+        return $item->ordenDespacho !== null
+            && (!empty($item->ordenDespacho->f_entrega) || $item->ordenDespacho->estatus === 'despachado');
+    });
+
+    $totalItems      = $items->count();
+    $totalEntregados = $itemsEntregados->count();
+    $totalFaltantes  = $itemsFaltantes->count();
+
+    // Generar badge resumen listo para mostrar en tabla/DataTable
+    if ($totalItems === 0) {
+        $htmlEntrega = '<span class="badge badge-secondary">Sin ítems</span>';
+    } elseif ($totalFaltantes === 0) {
+        $htmlEntrega = '<span class="badge badge-success">Entregado completo (' . $totalEntregados . '/' . $totalItems . ')</span>';
+    } elseif ($totalEntregados === 0) {
+        $htmlEntrega = '<span class="badge badge-danger">Pendiente (' . $totalFaltantes . ' faltantes)</span>';
+    } else {
+        $htmlEntrega = '<span class="badge badge-warning">Parcial: ' . $totalEntregados . ' entregados / ' . $totalFaltantes . ' faltantes</span>';
+    }
+	
+	  return $cache[$invoice->id] = [
+        'es_unico_pieza'    => $totalItems === 1,
+        'es_unico_agrupado' => $itemsAgrupados->count() === 1,
+        'entregado'         => $totalItems > 0 && $totalFaltantes === 0, // true si no falta ninguno
+        'total_entregados'  => $totalEntregados,
+        'total_faltantes'   => $totalFaltantes,
+        'entrega_html'      => $htmlEntrega,
+        'pieza_html'        => $htmlPieza,
+        'nro_html'          => $htmlNroInterno,
+        'marca_modelo_html' => $htmlMarcaModelo,
+    ];
+
+    /*return $cache[$invoice->id] = [
+        'es_unico_pieza'    => $items->count() === 1,
+        'es_unico_agrupado' => $itemsAgrupados->count() === 1,
+        'pieza_html'        => $htmlPieza,
+        'nro_html'          => $htmlNroInterno,
+        'marca_modelo_html' => $htmlMarcaModelo,
+    ];*/
+}
+
+
+			private function procesarItemsFactura_old($invoice): array
 			{
 				static $cache = [];
 
 				if (isset($cache[$invoice->id])) {
 					return $cache[$invoice->id];
 				}
-
+				
 				$items = $invoice->invoice_items->filter()->sortBy('product.nro_interno');
 
 				$htmlPieza = '';
@@ -7213,7 +7822,42 @@ public function guardarComision($request, $invoice)
 					'marca_modelo_html' => $htmlMarcaModelo,
 				];
 			}
+			
+			
+		public function actualizarEstatusFacturas()
+{
+    $actualizadas = 0;
 
+    Invoice::where(function ($query) {
+            $query->whereIn('status', ['Unpaid', 'Partially_Paid'])
+                  ->orWhereNull('status');
+        })
+        ->has('payments') // Solo facturas donde exista al menos 1 pago registrado
+        ->withSum('payments', 'amount') // Suma los montos de la relación payments
+        ->chunkById(200, function ($invoices) use (&$actualizadas) {
+            foreach ($invoices as $invoice) {
+                $paid  = round((float) ($invoice->payments_sum_amount ?? 0), 2);
+                $total = round((float) $invoice->grand_total, 2);
+
+                // Actuar ÚNICAMENTE si el monto pagado cubre el total de la factura
+                if ($paid >= $total && $total > 0) {
+                    //$invoice->paid   = $paid;
+                    $invoice->status = 'Paid';
+                    $invoice->save();
+
+                    $actualizadas++;
+                }
+            }
+        });
+
+    Log::info("Actualización de facturas ejecutada. Total marcadas como Paid: {$actualizadas}");
+
+    return response()->json([
+        'status'       => 'success',
+        'message'      => "Proceso finalizado. Facturas marcadas como Paid: {$actualizadas}",
+        'actualizadas' => $actualizadas,
+    ]);
+}
 
 
 
