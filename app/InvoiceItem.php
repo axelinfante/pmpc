@@ -42,6 +42,11 @@ class InvoiceItem extends Model implements AuditableInvoiceItem
 	{
 		return $this->belongsTo('App\Invoice', 'invoice_id')->withDefault();
 	}
+	
+	 public function ordenDespacho()
+    {
+        return $this->hasOne('App\OrdenDespacho', 'invoiceitem_id', 'id');
+    }
 
 
 }
